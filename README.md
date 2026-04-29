@@ -11,6 +11,7 @@ innovatech/
 ├── docs/
 ├── README.md
 └── .gitignore
+```
 
 ## Tecnologías principales
 - Next.js
