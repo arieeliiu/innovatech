@@ -1,4 +1,4 @@
-# Innovatech Solutions 
+# Innovatech Solutions
 
 Desarrollo de una plataforma centralizada para la gestión de proyectos, recursos y analítica organizacional para Innovatech Solutions.
 
@@ -14,8 +14,13 @@ innovatech/
 ```
 
 ## Tecnologías principales
+
 - Next.js
 - NestJS
 - Supabase
 - PostgreSQL
 - Metabase
+
+## Estado del proyecto
+
+Proyecto en etapa inicial de configuración.
