@@ -38,6 +38,11 @@ export class ProjectsController {
     return this.projectsService.findById(id);
   }
 
+  @Delete(':id')
+  deleteProject(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.projectsService.deleteProject(id);
+  }
+
   @Post(':id/tasks')
   createTask(
     @Param('id', new ParseUUIDPipe()) id: string,

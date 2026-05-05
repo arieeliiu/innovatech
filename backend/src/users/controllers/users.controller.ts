@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Param, UseGuards} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 
@@ -13,8 +13,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.usersService.findById(Number(id));
+  findById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.findById(id);
   }
-  
-}  
+}
