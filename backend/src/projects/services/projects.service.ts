@@ -30,35 +30,14 @@ export class ProjectsService {
     return data;
   }
 
-  private async ensureTaskExists(taskId: string) {
-    const { data, error } = await this.supabase
-      .from('project_tasks')
-      .select('*')
-      .eq('id', taskId)
-      .single();
-
-    if (error || !data) {
-      throw new NotFoundException('Tarea no encontrada');
-    }
-
-    return data;
-  }
-
   private async ensureUserExists(userId: string) {
-    try {
-      const { data, error } = await this.supabase.auth.admin.getUserById(userId);
+    const { data, error } = await this.supabase.auth.admin.getUserById(userId);
 
-      if (error || !data.user) {
-        throw new NotFoundException('Usuario no encontrado');
-      }
-
-      return data.user;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new NotFoundException('Usuario no encontrado o ID inválido');
+    if (error || !data.user) {
+      throw new NotFoundException('Usuario no encontrado');
     }
+
+    return data.user;
   }
 
   async createProject(createProjectDto: CreateProjectDto) {
@@ -125,6 +104,51 @@ export class ProjectsService {
     };
   }
 
+  async deleteProject(projectId: string) {
+    await this.ensureProjectExists(projectId);
+
+    const { error: historyError } = await this.supabase
+      .from('project_status_history')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (historyError) {
+      throw new InternalServerErrorException(historyError.message);
+    }
+
+    const { error: membersError } = await this.supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (membersError) {
+      throw new InternalServerErrorException(membersError.message);
+    }
+
+    const { error: tasksError } = await this.supabase
+      .from('project_tasks')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (tasksError) {
+      throw new InternalServerErrorException(tasksError.message);
+    }
+
+    const { error: projectError } = await this.supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (projectError) {
+      throw new InternalServerErrorException(projectError.message);
+    }
+
+    return {
+      success: true,
+      message: 'Proyecto eliminado correctamente',
+    };
+  }
+
   async createTask(projectId: string, createTaskDto: CreateTaskDto) {
     const { title, description, responsibleId, startDate, endDate } =
       createTaskDto;
@@ -178,11 +202,19 @@ export class ProjectsService {
   }
 
   async findTaskById(taskId: string) {
-    const task = await this.ensureTaskExists(taskId);
+    const { data, error } = await this.supabase
+      .from('project_tasks')
+      .select('*')
+      .eq('id', taskId)
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException('Tarea no encontrada');
+    }
 
     return {
       success: true,
-      task,
+      task: data,
     };
   }
 
@@ -195,7 +227,15 @@ export class ProjectsService {
 
     await this.ensureUserExists(userId);
 
-    const existingTask = await this.ensureTaskExists(taskId);
+    const { data: existingTask, error: findError } = await this.supabase
+      .from('project_tasks')
+      .select('*')
+      .eq('id', taskId)
+      .single();
+
+    if (findError || !existingTask) {
+      throw new NotFoundException('Tarea no encontrada');
+    }
 
     const { data: updatedTask, error: updateError } = await this.supabase
       .from('project_tasks')
@@ -235,8 +275,6 @@ export class ProjectsService {
   }
 
   async findTaskHistory(taskId: string) {
-    await this.ensureTaskExists(taskId);
-
     const { data, error } = await this.supabase
       .from('project_status_history')
       .select('*')
@@ -303,25 +341,27 @@ export class ProjectsService {
   }
 
   async removeProjectMember(projectId: string, userId: string) {
-  await this.ensureProjectExists(projectId);
-  await this.ensureUserExists(userId);
+    await this.ensureProjectExists(projectId);
+    await this.ensureUserExists(userId);
 
-  const { data, error } = await this.supabase
-    .from('project_members')
-    .delete()
-    .eq('project_id', projectId)
-    .eq('user_id', userId)
-    .select()
-    .single();
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .select();
 
-  if (error || !data) {
-    throw new NotFoundException('Miembro no encontrado en este proyecto');
-  }
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
 
-  return {
-    success: true,
-    message: 'Miembro eliminado correctamente del proyecto',
-    member: data,
+    if (!data || data.length === 0) {
+      throw new NotFoundException('Miembro no encontrado en el proyecto');
+    }
+
+    return {
+      success: true,
+      message: 'Miembro eliminado correctamente del proyecto',
     };
   }
 }
