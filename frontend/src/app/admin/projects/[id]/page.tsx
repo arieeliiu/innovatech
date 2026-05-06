@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   deleteProject,
+  finalizeProject,
   getProjectById,
   getProjectTasks,
   getUsers,
@@ -69,6 +70,11 @@ export default function AdminProjectDetailPage() {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [finalizeConfirmation, setFinalizeConfirmation] = useState('');
+  const [finalizeError, setFinalizeError] = useState('');
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   async function loadProjectDetail() {
     try {
@@ -136,6 +142,34 @@ export default function AdminProjectDetailPage() {
     setDeleteError('');
   }
 
+  async function handleFinalizeProject() {
+    if (!project) return;
+
+    if (finalizeConfirmation.trim().toLowerCase() !== 'finalizar') {
+      setFinalizeError('Debes escribir "finalizar" para confirmar.');
+      return;
+    }
+
+    try {
+      setIsFinalizing(true);
+      setFinalizeError('');
+
+      await finalizeProject(project.id);
+
+      router.push('/admin/projects');
+    } catch {
+      setFinalizeError('No se pudo finalizar el proyecto');
+    } finally {
+      setIsFinalizing(false);
+    }
+  }
+
+  function closeFinalizeModal() {
+    setShowFinalizeModal(false);
+    setFinalizeConfirmation('');
+    setFinalizeError('');
+  }
+
   useEffect(() => {
     if (projectId) {
       loadProjectDetail();
@@ -179,13 +213,23 @@ export default function AdminProjectDetailPage() {
           Volver a proyectos
         </button>
 
-        <button
-          type="button"
-          onClick={() => setShowDeleteModal(true)}
-          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-        >
-          Eliminar proyecto
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowFinalizeModal(true)}
+            className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
+          >
+            Finalizar proyecto
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+          >
+            Eliminar proyecto
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl bg-white p-6 shadow">
@@ -380,6 +424,59 @@ export default function AdminProjectDetailPage() {
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
               >
                 {isDeleting ? 'Eliminando...' : 'Confirmar eliminación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinalizeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Finalizar proyecto
+            </h2>
+
+            <p className="mt-3 text-sm text-slate-600">
+              Al finalizar <strong className="text-slate-900">{project.name}</strong>, se removerán todos los miembros del proyecto. Esta acción no se puede deshacer.
+            </p>
+
+            <p className="mt-3 text-sm text-slate-600">
+              Para confirmar, escribe <strong className="text-slate-900">finalizar</strong>.
+            </p>
+
+            <input
+              className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-amber-500"
+              value={finalizeConfirmation}
+              onChange={(event) => setFinalizeConfirmation(event.target.value)}
+              placeholder="Escribe finalizar"
+            />
+
+            {finalizeError && (
+              <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+                {finalizeError}
+              </p>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeFinalizeModal}
+                className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleFinalizeProject}
+                disabled={
+                  isFinalizing ||
+                  finalizeConfirmation.trim().toLowerCase() !== 'finalizar'
+                }
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
+              >
+                {isFinalizing ? 'Finalizando...' : 'Confirmar finalización'}
               </button>
             </div>
           </div>

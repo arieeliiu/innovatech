@@ -8,6 +8,7 @@ import {
   getProjectMembers,
   getUsers,
 } from '../../../lib/api';
+import { formatDateShort } from '../../../lib/date';
 import {
   getStoredRole,
   getStoredUserId,
@@ -213,13 +214,13 @@ export default function ProjectDetailPage() {
             <div className="rounded-lg bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Fecha de inicio</p>
               <p className="font-medium text-slate-900">
-                {project.start_date}
+                {formatDateShort(project.start_date)}
               </p>
             </div>
 
             <div className="rounded-lg bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Fecha de término</p>
-              <p className="font-medium text-slate-900">{project.end_date}</p>
+              <p className="font-medium text-slate-900">{formatDateShort(project.end_date)}</p>
             </div>
 
             <div className="rounded-lg bg-slate-50 p-4">

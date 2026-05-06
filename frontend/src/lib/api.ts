@@ -81,7 +81,7 @@ export async function createTask(
     description: string;
     responsibleId: string;
     startDate: string;
-    endDate: string;
+    endDate?: string;
   },
 ) {
   return request(`/projects/${projectId}/tasks`, {
@@ -110,6 +110,20 @@ export async function updateTaskStatus(
 
 export async function getTaskHistory(taskId: string) {
   return request(`/projects/tasks/${taskId}/history`);
+}
+
+export async function getTaskComments(taskId: string) {
+  return request(`/projects/tasks/${taskId}/comments`);
+}
+
+export async function createTaskComment(
+  taskId: string,
+  body: { title: string; description: string },
+) {
+  return request(`/projects/tasks/${taskId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 export async function addProjectMember(
@@ -142,6 +156,13 @@ export async function getUsers() {
 export async function deleteProject(projectId: string) {
   return request(`/projects/${projectId}`, {
     method: 'DELETE',
+  });
+}
+
+export async function finalizeProject(projectId: string, body?: { comment?: string }) {
+  return request(`/projects/${projectId}/finalize`, {
+    method: 'PATCH',
+    body: JSON.stringify(body ?? {}),
   });
 }
 
