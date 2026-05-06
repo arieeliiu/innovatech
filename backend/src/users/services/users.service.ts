@@ -82,8 +82,16 @@ export class UsersService {
   }
 
   async updateRole(id: string, role: string) {
+    const { data: userData, error: userError } =
+      await this.supabase.auth.admin.getUserById(id);
+
+    if (userError || !userData.user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
     const { data, error } = await this.supabase.auth.admin.updateUserById(id, {
       user_metadata: {
+        ...userData.user.user_metadata,
         role,
       },
     });

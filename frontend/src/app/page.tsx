@@ -24,7 +24,7 @@ export default function Home() {
       });
 
       if (!data.access_token) {
-        setMessage('No se recibió token de acceso');
+        setMessage('Credenciales incorrectas');
         return;
       }
 

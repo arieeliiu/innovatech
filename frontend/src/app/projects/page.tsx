@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
 import {
   canCreateProjects,
+  canManageTasks,
   getStoredRole,
   getStoredUserId,
   isAdminRole,
@@ -50,7 +51,7 @@ export default function ProjectsPage() {
         ? loadedProjects
         : [];
 
-      if (isAdminRole(currentRole) || currentRole === 'gestor' || !currentUserId) {
+      if (canManageTasks(currentRole) || !currentUserId) {
         setProjects(normalizedProjects);
       } else {
         const visibleProjects = await Promise.all(
@@ -102,7 +103,7 @@ export default function ProjectsPage() {
   const canCreateProject = canCreateProjects(role);
 
   function getProjectRoute(projectId: string) {
-    return role === 'admin'
+    return isAdminRole(role)
       ? `/admin/projects/${projectId}`
       : `/projects/${projectId}`;
   }
