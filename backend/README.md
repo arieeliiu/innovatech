@@ -1,98 +1,98 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend - Innovatech Solutions
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend desarrollado en **NestJS** para el proyecto **Innovatech Solutions**. Su objetivo es actuar como la capa de servicios de la plataforma, exponiendo una API para que el frontend pueda autenticarse, gestionar usuarios, administrar proyectos y preparar la integración futura con herramientas externas de gestión, recursos y analítica.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Este backend forma parte de una arquitectura pensada originalmente bajo un enfoque de **microservicios**, donde cada área funcional del sistema puede evolucionar de forma independiente. Para esta entrega se implementó de forma prioritaria el núcleo funcional asociado a autenticación, usuarios, proyectos y tareas, manteniendo una estructura modular que permite escalar hacia los demás servicios planificados.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Rol del backend dentro del sistema
 
-## Project setup
+El backend cumple la función de intermediario entre el frontend de Innovatech Solutions y los servicios de datos o plataformas externas. En vez de conectar el frontend directamente con cada herramienta, el backend centraliza la lógica de negocio, las validaciones, la autenticación y la comunicación con los servicios externos.
 
-```bash
-$ npm install
+Esto permite que el sistema sea más ordenado, seguro y mantenible, ya que las reglas principales no quedan distribuidas en la interfaz de usuario, sino concentradas en una capa de servicios.
+
+---
+
+## Enfoque de microservicios planificado
+
+La solución fue diseñada considerando tres servicios funcionales:
+
+### 1. Servicio de gestión de proyectos
+
+Responsable de administrar proyectos, tareas, responsables, estados, progreso e historial de cambios. Este servicio representa el núcleo operativo de la plataforma, ya que permite controlar el avance del trabajo y mantener trazabilidad sobre las actividades realizadas.
+
+En la implementación actual, este es el servicio con mayor desarrollo dentro del backend.
+
+### 2. Servicio de gestión de recursos
+
+Servicio proyectado para administrar información relacionada con personas, equipos de trabajo, disponibilidad, carga laboral y recursos asociados a los proyectos. Su propósito es apoyar la asignación de responsabilidades y mejorar la planificación interna.
+
+En una evolución futura, este servicio podría integrarse con herramientas externas de recursos humanos o control de horas.
+
+### 3. Servicio de analítica y reportes
+
+Servicio proyectado para consolidar información del sistema y transformarla en métricas útiles para la toma de decisiones. Su objetivo es entregar indicadores sobre avance de proyectos, productividad, carga de trabajo y estado general de la operación.
+
+En una evolución futura, este servicio podría alimentar herramientas de inteligencia de negocios como Metabase.
+
+---
+
+## Estado actual de implementación
+
+Actualmente, el backend implementa el núcleo base necesario para operar la plataforma:
+
+- autenticación de usuarios;
+- validación de token mediante guard;
+- gestión de usuarios;
+- creación y consulta de proyectos;
+- gestión de tareas asociadas a proyectos;
+- actualización de estados y progreso de tareas;
+- registro de historial de cambios;
+- administración de miembros de proyecto.
+
+Aunque la arquitectura fue pensada para tres servicios principales, en esta etapa se priorizó el desarrollo del servicio central de gestión de proyectos y usuarios, dejando preparados los criterios de separación modular para futuras ampliaciones.
+
+---
+
+## Tecnologías utilizadas
+
+- **NestJS**: framework principal del backend.
+- **TypeScript**: lenguaje utilizado para mejorar legibilidad, tipado y mantenibilidad.
+- **Supabase**: servicio utilizado para autenticación y persistencia de datos.
+- **class-validator / class-transformer**: validación y transformación de datos mediante DTOs.
+- **Node.js**: entorno de ejecución.
+
+---
+
+## Estructura general
+
+```txt
+backend/
+├── src/
+│   ├── auth/
+│   │   ├── controllers/
+│   │   ├── guards/
+│   │   ├── services/
+│   │   └── auth.module.ts
+│   ├── users/
+│   │   ├── controllers/
+│   │   ├── dto/
+│   │   ├── services/
+│   │   └── users.module.ts
+│   ├── projects/
+│   │   ├── controllers/
+│   │   ├── dto/
+│   │   ├── services/
+│   │   └── projects.module.ts
+│   ├── app.module.ts
+│   └── main.ts
+├── package.json
+└── README.md
 ```
 
-## Compile and run the project
+## Quick Start
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+npm install
+npm run start:dev

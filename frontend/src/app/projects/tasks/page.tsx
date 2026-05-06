@@ -8,6 +8,8 @@ import {
   getProjects,
   getUsers,
   updateTaskStatus,
+  getTaskById,
+  getTaskHistory,
 } from '../../../lib/api';
 import {
   canManageTasks,
@@ -15,6 +17,7 @@ import {
   getStoredUserId,
   isAdminRole,
 } from '../../../lib/auth';
+import { formatDateShort } from '../../../lib/date';
 
 type Project = {
   id: string;
@@ -73,6 +76,12 @@ export default function ProjectTasksPage() {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskHistory, setTaskHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(false);
+  const [editProgress, setEditProgress] = useState<number | ''>('');
+  const [newComment, setNewComment] = useState('');
 
   async function loadInitialData(currentRole: string | null, currentUserId: string | null) {
     try {
@@ -231,6 +240,57 @@ export default function ProjectTasksPage() {
       await loadTasks(selectedProjectId);
     } catch {
       setError('No se pudo actualizar el estado de la tarea');
+    }
+  }
+
+  async function openTaskModal(task: Task) {
+    setSelectedTask(task);
+    setEditProgress(task.progress ?? 0);
+    setNewComment('');
+    setLoadingHistory(true);
+
+    try {
+      const [taskResp, historyResp] = await Promise.all([
+        getTaskById(task.id),
+        getTaskHistory(task.id),
+      ]);
+
+      setSelectedTask(taskResp.task ?? task);
+      setTaskHistory(historyResp.history ?? []);
+    } catch {
+      setTaskHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  function closeTaskModal() {
+    setSelectedTask(null);
+    setTaskHistory([]);
+    setEditProgress('');
+    setNewComment('');
+  }
+
+  async function handleSaveProgress() {
+    if (!selectedTask) return;
+
+    const progressValue = typeof editProgress === 'number' ? editProgress : 0;
+
+    try {
+      setSavingProgress(true);
+
+      await updateTaskStatus(selectedTask.id, {
+        status: selectedTask.status,
+        progress: progressValue,
+        comment: newComment || `Actualizó avance a ${progressValue}%`,
+      });
+
+      await loadTasks(selectedProjectId);
+      closeTaskModal();
+    } catch {
+      // ignore for now
+    } finally {
+      setSavingProgress(false);
     }
   }
 
@@ -543,6 +603,73 @@ export default function ProjectTasksPage() {
           );
         })}
       </div>
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{selectedTask.title}</h3>
+              <button onClick={closeTaskModal} className="text-sm text-slate-600">Cerrar</button>
+            </div>
+
+            <p className="mt-2 text-sm text-slate-600">{selectedTask.description}</p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div>
+                <p className="text-xs text-slate-500">Responsable</p>
+                <p className="font-medium text-slate-900">{getResponsibleName(selectedTask)}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">Inicio</p>
+                <p className="font-medium text-slate-900">{formatDateShort(selectedTask.start_date ?? selectedTask.startDate)}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">Término</p>
+                <p className="font-medium text-slate-900">{formatDateShort(selectedTask.end_date ?? selectedTask.endDate)}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">Avance</p>
+                <div className="mt-1 flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={editProgress}
+                    onChange={(e) => setEditProgress(Number(e.target.value))}
+                    className="w-24 rounded-lg border border-slate-300 p-2"
+                  />
+                  <span className="text-sm text-slate-600">%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm text-slate-700">Comentarios</label>
+              <textarea value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 p-2" placeholder="Agregar comentario" />
+            </div>
+
+            {loadingHistory ? (
+              <p className="mt-4 text-sm text-slate-600">Cargando historial...</p>
+            ) : (
+              <div className="mt-4 space-y-2 max-h-40 overflow-auto">
+                {taskHistory.map((h) => (
+                  <div key={h.id} className="rounded-lg border border-slate-100 p-2">
+                    <p className="text-xs text-slate-500">{new Date(h.created_at).toLocaleString()}</p>
+                    <p className="text-sm text-slate-700">{h.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={closeTaskModal} className="rounded-lg border border-slate-300 px-4 py-2">Cancelar</button>
+              <button onClick={handleSaveProgress} disabled={savingProgress} className="rounded-lg bg-slate-900 px-4 py-2 text-white">{savingProgress ? 'Guardando...' : 'Guardar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

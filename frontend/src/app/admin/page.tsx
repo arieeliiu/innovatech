@@ -52,8 +52,8 @@ export default function AdminDashboard() {
     loadData();
   }, []);
 
-  const activeProjects = projects.filter(p => p.status?.toLowerCase() === 'activo').length;
-  const completedProjects = projects.filter(p => p.status?.toLowerCase() === 'completado').length;
+  const activeProjects = projects.filter((p) => (p.status || '').toUpperCase() !== 'DONE').length;
+  const completedProjects = projects.filter((p) => (p.status || '').toUpperCase() === 'DONE').length;
 
   return (
     <div className="space-y-8">

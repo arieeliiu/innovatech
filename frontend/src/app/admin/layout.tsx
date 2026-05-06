@@ -124,10 +124,12 @@ export default function AdminLayout({
         </nav>
       </aside>
 
-      <section className="flex min-h-screen flex-1 flex-col">
+      <section className="flex min-h-screen flex-1 flex-col overflow-hidden">
         <ProfileTopbar />
 
-        <div className="flex-1 p-8">{children}</div>
+        <div className="flex-1 px-6 py-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1450px]">{children}</div>
+        </div>
       </section>
     </main>
   );

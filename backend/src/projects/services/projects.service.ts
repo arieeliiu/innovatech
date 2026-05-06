@@ -7,6 +7,7 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { CreateTaskDto } from '../dto/create-task.dto';
+import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
 
@@ -99,6 +100,70 @@ export class ProjectsService {
     };
   }
 
+  async finalizeProject(projectId: string, userId: string, comment?: string) {
+    await this.ensureProjectExists(projectId);
+    await this.ensureUserExists(userId);
+
+    const { data: projectData, error: projectErr } = await this.supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (projectErr || !projectData) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    const previousStatus = projectData.status;
+
+    const { data: updatedProject, error: updateErr } = await this.supabase
+      .from('projects')
+      .update({
+        status: 'DONE',
+        progress: 100,
+        end_date: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (updateErr) {
+      throw new InternalServerErrorException(updateErr.message);
+    }
+
+    // remove all members from project
+    const { error: membersErr } = await this.supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (membersErr) {
+      throw new InternalServerErrorException(membersErr.message);
+    }
+
+    const { error: historyErr } = await this.supabase
+      .from('project_status_history')
+      .insert({
+        project_id: projectId,
+        task_id: null,
+        previous_status: previousStatus,
+        new_status: 'DONE',
+        changed_by: userId,
+        comment: comment ?? 'Proyecto finalizado',
+      });
+
+    if (historyErr) {
+      throw new InternalServerErrorException(historyErr.message);
+    }
+
+    return {
+      success: true,
+      message: 'Proyecto finalizado correctamente',
+      project: updatedProject,
+    };
+  }
+
   async findById(id: string) {
     const { data, error } = await this.supabase
       .from('projects')
@@ -118,6 +183,28 @@ export class ProjectsService {
 
   async deleteProject(projectId: string) {
     await this.ensureProjectExists(projectId);
+
+    const { data: projectTasks, error: projectTasksError } = await this.supabase
+      .from('project_tasks')
+      .select('id')
+      .eq('project_id', projectId);
+
+    if (projectTasksError) {
+      throw new InternalServerErrorException(projectTasksError.message);
+    }
+
+    const taskIds = (projectTasks ?? []).map((task) => task.id);
+
+    if (taskIds.length > 0) {
+      const { error: commentsError } = await this.supabase
+        .from('task_comments')
+        .delete()
+        .in('task_id', taskIds);
+
+      if (commentsError) {
+        throw new InternalServerErrorException(commentsError.message);
+      }
+    }
 
     const { error: historyError } = await this.supabase
       .from('project_status_history')
@@ -176,7 +263,7 @@ export class ProjectsService {
         description,
         responsible_id: responsibleId,
         start_date: startDate,
-        end_date: endDate,
+        end_date: endDate || null,
         status: 'TODO',
         progress: 0,
       })
@@ -249,11 +336,44 @@ export class ProjectsService {
       throw new NotFoundException('Tarea no encontrada');
     }
 
+    // Normalize progress/end_date behavior:
+    let newProgress = progress;
+    let endDate: string | null = null;
+
+    if (status === 'DONE') {
+      newProgress = 100;
+      endDate =
+        existingTask.status === 'DONE' && existingTask.end_date
+          ? existingTask.end_date
+          : new Date().toISOString();
+    } else {
+      // prevent tasks from staying at 100% when moved back
+      if (newProgress >= 100) {
+        newProgress = 0;
+      }
+      endDate = null;
+    }
+
+    const existingEndDate = existingTask.end_date ?? null;
+    const hasRealChanges =
+      existingTask.status !== status ||
+      existingTask.progress !== newProgress ||
+      existingEndDate !== endDate;
+
+    if (!hasRealChanges) {
+      return {
+        success: true,
+        message: 'No hay cambios para guardar',
+        task: existingTask,
+      };
+    }
+
     const { data: updatedTask, error: updateError } = await this.supabase
       .from('project_tasks')
       .update({
         status,
-        progress,
+        progress: newProgress,
+        end_date: endDate,
         updated_at: new Date().toISOString(),
       })
       .eq('id', taskId)
@@ -300,6 +420,64 @@ export class ProjectsService {
     return {
       success: true,
       history: data,
+    };
+  }
+
+  async addTaskComment(
+    taskId: string,
+    userId: string,
+    createTaskCommentDto: CreateTaskCommentDto,
+  ) {
+    const { title, description } = createTaskCommentDto;
+
+    await this.ensureUserExists(userId);
+
+    const { data: taskData, error: taskError } = await this.supabase
+      .from('project_tasks')
+      .select('id, project_id')
+      .eq('id', taskId)
+      .single();
+
+    if (taskError || !taskData) {
+      throw new NotFoundException('Tarea no encontrada');
+    }
+
+    const { data, error } = await this.supabase
+      .from('task_comments')
+      .insert({
+        task_id: taskId,
+        user_id: userId,
+        title,
+        description,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return {
+      success: true,
+      message: 'Comentario agregado correctamente',
+      comment: data,
+    };
+  }
+
+  async findTaskComments(taskId: string) {
+    const { data, error } = await this.supabase
+      .from('task_comments')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return {
+      success: true,
+      comments: data,
     };
   }
 

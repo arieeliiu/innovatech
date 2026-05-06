@@ -16,6 +16,7 @@ import { AuthGuard } from '../../auth/guards/auth.guard';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
+import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
 import type { Request } from 'express';
 
 @Controller('projects')
@@ -69,6 +70,15 @@ export class ProjectsController {
     );
   }
 
+  @Patch(':id/finalize')
+  finalizeProject(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: Request,
+    @Body() body: { comment?: string },
+  ) {
+    return this.projectsService.finalizeProject(id, request['user'].id, body?.comment);
+  }
+
   @Get('tasks/:taskId')
   findTaskById(@Param('taskId', new ParseUUIDPipe()) taskId: string) {
     return this.projectsService.findTaskById(taskId);
@@ -87,6 +97,26 @@ export class ProjectsController {
     @Param('taskId', new ParseUUIDPipe()) taskId: string,
   ) {
     return this.projectsService.findTaskHistory(taskId);
+  }
+
+  @Get('tasks/:taskId/comments')
+  async findTaskComments(
+    @Param('taskId', new ParseUUIDPipe()) taskId: string,
+  ) {
+    return this.projectsService.findTaskComments(taskId);
+  }
+
+  @Post('tasks/:taskId/comments')
+  async addTaskComment(
+    @Param('taskId', new ParseUUIDPipe()) taskId: string,
+    @Body() createTaskCommentDto: CreateTaskCommentDto,
+    @Req() request: Request,
+  ) {
+    return this.projectsService.addTaskComment(
+      taskId,
+      request['user'].id,
+      createTaskCommentDto,
+    );
   }
 
   @Get(':id/members')
