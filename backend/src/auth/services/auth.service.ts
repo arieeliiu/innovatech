@@ -15,40 +15,42 @@ export class AuthService {
   }
 
   async validateToken(token: string) {
-    // Método temporalmente usado para validar el JWT recibido desde el frontend.
-    // Más adelante también podremos usar esta información para roles/permisos.
-    const { data, error } = await this.supabase.auth.getUser(token);
+  const { data, error } = await this.supabase.auth.getUser(token);
 
     if (error || !data.user) {
       return null;
     }
 
-    return data.user;
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.name ?? data.user.email,
+      role: data.user.user_metadata?.role ?? 'USER',
+      };
   }
 
   async login(email: string, password: string) {
-  // Login real usando Supabase Auth.
-  // Supabase valida las credenciales y devuelve una sesión con access_token JWT.
   const { data, error } = await this.supabase.auth.signInWithPassword({
     email,
     password,
     });
 
-    if (error) {
+    if (error || !data.session || !data.user) {
       return {
         success: false,
         message: 'Credenciales inválidas',
-        };
-      }
+      };
+    }
 
     return {
-    success: true,
-    access_token: data.session.access_token,
-    refresh_token: data.session.refresh_token,
-    user: {
-      id: data.user.id,
-      email: data.user.email,
-      role: data.user.role,
+      success: true,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name ?? data.user.email,
+        role: data.user.user_metadata?.role ?? 'USER',
       },
     };
   }

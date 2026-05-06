@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createProject, getUsers } from '../../../lib/api';
-import { canCreateProjects, getStoredRole } from '../../../lib/auth';
+import { createProject, getUsers } from '../../../../lib/api';
 
 type User = {
   id: string;
@@ -17,9 +16,8 @@ function isManagerRole(role?: string) {
   return normalized === 'MANAGER' || normalized === 'PROJECT_MANAGER';
 }
 
-export default function CreateProjectPage() {
+export default function AdminCreateProjectPage() {
   const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
 
   const [users, setUsers] = useState<User[]>([]);
 
@@ -74,26 +72,8 @@ export default function CreateProjectPage() {
   }
 
   useEffect(() => {
-    const currentRole = getStoredRole();
-    setRole(currentRole);
-
-    if (!canCreateProjects(currentRole)) {
-      router.replace('/projects');
-      return;
-    }
-
     loadUsers();
-  }, [router]);
-
-  if (role && !canCreateProjects(role)) {
-    return (
-      <section>
-        <p className="rounded-lg bg-red-100 p-4 text-red-700">
-          No tienes permisos para crear proyectos.
-        </p>
-      </section>
-    );
-  }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,7 +98,7 @@ export default function CreateProjectPage() {
 
       setMessage('Proyecto creado correctamente');
 
-      router.push('/projects');
+      router.push('/admin/projects');
     } catch (error) {
       setError(
         error instanceof Error
@@ -236,6 +216,18 @@ export default function CreateProjectPage() {
           )}
         </div>
 
+        {error && (
+          <p className="rounded-lg bg-red-100 p-3 text-red-700">
+            {error}
+          </p>
+        )}
+
+        {message && (
+          <p className="rounded-lg bg-green-100 p-3 text-green-700">
+            {message}
+          </p>
+        )}
+
         <div className="flex gap-3">
           <button
             type="submit"
@@ -247,15 +239,12 @@ export default function CreateProjectPage() {
 
           <button
             type="button"
-            onClick={() => router.push('/projects')}
+            onClick={() => router.push('/admin/projects')}
             className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100"
           >
             Cancelar
           </button>
         </div>
-
-        {message && <p className="text-green-700">{message}</p>}
-        {error && <p className="text-red-700">{error}</p>}
       </form>
     </section>
   );
