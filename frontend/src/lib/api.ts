@@ -144,3 +144,36 @@ export async function deleteProject(projectId: string) {
     method: 'DELETE',
   });
 }
+
+export async function createUser(user: {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}) {
+  return request('/users', {
+    method: 'POST',
+    body: JSON.stringify(user),
+  });
+}
+
+export async function deleteUser(userId: string) {
+  return request(`/users/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function updateUser(
+  userId: string,
+  body: {
+    name?: string;
+    email?: string;
+    role?: string;
+    password?: string;
+  },
+) {
+  return request(`/users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}

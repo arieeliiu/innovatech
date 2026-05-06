@@ -4,17 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   createTask,
   getProjectTasks,
-  getProjectMembers,
   getProjects,
   getUsers,
   updateTaskStatus,
 } from '../../../lib/api';
-import {
-  canManageTasks,
-  getStoredRole,
-  getStoredUserId,
-  isAdminRole,
-} from '../../../lib/auth';
 
 type Project = {
   id: string;
@@ -52,8 +45,7 @@ const columns: { status: TaskStatus; title: string }[] = [
   { status: 'DONE', title: 'Finalizadas' },
 ];
 
-export default function ProjectTasksPage() {
-  const [role, setRole] = useState<string | null>(null);
+export default function AdminTasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -74,7 +66,7 @@ export default function ProjectTasksPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  async function loadInitialData(currentRole: string | null, currentUserId: string | null) {
+  async function loadInitialData() {
     try {
       setLoading(true);
       setError('');
@@ -88,31 +80,7 @@ export default function ProjectTasksPage() {
       const loadedProjects = projectsData.projects ?? [];
       const loadedUsers = usersData.users ?? usersData.data ?? usersData ?? [];
 
-      const normalizedProjects = Array.isArray(loadedProjects)
-        ? loadedProjects
-        : [];
-
-      if (isAdminRole(currentRole) || currentRole === 'gestor' || !currentUserId) {
-        setProjects(normalizedProjects);
-      } else {
-        const visibleProjects = await Promise.all(
-          normalizedProjects.map(async (project) => {
-            const membersData = await getProjectMembers(project.id);
-            const members = membersData.members ?? [];
-
-            const isMember = members.some(
-              (member: { user_id?: string }) => member.user_id === currentUserId,
-            );
-
-            return isMember || project.main_responsible_id === currentUserId
-              ? project
-              : null;
-          }),
-        );
-
-        setProjects(visibleProjects.filter(Boolean) as Project[]);
-      }
-
+      setProjects(loadedProjects);
       setUsers(loadedUsers);
 
       if (loadedProjects.length > 0) {
@@ -142,11 +110,7 @@ export default function ProjectTasksPage() {
   }
 
   useEffect(() => {
-    const currentRole = getStoredRole();
-    const currentUserId = getStoredUserId();
-
-    setRole(currentRole);
-    loadInitialData(currentRole, currentUserId);
+    loadInitialData();
   }, []);
 
   useEffect(() => {
@@ -158,8 +122,6 @@ export default function ProjectTasksPage() {
   const selectedProject = useMemo(() => {
     return projects.find((project) => project.id === selectedProjectId);
   }, [projects, selectedProjectId]);
-
-  const canManageTaskActions = canManageTasks(role);
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -256,7 +218,7 @@ export default function ProjectTasksPage() {
         </h1>
 
         <div className="mt-6 rounded-xl bg-white p-6 text-slate-700 shadow">
-          No estás asociado a ningún proyecto.
+          No hay proyectos disponibles.
         </div>
       </section>
     );
@@ -271,19 +233,17 @@ export default function ProjectTasksPage() {
           </h1>
 
           <p className="mt-2 text-slate-600">
-            Gestiona las tareas asociadas a cada proyecto.
+            Gestiona todas las tareas asociadas a cada proyecto.
           </p>
         </div>
 
-        {canManageTaskActions && (
-          <button
-            type="button"
-            onClick={() => setShowCreateForm(true)}
-            className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
-          >
-            + Nueva tarea
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowCreateForm(true)}
+          className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+        >
+          + Nueva tarea
+        </button>
       </div>
 
       <div className="mt-6 max-w-xl">
@@ -323,7 +283,7 @@ export default function ProjectTasksPage() {
         </p>
       )}
 
-      {showCreateForm && canManageTaskActions && (
+      {showCreateForm && (
         <div className="mt-6 rounded-xl bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold text-slate-900">
@@ -444,10 +404,10 @@ export default function ProjectTasksPage() {
           );
 
           return (
-              <div
-                key={column.status}
-                className="flex max-h-[650px] min-h-[420px] flex-col rounded-xl bg-slate-200 p-4"
-              >
+            <div
+              key={column.status}
+              className="flex max-h-[650px] min-h-[420px] flex-col rounded-xl bg-slate-200 p-4"
+            >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-semibold text-slate-900">
                   {column.title}
@@ -503,7 +463,7 @@ export default function ProjectTasksPage() {
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {canManageTaskActions && task.status !== 'TODO' && (
+                        {task.status !== 'TODO' && (
                           <button
                             type="button"
                             onClick={() => handleChangeStatus(task, 'TODO')}
@@ -513,7 +473,7 @@ export default function ProjectTasksPage() {
                           </button>
                         )}
 
-                        {canManageTaskActions && task.status !== 'IN_PROGRESS' && (
+                        {task.status !== 'IN_PROGRESS' && (
                           <button
                             type="button"
                             onClick={() =>
@@ -525,7 +485,7 @@ export default function ProjectTasksPage() {
                           </button>
                         )}
 
-                        {canManageTaskActions && task.status !== 'DONE' && (
+                        {task.status !== 'DONE' && (
                           <button
                             type="button"
                             onClick={() => handleChangeStatus(task, 'DONE')}
@@ -539,6 +499,7 @@ export default function ProjectTasksPage() {
                   ))}
                 </div>
               )}
+            
             </div>
           );
         })}

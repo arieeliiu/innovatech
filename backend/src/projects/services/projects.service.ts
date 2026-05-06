@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -40,11 +41,22 @@ export class ProjectsService {
     return data.user;
   }
 
+  private ensureUserIsManager(user: { user_metadata?: { role?: string } }) {
+    const role = user.user_metadata?.role?.trim().toUpperCase();
+
+    if (role !== 'MANAGER' && role !== 'PROJECT_MANAGER') {
+      throw new BadRequestException(
+        'El responsable del proyecto debe tener rol de gestor',
+      );
+    }
+  }
+
   async createProject(createProjectDto: CreateProjectDto) {
     const { name, description, startDate, endDate, managerId } =
       createProjectDto;
 
-    await this.ensureUserExists(managerId);
+    const manager = await this.ensureUserExists(managerId);
+    this.ensureUserIsManager(manager);
 
     const { data, error } = await this.supabase
       .from('projects')

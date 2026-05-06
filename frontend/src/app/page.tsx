@@ -1,9 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiRequest } from '../lib/api';
+import { getRoleFromToken } from '../lib/auth';
 
 export default function Home() {
+  const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -12,20 +16,35 @@ export default function Home() {
     event.preventDefault();
 
     try {
+      setMessage('');
+
       const data = await apiRequest('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
 
+      if (!data.access_token) {
+        setMessage('No se recibió token de acceso');
+        return;
+      }
+
       localStorage.setItem('token', data.access_token);
-      setMessage('Inicio de sesión correcto');
-    } catch (error) {
+
+      const role = getRoleFromToken(data.access_token);
+
+      if (role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/projects');
+      }
+    } catch {
+      localStorage.removeItem('token');
       setMessage('Credenciales incorrectas o error de conexión');
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow">
         <h1 className="text-2xl font-bold text-slate-900">
           Innovatech Solutions
@@ -40,8 +59,9 @@ export default function Home() {
             <label className="text-sm font-medium text-slate-700">
               Correo
             </label>
+
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-900"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -53,8 +73,9 @@ export default function Home() {
             <label className="text-sm font-medium text-slate-700">
               Contraseña
             </label>
+
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-900"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -70,11 +91,7 @@ export default function Home() {
           </button>
         </form>
 
-        {message && (
-          <p className="mt-4 text-sm text-slate-700">
-            {message}
-          </p>
-        )}
+        {message && <p className="mt-4 text-sm text-red-700">{message}</p>}
       </section>
     </main>
   );

@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  deleteProject,
   getProjectById,
   getProjectTasks,
+  getProjectMembers,
   getUsers,
 } from '../../../lib/api';
+import {
+  getStoredRole,
+  getStoredUserId,
+  isAdminRole,
+} from '../../../lib/auth';
 
 type Project = {
   id: string;
@@ -57,6 +62,7 @@ const columns = [
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
 
   const projectId = params.id as string;
 
@@ -65,22 +71,40 @@ export default function ProjectDetailPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const [deleteError, setDeleteError] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  async function loadProjectDetail() {
+  async function loadProjectDetail(
+    currentRole: string | null,
+    currentUserId: string | null,
+  ) {
     try {
       setError('');
 
-      const [projectData, tasksData, usersData] = await Promise.all([
+      const [projectData, tasksData, usersData, membersData] = await Promise.all([
         getProjectById(projectId),
         getProjectTasks(projectId),
         getUsers(),
+        getProjectMembers(projectId),
       ]);
 
-      setProject(projectData.project);
+      const projectDetail = projectData.project;
+      const memberList = membersData.members ?? [];
+
+      const isAllowed =
+        isAdminRole(currentRole) ||
+        currentRole === 'gestor' ||
+        projectDetail.main_responsible_id === currentUserId ||
+        memberList.some(
+          (member: { user_id?: string }) => member.user_id === currentUserId,
+        );
+
+      if (!isAllowed) {
+        setError('No tienes acceso a este proyecto');
+        setProject(null);
+        setTasks([]);
+        setUsers([]);
+        return;
+      }
+
+      setProject(projectDetail);
       setTasks(tasksData.tasks ?? []);
 
       setUsers(
@@ -108,39 +132,22 @@ export default function ProjectDetailPage() {
     return user.name || user.email || 'Usuario sin nombre';
   }
 
-  async function handleDeleteProject() {
-    if (!project) return;
-
-    if (deleteConfirmation.trim().toLowerCase() !== 'eliminar') {
-      setDeleteError('Debes escribir "eliminar" para confirmar.');
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      setDeleteError('');
-
-      await deleteProject(project.id);
-
-      router.push('/projects');
-    } catch {
-      setDeleteError('No se pudo eliminar el proyecto');
-    } finally {
-      setIsDeleting(false);
-    }
-  }
-
-  function closeDeleteModal() {
-    setShowDeleteModal(false);
-    setDeleteConfirmation('');
-    setDeleteError('');
-  }
-
   useEffect(() => {
+    const currentRole = getStoredRole();
+    const currentUserId = getStoredUserId();
+
+    setRole(currentRole);
+
     if (projectId) {
-      loadProjectDetail();
+      loadProjectDetail(currentRole, currentUserId);
     }
   }, [projectId]);
+
+  useEffect(() => {
+    if (role === 'admin' && projectId) {
+      router.replace(`/admin/projects/${projectId}`);
+    }
+  }, [projectId, router, role]);
 
   if (error) {
     return (
@@ -182,14 +189,6 @@ export default function ProjectDetailPage() {
             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow transition hover:bg-slate-50"
           >
             Volver a proyectos
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowDeleteModal(true)}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-          >
-            Eliminar proyecto
           </button>
         </div>
 
@@ -341,56 +340,6 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-slate-900">
-              Eliminar proyecto
-            </h2>
-
-            <p className="mt-3 text-sm text-slate-600">
-              Para eliminar este proyecto{' '}
-              <strong className="text-slate-900">{project.name}</strong>,
-              escribe <strong className="text-slate-900">eliminar</strong>.
-            </p>
-
-            <input
-              className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-red-500"
-              value={deleteConfirmation}
-              onChange={(event) => setDeleteConfirmation(event.target.value)}
-              placeholder="Escribe eliminar"
-            />
-
-            {deleteError && (
-              <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
-                {deleteError}
-              </p>
-            )}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={closeDeleteModal}
-                className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-              >
-                Cancelar
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDeleteProject}
-                disabled={
-                  isDeleting ||
-                  deleteConfirmation.trim().toLowerCase() !== 'eliminar'
-                }
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
-              >
-                {isDeleting ? 'Eliminando...' : 'Confirmar eliminación'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

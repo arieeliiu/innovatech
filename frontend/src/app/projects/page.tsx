@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getProjects, getUsers } from '../../lib/api';
+import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
+import {
+  canCreateProjects,
+  getStoredRole,
+  getStoredUserId,
+  isAdminRole,
+} from '../../lib/auth';
 
 type Project = {
   id: string;
@@ -24,12 +30,13 @@ type User = {
 
 export default function ProjectsPage() {
   const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
 
-  async function loadProjects() {
+  async function loadProjects(currentRole: string | null, currentUserId: string | null) {
     try {
       setError('');
 
@@ -39,7 +46,31 @@ export default function ProjectsPage() {
       const loadedProjects = projectsData.projects ?? projectsData.data ?? [];
       const loadedUsers = usersData.users ?? usersData.data ?? [];
 
-      setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
+      const normalizedProjects = Array.isArray(loadedProjects)
+        ? loadedProjects
+        : [];
+
+      if (isAdminRole(currentRole) || currentRole === 'gestor' || !currentUserId) {
+        setProjects(normalizedProjects);
+      } else {
+        const visibleProjects = await Promise.all(
+          normalizedProjects.map(async (project) => {
+            const membersData = await getProjectMembers(project.id);
+            const members = membersData.members ?? [];
+
+            const isMember = members.some(
+              (member: { user_id?: string }) => member.user_id === currentUserId,
+            );
+
+            return isMember || project.main_responsible_id === currentUserId
+              ? project
+              : null;
+          }),
+        );
+
+        setProjects(visibleProjects.filter(Boolean) as Project[]);
+      }
+
       setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
     } catch {
       setError('No se pudieron cargar los proyectos');
@@ -61,8 +92,20 @@ export default function ProjectsPage() {
   }
 
   useEffect(() => {
-    loadProjects();
+    const currentRole = getStoredRole();
+    const currentUserId = getStoredUserId();
+
+    setRole(currentRole);
+    loadProjects(currentRole, currentUserId);
   }, []);
+
+  const canCreateProject = canCreateProjects(role);
+
+  function getProjectRoute(projectId: string) {
+    return role === 'admin'
+      ? `/admin/projects/${projectId}`
+      : `/projects/${projectId}`;
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 p-8">
@@ -78,13 +121,15 @@ export default function ProjectsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push('/projects/create')}
-            className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
-          >
-            Crear proyecto
-          </button>
+          {canCreateProject && (
+            <button
+              type="button"
+              onClick={() => router.push('/projects/create')}
+              className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+            >
+              Crear proyecto
+            </button>
+          )}
         </div>
 
         {error && (
@@ -110,7 +155,7 @@ export default function ProjectsPage() {
             return (
               <article
                 key={project.id}
-                onClick={() => router.push(`/projects/${project.id}`)}
+                onClick={() => router.push(getProjectRoute(project.id))}
                 className="cursor-pointer rounded-xl bg-white p-5 shadow transition hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="flex items-start justify-between gap-4">
