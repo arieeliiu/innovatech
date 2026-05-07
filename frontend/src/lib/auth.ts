@@ -4,6 +4,11 @@ function normalizeRole(role?: string | null) {
   return role?.trim().toLowerCase() ?? null;
 }
 
+function isManagerRole(role?: string | null) {
+  const normalized = normalizeRole(role);
+  return normalized === 'manager' || normalized === 'project_manager' || normalized === 'gestor';
+}
+
 export function getDecodedToken(token: string) {
   try {
     return JSON.parse(atob(token.split('.')[1]));
@@ -51,9 +56,9 @@ export function isAdminRole(role?: string | null) {
 }
 
 export function canCreateProjects(role?: string | null) {
-  return ['admin', 'gestor'].includes(normalizeRole(role) ?? '');
+  return isAdminRole(role) || isManagerRole(role);
 }
 
 export function canManageTasks(role?: string | null) {
-  return ['admin', 'gestor'].includes(normalizeRole(role) ?? '');
+  return isAdminRole(role) || isManagerRole(role);
 }

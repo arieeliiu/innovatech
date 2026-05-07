@@ -10,6 +10,7 @@ import {
 } from '../../../lib/api';
 import { formatDateShort } from '../../../lib/date';
 import {
+  canManageTasks,
   getStoredRole,
   getStoredUserId,
   isAdminRole,
@@ -90,8 +91,7 @@ export default function ProjectDetailPage() {
       const memberList = membersData.members ?? [];
 
       const isAllowed =
-        isAdminRole(currentRole) ||
-        currentRole === 'gestor' ||
+        canManageTasks(currentRole) ||
         projectDetail.main_responsible_id === currentUserId ||
         memberList.some(
           (member: { user_id?: string }) => member.user_id === currentUserId,
@@ -145,7 +145,7 @@ export default function ProjectDetailPage() {
   }, [projectId]);
 
   useEffect(() => {
-    if (role === 'admin' && projectId) {
+    if (isAdminRole(role) && projectId) {
       router.replace(`/admin/projects/${projectId}`);
     }
   }, [projectId, router, role]);
