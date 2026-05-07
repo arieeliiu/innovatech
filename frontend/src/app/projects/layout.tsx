@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import ProfileTopbar from '../../components/ProfileTopbar';
 import { canCreateProjects, getStoredRole } from '../../lib/auth';
 
@@ -10,6 +11,7 @@ export default function ProjectsLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,6 +19,14 @@ export default function ProjectsLayout({
   }, []);
 
   const canCreateProject = canCreateProjects(role);
+
+  function getNavItemClass(matcher: RegExp) {
+    const isActive = matcher.test(pathname);
+
+    return isActive
+      ? 'block rounded-lg border-l-4 border-slate-900 bg-slate-200 px-3 py-2 text-sm font-medium text-slate-900'
+      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-normal text-slate-700 transition hover:bg-slate-100';
+  }
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -26,10 +36,10 @@ export default function ProjectsLayout({
             Innovatech Solutions
           </h2>
 
-          <nav className="mt-8 flex flex-col gap-4">
+          <nav className="mt-8 space-y-2">
             <Link
               href="/projects"
-              className="text-sm font-medium text-slate-700 hover:text-slate-950"
+              className={getNavItemClass(/^\/projects(?:\/[0-9a-fA-F-]{36}(?:\/members)?)?$/)}
             >
               Proyectos
             </Link>
@@ -37,7 +47,7 @@ export default function ProjectsLayout({
             {canCreateProject && (
               <Link
                 href="/projects/create"
-                className="text-sm font-medium text-slate-700 hover:text-slate-950"
+                className={getNavItemClass(/^\/projects\/create$/)}
               >
                 Crear proyecto
               </Link>
@@ -45,7 +55,7 @@ export default function ProjectsLayout({
 
             <Link
               href="/projects/tasks"
-              className="text-sm font-medium text-slate-700 hover:text-slate-950"
+              className={getNavItemClass(/^\/projects\/tasks$/)}
             >
               Tareas
             </Link>
