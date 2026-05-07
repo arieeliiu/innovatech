@@ -88,8 +88,13 @@ export class ProjectsController {
   addProjectMember(
     @Param('projectId', new ParseUUIDPipe()) projectId: string,
     @Body() addProjectMemberDto: AddProjectMemberDto,
+    @Req() request: Request,
   ) {
-    return this.projectsService.addProjectMember(projectId, addProjectMemberDto);
+    return this.projectsService.addProjectMember(
+      projectId,
+      addProjectMemberDto,
+      request['user'].id,
+    );
   }
 
   @Get('tasks/:taskId/history')
@@ -128,7 +133,12 @@ export class ProjectsController {
   removeProjectMember(
     @Param('projectId', new ParseUUIDPipe()) projectId: string,
     @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Req() request: Request,
   ) {
-    return this.projectsService.removeProjectMember(projectId, userId);
+    return this.projectsService.removeProjectMember(
+      projectId,
+      userId,
+      request['user'].id,
+    );
   }
 }

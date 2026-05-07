@@ -484,8 +484,20 @@ export class ProjectsService {
   async addProjectMember(
     projectId: string,
     addProjectMemberDto: AddProjectMemberDto,
+    requestingUserId: string,
   ) {
     const { userId, projectRole } = addProjectMemberDto;
+
+    // Verify requesting user exists and get their role
+    const requestingUser = await this.ensureUserExists(requestingUserId);
+    const requestingUserRole = requestingUser.user_metadata?.role?.trim().toUpperCase();
+
+    // Only ADMIN and MANAGER can add members
+    if (requestingUserRole !== 'ADMIN' && requestingUserRole !== 'MANAGER' && requestingUserRole !== 'PROJECT_MANAGER') {
+      throw new BadRequestException(
+        'Solo los administradores y gestores pueden añadir miembros a proyectos',
+      );
+    }
 
     await this.ensureProjectExists(projectId);
     await this.ensureUserExists(userId);
@@ -530,7 +542,22 @@ export class ProjectsService {
     };
   }
 
-  async removeProjectMember(projectId: string, userId: string) {
+  async removeProjectMember(
+    projectId: string,
+    userId: string,
+    requestingUserId: string,
+  ) {
+    // Verify requesting user exists and get their role
+    const requestingUser = await this.ensureUserExists(requestingUserId);
+    const requestingUserRole = requestingUser.user_metadata?.role?.trim().toUpperCase();
+
+    // Only ADMIN and MANAGER can remove members
+    if (requestingUserRole !== 'ADMIN' && requestingUserRole !== 'MANAGER' && requestingUserRole !== 'PROJECT_MANAGER') {
+      throw new BadRequestException(
+        'Solo los administradores y gestores pueden remover miembros de proyectos',
+      );
+    }
+
     await this.ensureProjectExists(projectId);
     await this.ensureUserExists(userId);
 

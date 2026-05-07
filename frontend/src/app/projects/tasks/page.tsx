@@ -168,8 +168,6 @@ export default function ProjectTasksPage() {
     return projects.find((project) => project.id === selectedProjectId);
   }, [projects, selectedProjectId]);
 
-  const canManageTaskActions = canManageTasks(role);
-
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
 
@@ -335,15 +333,13 @@ export default function ProjectTasksPage() {
           </p>
         </div>
 
-        {canManageTaskActions && (
-          <button
-            type="button"
-            onClick={() => setShowCreateForm(true)}
-            className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
-          >
-            + Nueva tarea
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowCreateForm(true)}
+          className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+        >
+          + Nueva tarea
+        </button>
       </div>
 
       <div className="mt-6 max-w-xl">
@@ -383,7 +379,7 @@ export default function ProjectTasksPage() {
         </p>
       )}
 
-      {showCreateForm && canManageTaskActions && (
+      {showCreateForm && (
         <div className="mt-6 rounded-xl bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold text-slate-900">

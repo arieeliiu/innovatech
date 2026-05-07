@@ -7,7 +7,10 @@ import {
   finalizeProject,
   getProjectById,
   getProjectTasks,
+  getProjectMembers,
   getUsers,
+  addProjectMember,
+  removeProjectMember,
 } from '../../../../lib/api';
 
 type Project = {
@@ -40,6 +43,18 @@ type User = {
   role?: string;
 };
 
+type ProjectMember = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  project_role: string;
+  joined_at: string;
+  user?: {
+    name?: string;
+    email?: string;
+  };
+};
+
 const columns = [
   {
     title: 'Por hacer',
@@ -64,6 +79,7 @@ export default function AdminProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [members, setMembers] = useState<ProjectMember[]>([]);
   const [error, setError] = useState('');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -76,18 +92,25 @@ export default function AdminProjectDetailPage() {
   const [finalizeError, setFinalizeError] = useState('');
   const [isFinalizing, setIsFinalizing] = useState(false);
 
+  const [showAddMemberForm, setShowAddMemberForm] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [loadingAddMember, setLoadingAddMember] = useState(false);
+  const [memberError, setMemberError] = useState('');
+
   async function loadProjectDetail() {
     try {
       setError('');
 
-      const [projectData, tasksData, usersData] = await Promise.all([
+      const [projectData, tasksData, usersData, membersData] = await Promise.all([
         getProjectById(projectId),
         getProjectTasks(projectId),
         getUsers(),
+        getProjectMembers(projectId),
       ]);
 
       setProject(projectData.project);
       setTasks(tasksData.tasks ?? []);
+      setMembers(membersData.members ?? []);
 
       setUsers(
         Array.isArray(usersData)
@@ -112,6 +135,60 @@ export default function AdminProjectDetailPage() {
     }
 
     return user.name || user.email || 'Usuario sin nombre';
+  }
+
+  async function handleAddMember() {
+    if (!selectedMemberId) {
+      setMemberError('Por favor selecciona un usuario');
+      return;
+    }
+
+    const selectedUser = users.find((user) => user.id === selectedMemberId);
+    const userRole = selectedUser?.role || 'DEVELOPER';
+
+    setLoadingAddMember(true);
+    setMemberError('');
+
+    try {
+      await addProjectMember(projectId, {
+        userId: selectedMemberId,
+        projectRole: userRole,
+      });
+
+      // Reload members
+      const updatedMembers = await getProjectMembers(projectId);
+      setMembers(updatedMembers.members ?? []);
+
+      // Reset form
+      setSelectedMemberId('');
+      setShowAddMemberForm(false);
+    } catch (err) {
+      setMemberError(
+        err instanceof Error ? err.message : 'Error al agregar miembro',
+      );
+    } finally {
+      setLoadingAddMember(false);
+    }
+  }
+
+  async function handleRemoveMember(memberId: string) {
+    if (
+      !confirm('¿Estás seguro de que deseas remover este miembro del proyecto?')
+    ) {
+      return;
+    }
+
+    try {
+      await removeProjectMember(projectId, memberId);
+
+      // Reload members
+      const updatedMembers = await getProjectMembers(projectId);
+      setMembers(updatedMembers.members ?? []);
+    } catch (err) {
+      setMemberError(
+        err instanceof Error ? err.message : 'Error al remover miembro',
+      );
+    }
   }
 
   async function handleDeleteProject() {
@@ -271,22 +348,101 @@ export default function AdminProjectDetailPage() {
         </div>
 
         <div className="mt-6">
-          <div className="mb-1 flex justify-between text-sm text-slate-700">
-            <span>Avance general</span>
-            <span>{progress}%</span>
-          </div>
+          <div id="members-section" className="mt-8 rounded-xl bg-white p-6 shadow">
+              <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Miembros del proyecto
+                </h2>
+                <p className="mt-1 text-slate-600">
+                  Gestiona los miembros del equipo del proyecto.
+                </p>
+              </div>
 
-          <div className="h-3 rounded-full bg-slate-200">
-            <div
-              className="h-3 rounded-full bg-slate-900"
-              style={{ width: `${progress}%` }}
-            />
+                <button
+                  type="button"
+                  onClick={() => setShowAddMemberForm(!showAddMemberForm)}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800"
+                >
+                  {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
+                </button>
+            </div>
+
+            {memberError && (
+              <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
+                {memberError}
+              </div>
+            )}
+
+            {showAddMemberForm && (
+              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-900">
+                      Usuario
+                    </label>
+                    <select
+                      value={selectedMemberId}
+                      onChange={(e) => setSelectedMemberId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
+                    >
+                      <option value="">Selecciona un usuario</option>
+                      {Array.isArray(users) &&
+                        users.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name || user.email} ({user.role})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddMember}
+                    disabled={loadingAddMember}
+                    className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {members.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-slate-500">
+                  No hay miembros en este proyecto.
+                </p>
+              ) : (
+                members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {getUserName(member.user_id)}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Rol: {member.project_role} · Unido: {new Date(member.joined_at).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(member.user_id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-between">
-        <div>
+        <div className="mt-12">
           <h2 className="text-2xl font-bold text-slate-900">
             Tablero de tareas
           </h2>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getUserRoleLabel } from '../lib/userRules';
 
 type LoggedUser = {
   id?: string;
@@ -130,7 +131,7 @@ export default function ProfileTopbar() {
             </p>
 
             <span className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-              {user?.role || 'Sin rol'}
+              {getUserRoleLabel(user?.role)}
             </span>
           </div>
 

@@ -36,10 +36,12 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   async function loadProjects(currentRole: string | null, currentUserId: string | null) {
     try {
       setError('');
+      setIsLoading(true);
 
       const projectsData = await getProjects();
       const usersData = await getUsers();
@@ -75,6 +77,8 @@ export default function ProjectsPage() {
       setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
     } catch {
       setError('No se pudieron cargar los proyectos');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -92,6 +96,12 @@ export default function ProjectsPage() {
     return responsible.name || responsible.email || 'Usuario sin nombre';
   }
 
+  function getProjectRoute(projectId: string) {
+    return isAdminRole(role)
+      ? `/admin/projects/${projectId}`
+      : `/projects/${projectId}`;
+  }
+
   useEffect(() => {
     const currentRole = getStoredRole();
     const currentUserId = getStoredUserId();
@@ -101,12 +111,6 @@ export default function ProjectsPage() {
   }, []);
 
   const canCreateProject = canCreateProjects(role);
-
-  function getProjectRoute(projectId: string) {
-    return isAdminRole(role)
-      ? `/admin/projects/${projectId}`
-      : `/projects/${projectId}`;
-  }
 
   return (
     <main className="min-h-screen bg-slate-100 p-8">
@@ -139,7 +143,11 @@ export default function ProjectsPage() {
           </p>
         )}
 
-        {!error && projects.length === 0 && (
+        {isLoading && (
+          <p className="mt-8 text-slate-600">Cargando proyectos...</p>
+        )}
+
+        {!error && !isLoading && projects.length === 0 && (
           <div className="mt-8 rounded-xl bg-white p-6 text-slate-600 shadow">
             No hay proyectos registrados todavía.
           </div>
@@ -156,8 +164,7 @@ export default function ProjectsPage() {
             return (
               <article
                 key={project.id}
-                onClick={() => router.push(getProjectRoute(project.id))}
-                className="cursor-pointer rounded-xl bg-white p-5 shadow transition hover:-translate-y-1 hover:shadow-lg"
+                className="rounded-xl bg-white p-5 shadow transition hover:shadow-lg"
               >
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -201,9 +208,13 @@ export default function ProjectsPage() {
                   </p>
                 </div>
 
-                <p className="mt-4 text-sm font-medium text-slate-900">
-                  Ver detalle del proyecto
-                </p>
+                <button
+                  type="button"
+                  onClick={() => router.push(getProjectRoute(project.id))}
+                  className="mt-4 w-full rounded-lg bg-slate-900 py-2 text-center text-sm font-medium text-white transition hover:bg-slate-700"
+                >
+                  Ver detalles
+                </button>
               </article>
             );
           })}
