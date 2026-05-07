@@ -559,7 +559,7 @@ export default function ProjectTasksPage() {
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {canManageTaskActions && task.status !== 'TODO' && (
+                        {task.status !== 'TODO' && (
                           <button
                             type="button"
                             onClick={() => handleChangeStatus(task, 'TODO')}
@@ -569,7 +569,7 @@ export default function ProjectTasksPage() {
                           </button>
                         )}
 
-                        {canManageTaskActions && task.status !== 'IN_PROGRESS' && (
+                        {task.status !== 'IN_PROGRESS' && (
                           <button
                             type="button"
                             onClick={() =>
@@ -581,7 +581,7 @@ export default function ProjectTasksPage() {
                           </button>
                         )}
 
-                        {canManageTaskActions && task.status !== 'DONE' && (
+                        {task.status !== 'DONE' && (
                           <button
                             type="button"
                             onClick={() => handleChangeStatus(task, 'DONE')}
