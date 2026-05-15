@@ -48,13 +48,11 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#05070A] text-[#F5F7FA]">
       <section className="grid min-h-screen lg:grid-cols-[52%_48%]">
-        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#101923] px-8 py-12">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(67,195,207,0.12),transparent_30%)]" />
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#1F2E49] px-8 py-12">
+          <div className="absolute right-0 top-0 h-full w-7 bg-gradient-to-l from-[#00feff]/30 to-transparent blur-md" />
 
-          <div className="absolute right-0 top-0 h-full w-7 bg-gradient-to-l from-[#00feff]/50 to-transparent blur-md" />
-
-          <section className="relative z-10 w-full max-w-[400px]">
-            <div className="relative mb-10 w-fit -translate-x-20">
+          <section className="relative z-10 w-full max-w-[380px] -translate-y-10">
+            <div className="relative mb-10 w-fit -translate-x-20 translate-y-6">
 
               <img
                 src="/innovatech-logo.png"
@@ -118,7 +116,7 @@ export default function Home() {
               </div>
 
               <button
-                className="group flex w-full items-center justify-center gap-3 rounded-lg bg-[#43c3cf] px-5 py-3 text-sm font-medium text-[#05070A] shadow-[0_12px_28px_rgba(67,195,207,0.14)] transition hover:bg-[#3a9ea8] hover:text-[#F5F7FA]"
+                className="group flex w-full items-center justify-center gap-3 rounded-lg bg-[#43c3cf] px-5 py-3 text-sm font-medium text-[#05070A] shadow-[0_12px_28px_rgba(67,195,207,0.14)] transition hover:bg-[#52e0dc] hover:text-[#F5F7FA]"
                 type="submit"
               >
                 Iniciar sesión
@@ -141,11 +139,11 @@ export default function Home() {
           </p>
         </div>
 
-        <div
-          className="relative hidden min-h-screen items-center overflow-hidden border-l border-[#123746]/40 bg-[#05070A] px-20 lg:flex"
+        <div 
+          className="relative hidden min-h-screen items-center overflow-hidden border-l border-[#123746]/40 bg-[#171C22] px-20 lg:flex"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 25% 20%, rgba(67,195,207,0.12), transparent 28%), radial-gradient(circle at 85% 75%, rgba(242,198,109,0.08), transparent 28%)',
+              'radial-gradient(circle at 25% 20%, rgba(42, 34, 70, 0.15), transparent 40%), radial-gradient(circle at 85% 75%, rgba(242, 198, 109, 0), transparent 28%)',
           }}
         >
           <div className="absolute inset-0 opacity-30">
@@ -156,15 +154,10 @@ export default function Home() {
             <div className="absolute left-[49%] top-[58%] h-1 w-1 rounded-full bg-[#AAB4C0]" />
             <div className="absolute left-[88%] top-[79%] h-1 w-1 rounded-full bg-[#43c3cf]" />
             <div className="absolute left-[23%] top-[82%] h-1 w-1 rounded-full bg-[#F2C66D]" />
-
-            <div className="absolute left-[18%] top-[12%] h-px w-16 rotate-45 bg-[#43c3cf]/30" />
-            <div className="absolute left-[62%] top-[24%] h-px w-20 -rotate-12 bg-[#43c3cf]" />
-            <div className="absolute left-[72%] top-[70%] h-px w-24 rotate-12 bg-[#43c3cf]/25" />
-            <div className="absolute left-[30%] top-[78%] h-px w-16 -rotate-45 bg-[#43c3cf]/20" />
           </div>
 
-          <section className="relative z-10 max-w-xl">
-            <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.55em] text-[#43c3cf]">
+          <section className="relative z-10 max-w-xl translate-x-15">
+            <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.55em] text-[#52e0dc]">
               Software & Technology consulting
             </p>
 
@@ -173,7 +166,7 @@ export default function Home() {
               <br />
               el futuro
               <br />
-              <span className="text-[#43c3cf]">digital.</span>
+              <span className="text-[#52e0dc]">digital.</span>
             </h2>
 
             <p className="mt-7 max-w-lg text-base leading-8 text-[#AAB4C0]">
