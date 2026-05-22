@@ -57,7 +57,7 @@ export default function Home() {
               <img
                 src="/innovatech-logo.png"
                 alt="Innovatech Solutions"
-                className="relative z-10 h-auto w-[480px] max-w-none"
+                className="relative z-10 h-auto w-[490px] max-w-none"
               />
             </div>
 
