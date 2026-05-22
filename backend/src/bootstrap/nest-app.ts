@@ -6,7 +6,8 @@ import express from 'express';
 
 import { AppModule } from '../app.module';
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const LOCAL_FRONTEND_ORIGIN = 'http://localhost:3001';
 
