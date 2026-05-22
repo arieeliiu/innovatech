@@ -66,7 +66,7 @@ export default function AdminLayout({
   }
 
   return (
-    <main className="flex min-h-screen bg-slate-100 text-slate-900">
+    <main className="flex min-h-screen bg-[#1F2E49] text-[#EEFAFA]">
       <aside className="w-64 border-r border-slate-200 bg-white p-6">
         <h1 className="text-xl font-bold">Innovatech Solutions</h1>
 
