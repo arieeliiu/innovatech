@@ -56,112 +56,144 @@ export default function AdminDashboard() {
   const completedProjects = projects.filter((p) => (p.status || '').toUpperCase() === 'DONE').length;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-[#F5F7FA]">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Panel de Administrador</h1>
-        <p className="mt-2 text-slate-600">Bienvenido al panel de administración de Innovatech Solutions</p>
+        <h1 className="text-3xl font-bold text-[#F5F7FA]">
+          Panel de Administrador
+        </h1>
+        <p className="mt-2 text-[#AAB4C0]">
+          Bienvenido al panel de administración de Innovatech Solutions
+        </p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-100 p-4 text-red-700">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
           {error}
         </div>
       )}
 
       {!isLoading && (
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <p className="text-sm text-slate-600">Total de Proyectos</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">{projects.length}</p>
+          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+            <p className="text-sm text-[#AAB4C0]">Total de Proyectos</p>
+            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+              {projects.length}
+            </p>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <p className="text-sm text-slate-600">Proyectos Activos</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">{activeProjects}</p>
+          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+            <p className="text-sm text-[#AAB4C0]">Proyectos Activos</p>
+            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+              {activeProjects}
+            </p>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <p className="text-sm text-slate-600">Proyectos Completados</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">{completedProjects}</p>
+          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+            <p className="text-sm text-[#AAB4C0]">Proyectos Completados</p>
+            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+              {completedProjects}
+            </p>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <p className="text-sm text-slate-600">Total de Usuarios</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">{users.length}</p>
+          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+            <p className="text-sm text-[#AAB4C0]">Total de Usuarios</p>
+            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+              {users.length}
+            </p>
           </div>
         </div>
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Gestión de Proyectos</h2>
-              <p className="mt-1 text-sm text-slate-600">Ver y administrar todos los proyectos</p>
+              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+                Gestión de Proyectos
+              </h2>
+              <p className="mt-1 text-sm text-[#AAB4C0]">
+                Ver y administrar todos los proyectos
+              </p>
             </div>
             <Link
               href="/admin/projects"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
             >
               Ver proyectos
             </Link>
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Crear Nuevo Proyecto</h2>
-              <p className="mt-1 text-sm text-slate-600">Registrar un nuevo proyecto en el sistema</p>
+              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+                Crear Nuevo Proyecto
+              </h2>
+              <p className="mt-1 text-sm text-[#AAB4C0]">
+                Registrar un nuevo proyecto en el sistema
+              </p>
             </div>
             <Link
               href="/admin/projects/create"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
             >
               Crear
             </Link>
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Gestión de Tareas</h2>
-              <p className="mt-1 text-sm text-slate-600">Ver y administrar todas las tareas</p>
+              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+                Gestión de Tareas
+              </h2>
+              <p className="mt-1 text-sm text-[#AAB4C0]">
+                Ver y administrar todas las tareas
+              </p>
             </div>
             <Link
               href="/admin/tasks"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
             >
               Ver tareas
             </Link>
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Registrar Usuario</h2>
-              <p className="mt-1 text-sm text-slate-600">Agregar nuevos usuarios al sistema</p>
+              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+                Registrar Usuario
+              </h2>
+              <p className="mt-1 text-sm text-[#AAB4C0]">
+                Agregar nuevos usuarios al sistema
+              </p>
             </div>
             <Link
               href="/admin/users/create"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
             >
               Registrar
             </Link>
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20 md:col-span-2">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Usuarios registrados</h2>
-              <p className="mt-1 text-sm text-slate-600">Ver y eliminar usuarios existentes</p>
+              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+                Usuarios registrados
+              </h2>
+              <p className="mt-1 text-sm text-[#AAB4C0]">
+                Ver y eliminar usuarios existentes
+              </p>
             </div>
             <Link
               href="/admin/users"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
             >
               Ver usuarios
             </Link>
