@@ -1,23 +1,102 @@
-# Dependencias
+# =========================
+# Dependencies
+# =========================
 node_modules/
+*/node_modules/
 
-# Variables de entorno
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# =========================
+# Environment variables
+# =========================
 .env
-.env.local
+.env.*
+*.env
 
-# Builds
-.next/
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# Allow example env files
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# =========================
+# Build outputs
+# =========================
 dist/
 build/
+out/
+.next/
 
+backend/dist/
+backend/build/
+
+frontend/dist/
+frontend/build/
+frontend/out/
+frontend/.next/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+next-env.d.ts
+
+# =========================
+# Testing / coverage
+# =========================
+coverage/
+*/coverage/
+
+# =========================
 # Logs
+# =========================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
+logs/
+*.log
 
-# Sistema
+# =========================
+# Vercel
+# =========================
+.vercel/
+backend/.vercel/
+frontend/.vercel/
+
+# =========================
+# OS / Editor
+# =========================
 .DS_Store
 Thumbs.db
 
-# VS Code
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+
+# =========================
+# Certificates / secrets
+# =========================
+*.pem
+*.key
+*.crt
+*.p12
+
+# =========================
+# Local uploads / temporary files
+# =========================
+tmp/
+temp/
+uploads/
