@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 import { getRoleFromToken } from '../lib/auth';
 
@@ -116,15 +116,11 @@ export default function Home() {
               </div>
 
               <button
-                className="group flex w-full items-center justify-center gap-3 rounded-full bg-[#52e0dc] px-5 py-3 text-sm font-medium tracking-tight text-[#05070A] shadow-[0_10px_22px_rgba(82,224,220,0.12)] transition hover:bg-[#43c3cf]"
+                className="flex w-full transform-gpu items-center justify-center rounded-full bg-[#52e0dc] px-5 py-3 text-sm font-medium tracking-tight text-[#05070A] shadow-[0_10px_22px_rgba(82,224,220,0.12)] transition duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.01] hover:bg-[#43c3cf] active:translate-y-0 active:scale-[0.99]"
                 type="submit"
               >
                 Iniciar sesión
-                <ArrowRight
-                  size={17}
-                  className="transition group-hover:translate-x-1"
-                />
-              </button>
+            </button>
             </form>
 
             {message && (
