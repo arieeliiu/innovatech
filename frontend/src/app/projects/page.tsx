@@ -4,12 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
 import {
-  canCreateProjects,
-  canManageTasks,
   getStoredRole,
   getStoredUserId,
   isAdminRole,
 } from '../../lib/auth';
+import { getPermissions } from '../../lib/permissions';
 
 type Project = {
   id: string;
@@ -38,7 +37,10 @@ export default function ProjectsPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  async function loadProjects(currentRole: string | null, currentUserId: string | null) {
+  async function loadProjects(
+    currentRole: string | null,
+    currentUserId: string | null,
+  ) {
     try {
       setError('');
       setIsLoading(true);
@@ -53,16 +55,22 @@ export default function ProjectsPage() {
         ? loadedProjects
         : [];
 
-      if (canManageTasks(currentRole) || !currentUserId) {
+      const permissions = getPermissions(currentRole);
+
+      if (permissions.projectAccess === 'all') {
         setProjects(normalizedProjects);
-      } else {
+      } else if (
+        permissions.projectAccess === 'associated' &&
+        currentUserId
+      ) {
         const visibleProjects = await Promise.all(
           normalizedProjects.map(async (project) => {
             const membersData = await getProjectMembers(project.id);
             const members = membersData.members ?? [];
 
             const isMember = members.some(
-              (member: { user_id?: string }) => member.user_id === currentUserId,
+              (member: { user_id?: string }) =>
+                member.user_id === currentUserId,
             );
 
             return isMember || project.main_responsible_id === currentUserId
@@ -72,6 +80,8 @@ export default function ProjectsPage() {
         );
 
         setProjects(visibleProjects.filter(Boolean) as Project[]);
+      } else {
+        setProjects([]);
       }
 
       setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
@@ -110,7 +120,8 @@ export default function ProjectsPage() {
     loadProjects(currentRole, currentUserId);
   }, []);
 
-  const canCreateProject = canCreateProjects(role);
+  const permissions = getPermissions(role);
+  const canCreateProject = permissions.canCreateProject;
 
   return (
     <main className="min-h-screen bg-slate-100 p-8">
@@ -149,13 +160,16 @@ export default function ProjectsPage() {
 
         {!error && !isLoading && projects.length === 0 && (
           <div className="mt-8 rounded-xl bg-white p-6 text-slate-600 shadow">
-            No hay proyectos registrados todavía.
+            No hay proyectos disponibles para tu usuario.
           </div>
         )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {projects.map((project) => {
-            const progress = Math.min(Math.max(project.progress ?? 0, 0), 100);
+            const progress = Math.min(
+              Math.max(project.progress ?? 0, 0),
+              100,
+            );
 
             const responsibleName = getResponsibleName(
               project.main_responsible_id,
