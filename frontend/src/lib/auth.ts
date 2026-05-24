@@ -1,13 +1,10 @@
+import {
+  canCreateProject,
+  getPermissions,
+  normalizeAppRole,
+} from './permissions';
+
 export type LoggedRole = string | null;
-
-function normalizeRole(role?: string | null) {
-  return role?.trim().toLowerCase() ?? null;
-}
-
-function isManagerRole(role?: string | null) {
-  const normalized = normalizeRole(role);
-  return normalized === 'manager' || normalized === 'project_manager' || normalized === 'gestor';
-}
 
 export function getDecodedToken(token: string) {
   try {
@@ -24,7 +21,7 @@ export function getRoleFromToken(token?: string | null): LoggedRole {
 
   const payload = getDecodedToken(token);
 
-  return normalizeRole(
+  return normalizeAppRole(
     payload?.user_metadata?.role || payload?.role || payload?.user?.role,
   );
 }
@@ -52,13 +49,39 @@ export function getStoredUserId() {
 }
 
 export function isAdminRole(role?: string | null) {
-  return normalizeRole(role) === 'admin';
+  return normalizeAppRole(role) === 'admin';
 }
 
+// Se mantiene este nombre porque ya está siendo usado por las vistas actuales.
 export function canCreateProjects(role?: string | null) {
-  return isAdminRole(role) || isManagerRole(role);
+  return canCreateProject(role);
 }
 
+// Se mantiene este nombre para no romper código existente.
+// Ahora considera también arquitecto/desarrollo, pero según su alcance.
 export function canManageTasks(role?: string | null) {
-  return isAdminRole(role) || isManagerRole(role);
+  const permissions = getPermissions(role);
+
+  return (
+    permissions.createTaskAccess !== 'none' ||
+    permissions.changeTaskStatusAccess !== 'none'
+  );
+}
+
+// Función útil para diferenciar admin/gestor de roles operativos.
+export function isProjectManagerRole(role?: string | null) {
+  const normalizedRole = normalizeAppRole(role);
+
+  return normalizedRole === 'admin' || normalizedRole === 'gestor';
+}
+
+// Función útil para roles que solo trabajan en proyectos asociados.
+export function isAssociatedProjectRole(role?: string | null) {
+  const normalizedRole = normalizeAppRole(role);
+
+  return (
+    normalizedRole === 'arquitecto' ||
+    normalizedRole === 'desarrollo' ||
+    normalizedRole === 'consultor'
+  );
 }

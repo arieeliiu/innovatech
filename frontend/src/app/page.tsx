@@ -51,30 +51,30 @@ export default function Home() {
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#1F2E49] px-8 py-12">
           <div className="absolute right-0 top-0 h-full w-7 bg-gradient-to-l from-[#00feff]/30 to-transparent blur-md" />
 
-          <section className="relative z-10 w-full max-w-[380px] -translate-y-10">
-            <div className="relative mb-10 w-fit -translate-x-20 translate-y-6">
+          <section className="relative z-10 w-full max-w-[350px] -translate-y-15">
+            <div className="relative mb-10 w-fit -translate-x-23 translate-y-7">
 
               <img
                 src="/innovatech-logo.png"
                 alt="Innovatech Solutions"
-                className="relative z-10 h-auto w-[500px] max-w-none"
+                className="relative z-10 h-auto w-[490px] max-w-none"
               />
             </div>
 
             <div>
-              <h1 className="text-3xl font-black tracking-tight text-[#F5F7FA]">
+              <h1 className="text-3xl font-bold tracking-tight text-[#F5F7FA]">
                 Bienvenido
               </h1>
 
-              <p className="mt-3 text-sm text-[#AAB4C0]">
+              <p className="mt-3 text-base font-normal tracking-tight text-[#AAB4C0]">
                 Accede con tus credenciales para continuar.
               </p>
             </div>
 
             <form onSubmit={handleLogin} className="mt-9 space-y-6">
               <div>
-                <label className="text-xs font-bold uppercase tracking-[0.32em] text-[#F5F7FA]">
-                  Correo electrónico
+                <label className="text-xs font-semibold tracking-[0.20em] text-[#F5F7FA]">
+                  CORREO ELECTRÓNICO
                 </label>
 
                 <input
@@ -88,8 +88,8 @@ export default function Home() {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-[0.32em] text-[#F5F7FA]">
-                  Contraseña
+                <label className="text-xs font-semibold tracking-[0.20em] text-[#F5F7FA]">
+                  CONTRASEÑA
                 </label>
 
                 <div className="relative mt-3">
@@ -116,7 +116,7 @@ export default function Home() {
               </div>
 
               <button
-                className="group flex w-full items-center justify-center gap-3 rounded-lg bg-[#43c3cf] px-5 py-3 text-sm font-medium text-[#05070A] shadow-[0_12px_28px_rgba(67,195,207,0.14)] transition hover:bg-[#52e0dc] hover:text-[#F5F7FA]"
+                className="group flex w-full items-center justify-center gap-3 rounded-full bg-[#52e0dc] px-5 py-3 text-sm font-medium tracking-tight text-[#05070A] shadow-[0_10px_22px_rgba(82,224,220,0.12)] transition hover:bg-[#43c3cf]"
                 type="submit"
               >
                 Iniciar sesión
@@ -157,11 +157,11 @@ export default function Home() {
           </div>
 
           <section className="relative z-10 max-w-xl translate-x-15">
-            <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.55em] text-[#52e0dc]">
-              Software & Technology consulting
+            <p className="mb-5 text-sm font-medium tracking-[0.15em] text-[#52e0dc]">
+              SOFTWARE & TECHNOLOGY CONSULTING
             </p>
 
-            <h2 className="text-6xl font-black leading-[1.02] tracking-tight text-[#F5F7FA] xl:text-7xl">
+            <h2 className="text-6xl font-bold leading-[1.02] tracking-tight text-[#F5F7FA] xl:text-7xl">
               Construimos
               <br />
               el futuro
@@ -169,7 +169,7 @@ export default function Home() {
               <span className="text-[#52e0dc]">digital.</span>
             </h2>
 
-            <p className="mt-7 max-w-lg text-base leading-8 text-[#AAB4C0]">
+            <p className="mt-7 max-w-lg text-lg font-normal leading-8 tracking-tight text-[#AAB4C0]">
               Plataforma de gestión para equipos, proyectos y tareas de
               Innovatech Solutions.
             </p>

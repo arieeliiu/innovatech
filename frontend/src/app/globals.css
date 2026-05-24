@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #05070A;
+  --foreground: #F5F7FA;
+
+  --color-app-bg: #05070A;
+  --color-panel-primary: #1F2E49;
+  --color-panel-secondary: #171C22;
+  --color-surface: #162233;
+  --color-border: #123746;
+
+  --color-text-primary: #F5F7FA;
+  --color-text-secondary: #AAB4C0;
+
+  --color-accent: #52e0dc;
+  --color-accent-hover: #43c3cf;
+  --color-warning: #F2C66D;
 }
 
 @theme inline {
@@ -12,15 +25,83 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Clases reutilizables para mantener la interfaz coherente */
+
+.app-page {
+  min-height: 100vh;
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
+}
+
+.app-panel {
+  background: var(--color-panel-secondary);
+  border: 1px solid rgba(18, 55, 70, 0.6);
+}
+
+.app-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(18, 55, 70, 0.7);
+  color: var(--color-text-primary);
+}
+
+.app-title {
+  color: var(--color-text-primary);
+}
+
+.app-muted {
+  color: var(--color-text-secondary);
+}
+
+.app-input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.app-input::placeholder {
+  color: rgba(170, 180, 192, 0.45);
+}
+
+.app-input:focus {
+  border-color: var(--color-accent-hover);
+  box-shadow: 0 0 0 2px rgba(67, 195, 207, 0.2);
+}
+
+.app-button-primary {
+  background: var(--color-accent);
+  color: var(--color-app-bg);
+  transition: background 0.2s ease;
+}
+
+.app-button-primary:hover {
+  background: var(--color-accent-hover);
+}
+
+.app-button-secondary {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.app-button-secondary:hover {
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent);
 }
