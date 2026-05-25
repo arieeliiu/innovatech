@@ -41,15 +41,19 @@ export class ProjectsController {
 
   @Get()
   findAll(@Req() request: AuthenticatedRequest) {
-    return this.projectsService.findAll(
-      request.user.id,
-      request.user.role,
-    );
+    return this.projectsService.findAll(request.user.id, request.user.role);
   }
 
   @Get(':id')
-  findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.projectsService.findById(id);
+  findById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findById(
+      id,
+      request.user.id,
+      request.user.role,
+    );
   }
 
   @Delete(':id')
@@ -63,26 +67,40 @@ export class ProjectsController {
   createTask(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() createTaskDto: CreateTaskDto,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.projectsService.createTask(id, createTaskDto);
+    return this.projectsService.createTask(
+      id,
+      createTaskDto,
+      request.user.id,
+      request.user.role,
+    );
   }
 
   @Get(':id/tasks')
-  findTasksByProject(@Param('id', ParseUUIDPipe) id: string) {
-    return this.projectsService.findTasksByProject(id);
+  findTasksByProject(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findTasksByProject(
+      id,
+      request.user.id,
+      request.user.role,
+    );
   }
 
   @Patch('tasks/:taskId/status')
   @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER')
-  async updateTaskStatus(
+  updateTaskStatus(
     @Param('taskId', ParseUUIDPipe) taskId: string,
     @Body() updateTaskStatusDto: UpdateTaskStatusDto,
-    @Req() request: Request,
+    @Req() request: AuthenticatedRequest,
   ) {
     return this.projectsService.updateTaskStatus(
       taskId,
       updateTaskStatusDto,
-      request['user'].id,
+      request.user.id,
+      request.user.role,
     );
   }
 
@@ -90,19 +108,64 @@ export class ProjectsController {
   @Roles('ADMIN', 'MANAGER')
   finalizeProject(
     @Param('id', ParseUUIDPipe) id: string,
-    @Req() request: Request,
+    @Req() request: AuthenticatedRequest,
     @Body() body: { comment?: string },
   ) {
     return this.projectsService.finalizeProject(
       id,
-      request['user'].id,
+      request.user.id,
       body?.comment,
     );
   }
 
   @Get('tasks/:taskId')
-  findTaskById(@Param('taskId', ParseUUIDPipe) taskId: string) {
-    return this.projectsService.findTaskById(taskId);
+  findTaskById(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findTaskById(
+      taskId,
+      request.user.id,
+      request.user.role,
+    );
+  }
+
+  @Get('tasks/:taskId/history')
+  findTaskHistory(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findTaskHistory(
+      taskId,
+      request.user.id,
+      request.user.role,
+    );
+  }
+
+  @Get('tasks/:taskId/comments')
+  findTaskComments(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findTaskComments(
+      taskId,
+      request.user.id,
+      request.user.role,
+    );
+  }
+
+  @Post('tasks/:taskId/comments')
+  addTaskComment(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Body() createTaskCommentDto: CreateTaskCommentDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.addTaskComment(
+      taskId,
+      request.user.id,
+      request.user.role,
+      createTaskCommentDto,
+    );
   }
 
   @Post(':projectId/members')
@@ -110,41 +173,25 @@ export class ProjectsController {
   addProjectMember(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() addProjectMemberDto: AddProjectMemberDto,
-    @Req() request: Request,
+    @Req() request: AuthenticatedRequest,
   ) {
     return this.projectsService.addProjectMember(
       projectId,
       addProjectMemberDto,
-      request['user'].id,
-    );
-  }
-
-  @Get('tasks/:taskId/history')
-  async findTaskHistory(@Param('taskId', ParseUUIDPipe) taskId: string) {
-    return this.projectsService.findTaskHistory(taskId);
-  }
-
-  @Get('tasks/:taskId/comments')
-  async findTaskComments(@Param('taskId', ParseUUIDPipe) taskId: string) {
-    return this.projectsService.findTaskComments(taskId);
-  }
-
-  @Post('tasks/:taskId/comments')
-  async addTaskComment(
-    @Param('taskId', ParseUUIDPipe) taskId: string,
-    @Body() createTaskCommentDto: CreateTaskCommentDto,
-    @Req() request: Request,
-  ) {
-    return this.projectsService.addTaskComment(
-      taskId,
-      request['user'].id,
-      createTaskCommentDto,
+      request.user.id,
     );
   }
 
   @Get(':id/members')
-  async findProjectMembers(@Param('id', ParseUUIDPipe) id: string) {
-    return this.projectsService.findProjectMembers(id);
+  findProjectMembers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.findProjectMembers(
+      id,
+      request.user.id,
+      request.user.role,
+    );
   }
 
   @Delete(':projectId/members/:userId')
@@ -152,12 +199,12 @@ export class ProjectsController {
   removeProjectMember(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Req() request: Request,
+    @Req() request: AuthenticatedRequest,
   ) {
     return this.projectsService.removeProjectMember(
       projectId,
       userId,
-      request['user'].id,
+      request.user.id,
     );
   }
 }

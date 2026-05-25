@@ -99,6 +99,61 @@ export class ProjectsService {
     }
   }
 
+    private async ensureTaskAccess(
+    taskId: string,
+    userId: string,
+    role?: string | null,
+  ) {
+    const { data: task, error } = await this.supabase
+      .from('project_tasks')
+      .select('*')
+      .eq('id', taskId)
+      .single();
+
+    if (error || !task) {
+      throw new NotFoundException('Tarea no encontrada');
+    }
+
+    await this.ensureProjectAccess(task.project_id, userId, role);
+
+    return task;
+  }
+
+  private ensureUserCanUpdateTask(
+    task: { responsible_id?: string | null },
+    userId: string,
+    role?: string | null,
+  ) {
+    if (this.canAccessAllProjects(role)) {
+      return;
+    }
+
+    if (task.responsible_id !== userId) {
+      throw new ForbiddenException(
+        'Solo puedes actualizar tareas asignadas a tu usuario',
+      );
+    }
+  }
+
+  private async ensureUserIsProjectMember(projectId: string, userId: string) {
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (!data) {
+      throw new BadRequestException(
+        'El responsable debe pertenecer al proyecto',
+      );
+    }
+  }
+
   async createProject(createProjectDto: CreateProjectDto) {
     const { name, description, startDate, endDate, managerId } =
       createProjectDto;
@@ -226,7 +281,9 @@ export class ProjectsService {
     };
   }
 
-  async findById(id: string) {
+    async findById(id: string, userId: string, role?: string | null) {
+    await this.ensureProjectAccess(id, userId, role);
+
     const { data, error } = await this.supabase
       .from('projects')
       .select('*')
@@ -240,8 +297,8 @@ export class ProjectsService {
     return {
       success: true,
       project: data,
-    };
-  }
+      };
+    }
 
   async deleteProject(projectId: string) {
     await this.ensureProjectExists(projectId);
@@ -310,12 +367,18 @@ export class ProjectsService {
     };
   }
 
-  async createTask(projectId: string, createTaskDto: CreateTaskDto) {
+    async createTask(
+    projectId: string,
+    createTaskDto: CreateTaskDto,
+    requestingUserId: string,
+    role?: string | null,
+  ) {
     const { title, description, responsibleId, startDate, endDate } =
       createTaskDto;
 
-    await this.ensureProjectExists(projectId);
+    await this.ensureProjectAccess(projectId, requestingUserId, role);
     await this.ensureUserExists(responsibleId);
+    await this.ensureUserIsProjectMember(projectId, responsibleId);
 
     const { data, error } = await this.supabase
       .from('project_tasks')
@@ -343,8 +406,12 @@ export class ProjectsService {
     };
   }
 
-  async findTasksByProject(projectId: string) {
-    await this.ensureProjectExists(projectId);
+    async findTasksByProject(
+    projectId: string,
+    userId: string,
+    role?: string | null,
+  ) {
+    await this.ensureProjectAccess(projectId, userId, role);
 
     const { data, error } = await this.supabase
       .from('project_tasks')
@@ -362,43 +429,32 @@ export class ProjectsService {
     };
   }
 
-  async findTaskById(taskId: string) {
-    const { data, error } = await this.supabase
-      .from('project_tasks')
-      .select('*')
-      .eq('id', taskId)
-      .single();
-
-    if (error || !data) {
-      throw new NotFoundException('Tarea no encontrada');
-    }
+    async findTaskById(
+    taskId: string,
+    userId: string,
+    role?: string | null,
+  ) {
+    const task = await this.ensureTaskAccess(taskId, userId, role);
 
     return {
       success: true,
-      task: data,
+      task,
     };
   }
 
-  async updateTaskStatus(
+    async updateTaskStatus(
     taskId: string,
     updateTaskStatusDto: UpdateTaskStatusDto,
     userId: string,
+    role?: string | null,
   ) {
     const { status, progress, comment } = updateTaskStatusDto;
 
     await this.ensureUserExists(userId);
 
-    const { data: existingTask, error: findError } = await this.supabase
-      .from('project_tasks')
-      .select('*')
-      .eq('id', taskId)
-      .single();
+    const existingTask = await this.ensureTaskAccess(taskId, userId, role);
+    this.ensureUserCanUpdateTask(existingTask, userId, role);
 
-    if (findError || !existingTask) {
-      throw new NotFoundException('Tarea no encontrada');
-    }
-
-    // Normalize progress/end_date behavior:
     let newProgress = progress;
     let endDate: string | null = null;
 
@@ -409,10 +465,10 @@ export class ProjectsService {
           ? existingTask.end_date
           : new Date().toISOString();
     } else {
-      // prevent tasks from staying at 100% when moved back
       if (newProgress >= 100) {
         newProgress = 0;
       }
+
       endDate = null;
     }
 
@@ -468,41 +524,39 @@ export class ProjectsService {
     };
   }
 
-  async findTaskHistory(taskId: string) {
-    const { data, error } = await this.supabase
-      .from('project_status_history')
-      .select('*')
-      .eq('task_id', taskId)
-      .order('created_at', { ascending: false });
+  async findTaskHistory(
+  taskId: string,
+  userId: string,
+  role?: string | null,
+) {
+  await this.ensureTaskAccess(taskId, userId, role);
 
-    if (error) {
-      throw new InternalServerErrorException(error.message);
-    }
+  const { data, error } = await this.supabase
+    .from('project_status_history')
+    .select('*')
+    .eq('task_id', taskId)
+    .order('created_at', { ascending: false });
 
-    return {
-      success: true,
-      history: data,
-    };
+  if (error) {
+    throw new InternalServerErrorException(error.message);
   }
 
-  async addTaskComment(
+  return {
+    success: true,
+    history: data,
+  };
+}
+
+   async addTaskComment(
     taskId: string,
     userId: string,
+    role: string | null,
     createTaskCommentDto: CreateTaskCommentDto,
-  ) {
+    ) {
     const { title, description } = createTaskCommentDto;
 
     await this.ensureUserExists(userId);
-
-    const { data: taskData, error: taskError } = await this.supabase
-      .from('project_tasks')
-      .select('id, project_id')
-      .eq('id', taskId)
-      .single();
-
-    if (taskError || !taskData) {
-      throw new NotFoundException('Tarea no encontrada');
-    }
+    await this.ensureTaskAccess(taskId, userId, role);
 
     const { data, error } = await this.supabase
       .from('task_comments')
@@ -526,7 +580,13 @@ export class ProjectsService {
     };
   }
 
-  async findTaskComments(taskId: string) {
+      async findTaskComments(
+    taskId: string,
+    userId: string,
+    role?: string | null,
+  ) {
+    await this.ensureTaskAccess(taskId, userId, role);
+
     const { data, error } = await this.supabase
       .from('task_comments')
       .select('*')
@@ -585,8 +645,12 @@ export class ProjectsService {
     };
   }
 
-  async findProjectMembers(projectId: string) {
-    await this.ensureProjectExists(projectId);
+    async findProjectMembers(
+    projectId: string,
+    userId: string,
+    role?: string | null,
+    ) {
+    await this.ensureProjectAccess(projectId, userId, role);
 
     const { data, error } = await this.supabase
       .from('project_members')
@@ -601,14 +665,14 @@ export class ProjectsService {
     return {
       success: true,
       members: data,
-    };
-  }
+      };
+    }
 
   async removeProjectMember(
     projectId: string,
     userId: string,
     requestingUserId: string,
-  ) {
+    ) {
     // Verify requesting user exists and get their role
     const requestingUser = await this.ensureUserExists(requestingUserId);
     const requestingUserRole = requestingUser.user_metadata?.role?.trim().toUpperCase();
