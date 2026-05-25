@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ProgressBar } from '../../components/ui/ProgressBar';
 import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
-import {
-  getStoredRole,
-  getStoredUserId,
-  isAdminRole,
-} from '../../lib/auth';
+import { getStoredRole, getStoredUserId, isAdminRole } from '../../lib/auth';
 import { getPermissions } from '../../lib/permissions';
 
 type Project = {
@@ -166,11 +163,6 @@ export default function ProjectsPage() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {projects.map((project) => {
-            const progress = Math.min(
-              Math.max(project.progress ?? 0, 0),
-              100,
-            );
-
             const responsibleName = getResponsibleName(
               project.main_responsible_id,
             );
@@ -195,17 +187,7 @@ export default function ProjectsPage() {
                 </p>
 
                 <div className="mt-4">
-                  <div className="mb-1 flex justify-between text-sm text-slate-700">
-                    <span>Avance</span>
-                    <span>{progress}%</span>
-                  </div>
-
-                  <div className="h-2 rounded-full bg-slate-200">
-                    <div
-                      className="h-2 rounded-full bg-slate-900"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+                  <ProgressBar value={project.progress} />
                 </div>
 
                 <div className="mt-4 text-sm text-slate-700">
