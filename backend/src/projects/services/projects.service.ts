@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -10,6 +11,7 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
+import { normalizeRole } from '../../auth/utils/role.utils';
 
 @Injectable()
 export class ProjectsService {
@@ -17,6 +19,51 @@ export class ProjectsService {
     process.env.SUPABASE_URL as string,
     process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   );
+
+  private canAccessAllProjects(role?: string | null) {
+  const normalizedRole = normalizeRole(role);
+
+  return normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER';
+  }
+
+  private async getAssociatedProjectIds(userId: string) {
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return (data ?? []).map((member) => member.project_id);
+  }
+
+    private async ensureProjectAccess(
+    projectId: string,
+    userId: string,
+    role?: string | null,
+  ) {
+    if (this.canAccessAllProjects(role)) {
+      await this.ensureProjectExists(projectId);
+      return;
+    }
+
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (!data) {
+      throw new ForbiddenException('No tienes acceso a este proyecto');
+    }
+  }
 
   private async ensureProjectExists(projectId: string) {
     const { data, error } = await this.supabase
@@ -84,19 +131,34 @@ export class ProjectsService {
     };
   }
 
-  async findAll() {
-    const { data, error } = await this.supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async findAll(userId: string, role?: string | null) {
+  let query = this.supabase
+    .from('projects')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-    if (error) {
-      throw new InternalServerErrorException(error.message);
+  if (!this.canAccessAllProjects(role)) {
+    const associatedProjectIds = await this.getAssociatedProjectIds(userId);
+
+    if (associatedProjectIds.length === 0) {
+      return {
+        success: true,
+        projects: [],
+      };
     }
 
-    return {
-      success: true,
-      projects: data,
+    query = query.in('id', associatedProjectIds);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new InternalServerErrorException(error.message);
+  }
+
+  return {
+    success: true,
+    projects: data,
     };
   }
 

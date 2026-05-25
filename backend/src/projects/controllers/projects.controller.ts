@@ -21,6 +21,13 @@ import { AuthGuard } from '../../auth/guards/auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 
+type AuthenticatedRequest = Request & {
+  user: {
+    id: string;
+    role: string;
+  };
+};
+
 @Controller('projects')
 @UseGuards(AuthGuard, RolesGuard)
 export class ProjectsController {
@@ -33,8 +40,11 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Req() request: AuthenticatedRequest) {
+    return this.projectsService.findAll(
+      request.user.id,
+      request.user.role,
+    );
   }
 
   @Get(':id')
