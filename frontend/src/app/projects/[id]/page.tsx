@@ -14,11 +14,16 @@ import {
 } from '../../../lib/api';
 import { formatDateShort } from '../../../lib/date';
 import {
-  canManageTasks,
   getStoredRole,
   getStoredUserId,
-  isAdminRole,
 } from '../../../lib/auth';
+import {
+  canManageProjectMembers,
+  canViewProjectDetail,
+  canViewProjectMembers,
+  canViewTaskBoard,
+  getPermissions,
+} from '../../../lib/permissions';
 
 type Project = {
   id: string;
@@ -67,23 +72,29 @@ const columns = [
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
 
   const projectId = params.id as string;
+
+  const [role, setRole] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [members, setMembers] = useState<ProjectMember[]>([]);
+
   const [error, setError] = useState('');
+
   const [showAddMemberForm, setShowAddMemberForm] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [loadingAddMember, setLoadingAddMember] = useState(false);
   const [memberError, setMemberError] = useState('');
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [finalizeConfirmation, setFinalizeConfirmation] = useState('');
   const [finalizeError, setFinalizeError] = useState('');
@@ -91,25 +102,32 @@ export default function ProjectDetailPage() {
 
   async function loadProjectDetail(
     currentRole: string | null,
-    currentUserId: string | null,
+    storedUserId: string | null,
   ) {
     try {
       setError('');
 
-      const [projectData, tasksData, usersData, membersData] = await Promise.all([
-        getProjectById(projectId),
-        getProjectTasks(projectId),
-        getUsers(),
-        getProjectMembers(projectId),
-      ]);
+      const [projectData, tasksData, usersData, membersData] =
+        await Promise.all([
+          getProjectById(projectId),
+          getProjectTasks(projectId),
+          getUsers(),
+          getProjectMembers(projectId),
+        ]);
 
       const projectDetail = projectData.project;
       const memberList = membersData.members ?? [];
 
-      const isAllowed =
-        canManageTasks(currentRole) ||
-        projectDetail.main_responsible_id === currentUserId ||
-        memberList.some((member: { user_id?: string }) => member.user_id === currentUserId);
+      const isAssociatedProject =
+        projectDetail.main_responsible_id === storedUserId ||
+        memberList.some(
+          (member: { user_id?: string }) => member.user_id === storedUserId,
+        );
+
+      const isAllowed = canViewProjectDetail(
+        currentRole,
+        isAssociatedProject,
+      );
 
       if (!isAllowed) {
         setError('No tienes acceso a este proyecto');
@@ -123,7 +141,11 @@ export default function ProjectDetailPage() {
       setProject(projectDetail);
       setTasks(tasksData.tasks ?? []);
       setMembers(memberList);
-      setUsers(Array.isArray(usersData) ? usersData : usersData.users ?? usersData.data ?? []);
+      setUsers(
+        Array.isArray(usersData)
+          ? usersData
+          : usersData.users ?? usersData.data ?? [],
+      );
     } catch {
       setError('No se pudo cargar el detalle del proyecto');
     }
@@ -162,27 +184,36 @@ export default function ProjectDetailPage() {
       });
 
       const updatedMembers = await getProjectMembers(projectId);
+
       setMembers(updatedMembers.members ?? []);
       setSelectedMemberId('');
       setShowAddMemberForm(false);
     } catch (err) {
-      setMemberError(err instanceof Error ? err.message : 'Error al agregar miembro');
+      setMemberError(
+        err instanceof Error ? err.message : 'Error al agregar miembro',
+      );
     } finally {
       setLoadingAddMember(false);
     }
   }
 
   async function handleRemoveMember(memberId: string) {
-    if (!confirm('¿Estás seguro de que deseas remover este miembro del proyecto?')) {
+    if (
+      !confirm('¿Estás seguro de que deseas remover este miembro del proyecto?')
+    ) {
       return;
     }
 
     try {
       await removeProjectMember(projectId, memberId);
+
       const updatedMembers = await getProjectMembers(projectId);
+
       setMembers(updatedMembers.members ?? []);
     } catch (err) {
-      setMemberError(err instanceof Error ? err.message : 'Error al remover miembro');
+      setMemberError(
+        err instanceof Error ? err.message : 'Error al remover miembro',
+      );
     }
   }
 
@@ -197,7 +228,9 @@ export default function ProjectDetailPage() {
     try {
       setIsDeleting(true);
       setDeleteError('');
+
       await deleteProject(project.id);
+
       router.push('/projects');
     } catch {
       setDeleteError('No se pudo eliminar el proyecto');
@@ -223,7 +256,9 @@ export default function ProjectDetailPage() {
     try {
       setIsFinalizing(true);
       setFinalizeError('');
+
       await finalizeProject(project.id);
+
       router.push('/projects');
     } catch {
       setFinalizeError('No se pudo finalizar el proyecto');
@@ -239,13 +274,14 @@ export default function ProjectDetailPage() {
   }
 
   useEffect(() => {
-    const currentRole = getStoredRole();
-    const currentUserId = getStoredUserId();
+    const storedRole = getStoredRole();
+    const storedUserId = getStoredUserId();
 
-    setRole(currentRole);
+    setRole(storedRole);
+    setCurrentUserId(storedUserId);
 
     if (projectId) {
-      loadProjectDetail(currentRole, currentUserId);
+      loadProjectDetail(storedRole, storedUserId);
     }
   }, [projectId]);
 
@@ -278,8 +314,19 @@ export default function ProjectDetailPage() {
   }
 
   const progress = Math.min(Math.max(project.progress, 0), 100);
-  const canManageMembers =
-    role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'manager';
+
+  const isAssociatedProject =
+    project.main_responsible_id === currentUserId ||
+    members.some((member) => member.user_id === currentUserId);
+
+  const permissions = getPermissions(role);
+
+  const canManageMembers = canManageProjectMembers(role);
+  const canViewMembers = canViewProjectMembers(role, isAssociatedProject);
+  const canViewTasks = canViewTaskBoard(role, isAssociatedProject);
+
+  const canDeleteCurrentProject = permissions.canDeleteProject;
+  const canFinalizeCurrentProject = permissions.canFinalizeProject;
 
   return (
     <main className="min-h-screen bg-slate-100 p-8">
@@ -293,23 +340,27 @@ export default function ProjectDetailPage() {
             Volver a proyectos
           </button>
 
-          {canManageMembers && (
+          {(canFinalizeCurrentProject || canDeleteCurrentProject) && (
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowFinalizeModal(true)}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
-              >
-                Finalizar proyecto
-              </button>
+              {canFinalizeCurrentProject && (
+                <button
+                  type="button"
+                  onClick={() => setShowFinalizeModal(true)}
+                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
+                >
+                  Finalizar proyecto
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-              >
-                Eliminar proyecto
-              </button>
+              {canDeleteCurrentProject && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                >
+                  Eliminar proyecto
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -317,8 +368,13 @@ export default function ProjectDetailPage() {
         <div className="rounded-xl bg-white p-6 shadow">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">{project.name}</h1>
-              <p className="mt-2 max-w-3xl text-slate-600">{project.description}</p>
+              <h1 className="text-3xl font-bold text-slate-900">
+                {project.name}
+              </h1>
+
+              <p className="mt-2 max-w-3xl text-slate-600">
+                {project.description}
+              </p>
             </div>
 
             <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
@@ -329,6 +385,7 @@ export default function ProjectDetailPage() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-lg bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Fecha de inicio</p>
+
               <p className="font-medium text-slate-900">
                 {formatDateShort(project.start_date)}
               </p>
@@ -336,13 +393,17 @@ export default function ProjectDetailPage() {
 
             <div className="rounded-lg bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Fecha de término</p>
+
               <p className="font-medium text-slate-900">
                 {formatDateShort(project.end_date)}
               </p>
             </div>
 
             <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Responsable principal</p>
+              <p className="text-sm text-slate-500">
+                Responsable principal
+              </p>
+
               <p className="font-medium text-slate-900">
                 {getUserName(project.main_responsible_id)}
               </p>
@@ -364,112 +425,122 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
-        <div id="members-section" className="mt-8 rounded-xl bg-white p-6 shadow">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                Miembros del proyecto
-              </h2>
-              <p className="mt-1 text-slate-600">
-                Gestiona los miembros del equipo del proyecto.
-              </p>
-            </div>
+        {canViewMembers && (
+          <div id="members-section" className="mt-8 rounded-xl bg-white p-6 shadow">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Miembros del proyecto
+                </h2>
 
-            {canManageMembers && (
-              <button
-                type="button"
-                onClick={() => setShowAddMemberForm(!showAddMemberForm)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800"
-              >
-                {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
-              </button>
-            )}
-          </div>
+                <p className="mt-1 text-slate-600">
+                  {canManageMembers
+                    ? 'Gestiona los miembros del equipo del proyecto.'
+                    : 'Consulta los miembros asociados al proyecto.'}
+                </p>
+              </div>
 
-          {memberError && (
-            <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
-              {memberError}
-            </div>
-          )}
-
-          {showAddMemberForm && canManageMembers && (
-            <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-900">
-                    Usuario
-                  </label>
-                  <select
-                    value={selectedMemberId}
-                    onChange={(e) => setSelectedMemberId(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
-                  >
-                    <option value="">Selecciona un usuario</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name || user.email} ({user.role})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+              {canManageMembers && (
                 <button
                   type="button"
-                  onClick={handleAddMember}
-                  disabled={loadingAddMember}
-                  className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  onClick={() => setShowAddMemberForm(!showAddMemberForm)}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800"
                 >
-                  {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
+                  {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
                 </button>
-              </div>
+              )}
             </div>
-          )}
 
-          <div className="space-y-2">
-            {members.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-slate-300 p-4 text-slate-500">
-                No hay miembros en este proyecto.
-              </p>
-            ) : (
-              members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
-                >
+            {memberError && (
+              <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
+                {memberError}
+              </div>
+            )}
+
+            {showAddMemberForm && canManageMembers && (
+              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="space-y-4">
                   <div>
-                    <p className="font-medium text-slate-900">
-                      {getUserName(member.user_id)}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Rol: {member.project_role} · Unido:{' '}
-                      {new Date(member.joined_at).toLocaleDateString()}
-                    </p>
+                    <label className="mb-2 block text-sm font-medium text-slate-900">
+                      Usuario
+                    </label>
+
+                    <select
+                      value={selectedMemberId}
+                      onChange={(e) => setSelectedMemberId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
+                    >
+                      <option value="">Selecciona un usuario</option>
+
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name || user.email} ({user.role})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {canManageMembers && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveMember(member.user_id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      Remover
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddMember}
+                    disabled={loadingAddMember}
+                    className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
+                  </button>
                 </div>
-              ))
+              </div>
             )}
-          </div>
-        </div>
 
-        {showDeleteModal && (
+            <div className="space-y-2">
+              {members.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-slate-500">
+                  No hay miembros en este proyecto.
+                </p>
+              ) : (
+                members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {getUserName(member.user_id)}
+                      </p>
+
+                      <p className="text-sm text-slate-500">
+                        Rol: {member.project_role} · Unido:{' '}
+                        {new Date(member.joined_at).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    {canManageMembers && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMember(member.user_id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && canDeleteCurrentProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-slate-900">Eliminar proyecto</h2>
+              <h2 className="text-xl font-bold text-slate-900">
+                Eliminar proyecto
+              </h2>
 
               <p className="mt-3 text-sm text-slate-600">
                 Para eliminar este proyecto{' '}
-                <strong className="text-slate-900">{project.name}</strong>, escribe{' '}
-                <strong className="text-slate-900">eliminar</strong>.
+                <strong className="text-slate-900">{project.name}</strong>,
+                escribe <strong className="text-slate-900">eliminar</strong>.
               </p>
 
               <input
@@ -510,23 +581,30 @@ export default function ProjectDetailPage() {
           </div>
         )}
 
-        {showFinalizeModal && (
+        {showFinalizeModal && canFinalizeCurrentProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-slate-900">Finalizar proyecto</h2>
+              <h2 className="text-xl font-bold text-slate-900">
+                Finalizar proyecto
+              </h2>
 
               <p className="mt-3 text-sm text-slate-600">
-                Al finalizar <strong className="text-slate-900">{project.name}</strong>, se removerán todos los miembros del proyecto.
+                Al finalizar{' '}
+                <strong className="text-slate-900">{project.name}</strong>,
+                se removerán todos los miembros del proyecto.
               </p>
 
               <p className="mt-3 text-sm text-slate-600">
-                Para confirmar, escribe <strong className="text-slate-900">finalizar</strong>.
+                Para confirmar, escribe{' '}
+                <strong className="text-slate-900">finalizar</strong>.
               </p>
 
               <input
                 className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-amber-500"
                 value={finalizeConfirmation}
-                onChange={(event) => setFinalizeConfirmation(event.target.value)}
+                onChange={(event) =>
+                  setFinalizeConfirmation(event.target.value)
+                }
                 placeholder="Escribe finalizar"
               />
 
@@ -561,99 +639,105 @@ export default function ProjectDetailPage() {
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Tablero de tareas
-            </h2>
+        {canViewTasks && (
+          <>
+            <div className="mt-8 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Tablero de tareas
+                </h2>
 
-            <p className="mt-1 text-slate-600">
-              Seguimiento de tareas asociadas al proyecto.
-            </p>
-          </div>
-        </div>
+                <p className="mt-1 text-slate-600">
+                  Seguimiento de tareas asociadas al proyecto.
+                </p>
+              </div>
+            </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          {columns.map((column) => {
-            const columnTasks = tasks.filter(
-              (task) => task.status === column.status,
-            );
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+              {columns.map((column) => {
+                const columnTasks = tasks.filter(
+                  (task) => task.status === column.status,
+                );
 
-            return (
-              <section
-                key={column.status}
-                className="min-h-96 rounded-xl bg-white p-4 shadow"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-900">
-                    {column.title}
-                  </h3>
+                return (
+                  <section
+                    key={column.status}
+                    className="min-h-96 rounded-xl bg-white p-4 shadow"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-semibold text-slate-900">
+                        {column.title}
+                      </h3>
 
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                    {columnTasks.length}
-                  </span>
-                </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                        {columnTasks.length}
+                      </span>
+                    </div>
 
-                <div className="space-y-3">
-                  {columnTasks.length === 0 && (
-                    <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                      No hay tareas en esta columna.
-                    </p>
-                  )}
-
-                  {columnTasks.map((task) => {
-                    const taskProgress = Math.min(
-                      Math.max(task.progress, 0),
-                      100,
-                    );
-
-                    return (
-                      <article
-                        key={task.id}
-                        className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-                      >
-                        <h4 className="font-semibold text-slate-900">
-                          {task.title}
-                        </h4>
-
-                        <p className="mt-2 text-sm text-slate-600">
-                          {task.description}
+                    <div className="space-y-3">
+                      {columnTasks.length === 0 && (
+                        <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                          No hay tareas en esta columna.
                         </p>
+                      )}
 
-                        <div className="mt-4 text-xs text-slate-600">
-                          <p>
-                            <strong>Inicio:</strong> {task.start_date}
-                          </p>
-                          <p>
-                            <strong>Término:</strong> {task.end_date}
-                          </p>
-                          <p>
-                            <strong>Responsable:</strong>{' '}
-                            {getUserName(task.responsible_id)}
-                          </p>
-                        </div>
+                      {columnTasks.map((task) => {
+                        const taskProgress = Math.min(
+                          Math.max(task.progress, 0),
+                          100,
+                        );
 
-                        <div className="mt-4">
-                          <div className="mb-1 flex justify-between text-xs text-slate-600">
-                            <span>Avance</span>
-                            <span>{taskProgress}%</span>
-                          </div>
+                        return (
+                          <article
+                            key={task.id}
+                            className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                          >
+                            <h4 className="font-semibold text-slate-900">
+                              {task.title}
+                            </h4>
 
-                          <div className="h-2 rounded-full bg-slate-200">
-                            <div
-                              className="h-2 rounded-full bg-slate-900"
-                              style={{ width: `${taskProgress}%` }}
-                            />
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+                            <p className="mt-2 text-sm text-slate-600">
+                              {task.description}
+                            </p>
+
+                            <div className="mt-4 text-xs text-slate-600">
+                              <p>
+                                <strong>Inicio:</strong> {task.start_date}
+                              </p>
+
+                              <p>
+                                <strong>Término:</strong> {task.end_date}
+                              </p>
+
+                              <p>
+                                <strong>Responsable:</strong>{' '}
+                                {getUserName(task.responsible_id)}
+                              </p>
+                            </div>
+
+                            <div className="mt-4">
+                              <div className="mb-1 flex justify-between text-xs text-slate-600">
+                                <span>Avance</span>
+                                <span>{taskProgress}%</span>
+                              </div>
+
+                              <div className="h-2 rounded-full bg-slate-200">
+                                <div
+                                  className="h-2 rounded-full bg-slate-900"
+                                  style={{ width: `${taskProgress}%` }}
+                                />
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </>
+        )}
       </section>
     </main>
   );
