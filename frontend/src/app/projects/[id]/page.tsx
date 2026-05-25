@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { ProgressBar } from '../../../components/ui/ProgressBar';
 import {
   addProjectMember,
   deleteProject,
@@ -313,8 +314,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const progress = Math.min(Math.max(project.progress, 0), 100);
-
   const isAssociatedProject =
     project.main_responsible_id === currentUserId ||
     members.some((member) => member.user_id === currentUserId);
@@ -411,17 +410,11 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="mt-6">
-            <div className="mb-1 flex justify-between text-sm text-slate-700">
-              <span>Avance general</span>
-              <span>{progress}%</span>
-            </div>
-
-            <div className="h-3 rounded-full bg-slate-200">
-              <div
-                className="h-3 rounded-full bg-slate-900"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={project.progress}
+              label="Avance general"
+              size="md"
+            />
           </div>
         </div>
 
@@ -681,13 +674,8 @@ export default function ProjectDetailPage() {
                         </p>
                       )}
 
-                      {columnTasks.map((task) => {
-                        const taskProgress = Math.min(
-                          Math.max(task.progress, 0),
-                          100,
-                        );
-
-                        return (
+                        {columnTasks.map((task) => {
+                          return (
                           <article
                             key={task.id}
                             className="rounded-lg border border-slate-200 bg-slate-50 p-4"
@@ -716,17 +704,7 @@ export default function ProjectDetailPage() {
                             </div>
 
                             <div className="mt-4">
-                              <div className="mb-1 flex justify-between text-xs text-slate-600">
-                                <span>Avance</span>
-                                <span>{taskProgress}%</span>
-                              </div>
-
-                              <div className="h-2 rounded-full bg-slate-200">
-                                <div
-                                  className="h-2 rounded-full bg-slate-900"
-                                  style={{ width: `${taskProgress}%` }}
-                                />
-                              </div>
+                              <ProgressBar value={task.progress} />
                             </div>
                           </article>
                         );
