@@ -168,19 +168,17 @@ export class ProjectsController {
     );
   }
 
-  @Post(':projectId/members')
-  @Roles('ADMIN', 'MANAGER')
-  addProjectMember(
-    @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Body() addProjectMemberDto: AddProjectMemberDto,
-    @Req() request: AuthenticatedRequest,
-  ) {
-    return this.projectsService.addProjectMember(
-      projectId,
-      addProjectMemberDto,
-      request.user.id,
-    );
-  }
+@Post(':projectId/members')
+@Roles('ADMIN', 'MANAGER')
+addProjectMember(
+  @Param('projectId', ParseUUIDPipe) projectId: string,
+  @Body() addProjectMemberDto: AddProjectMemberDto,
+) {
+  return this.projectsService.addProjectMember(
+    projectId,
+    addProjectMemberDto,
+  );
+}
 
   @Get(':id/members')
   findProjectMembers(
@@ -199,12 +197,7 @@ export class ProjectsController {
   removeProjectMember(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Req() request: AuthenticatedRequest,
   ) {
-    return this.projectsService.removeProjectMember(
-      projectId,
-      userId,
-      request.user.id,
-    );
+    return this.projectsService.removeProjectMember(projectId, userId);
   }
 }

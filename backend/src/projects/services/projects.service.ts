@@ -604,107 +604,80 @@ export class ProjectsService {
   }
 
   async addProjectMember(
-    projectId: string,
-    addProjectMemberDto: AddProjectMemberDto,
-    requestingUserId: string,
+  projectId: string,
+  addProjectMemberDto: AddProjectMemberDto,
   ) {
-    const { userId, projectRole } = addProjectMemberDto;
+  const { userId, projectRole } = addProjectMemberDto;
 
-    // Verify requesting user exists and get their role
-    const requestingUser = await this.ensureUserExists(requestingUserId);
-    const requestingUserRole = requestingUser.user_metadata?.role?.trim().toUpperCase();
+  await this.ensureProjectExists(projectId);
+  await this.ensureUserExists(userId);
 
-    // Only ADMIN and MANAGER can add members
-    if (requestingUserRole !== 'ADMIN' && requestingUserRole !== 'MANAGER' && requestingUserRole !== 'PROJECT_MANAGER') {
-      throw new BadRequestException(
-        'Solo los administradores y gestores pueden añadir miembros a proyectos',
-      );
-    }
+  const { data, error } = await this.supabase
+    .from('project_members')
+    .insert({
+      project_id: projectId,
+      user_id: userId,
+      project_role: projectRole,
+    })
+    .select()
+    .single();
 
-    await this.ensureProjectExists(projectId);
-    await this.ensureUserExists(userId);
+  if (error) {
+    throw new InternalServerErrorException(error.message);
+  }
 
-    const { data, error } = await this.supabase
-      .from('project_members')
-      .insert({
-        project_id: projectId,
-        user_id: userId,
-        project_role: projectRole,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-
-    return {
-      success: true,
-      message: 'Miembro agregado correctamente al proyecto',
-      member: data,
+  return {
+    success: true,
+    message: 'Miembro agregado correctamente al proyecto',
+    member: data,
     };
   }
 
-    async findProjectMembers(
-    projectId: string,
-    userId: string,
-    role?: string | null,
-    ) {
-    await this.ensureProjectAccess(projectId, userId, role);
+  async findProjectMembers(
+  projectId: string,
+  userId: string,
+  role?: string | null,
+  ) {
+  await this.ensureProjectAccess(projectId, userId, role);
 
-    const { data, error } = await this.supabase
-      .from('project_members')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('joined_at', { ascending: false });
+  const { data, error } = await this.supabase
+    .from('project_members')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('joined_at', { ascending: false });
 
-    if (error) {
-      throw new InternalServerErrorException(error.message);
-    }
+  if (error) {
+    throw new InternalServerErrorException(error.message);
+  }
 
-    return {
-      success: true,
-      members: data,
-      };
-    }
+  return {
+    success: true,
+    members: data,
+    };
+  }
 
-  async removeProjectMember(
-    projectId: string,
-    userId: string,
-    requestingUserId: string,
-    ) {
-    // Verify requesting user exists and get their role
-    const requestingUser = await this.ensureUserExists(requestingUserId);
-    const requestingUserRole = requestingUser.user_metadata?.role?.trim().toUpperCase();
+  async removeProjectMember(projectId: string, userId: string) {
+  await this.ensureProjectExists(projectId);
+  await this.ensureUserExists(userId);
 
-    // Only ADMIN and MANAGER can remove members
-    if (requestingUserRole !== 'ADMIN' && requestingUserRole !== 'MANAGER' && requestingUserRole !== 'PROJECT_MANAGER') {
-      throw new BadRequestException(
-        'Solo los administradores y gestores pueden remover miembros de proyectos',
-      );
-    }
+  const { data, error } = await this.supabase
+    .from('project_members')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .select();
 
-    await this.ensureProjectExists(projectId);
-    await this.ensureUserExists(userId);
+  if (error) {
+    throw new InternalServerErrorException(error.message);
+  }
 
-    const { data, error } = await this.supabase
-      .from('project_members')
-      .delete()
-      .eq('project_id', projectId)
-      .eq('user_id', userId)
-      .select();
+  if (!data || data.length === 0) {
+    throw new NotFoundException('Miembro no encontrado en el proyecto');
+  }
 
-    if (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-
-    if (!data || data.length === 0) {
-      throw new NotFoundException('Miembro no encontrado en el proyecto');
-    }
-
-    return {
-      success: true,
-      message: 'Miembro eliminado correctamente del proyecto',
+  return {
+    success: true,
+    message: 'Miembro eliminado correctamente del proyecto',
     };
   }
 }
