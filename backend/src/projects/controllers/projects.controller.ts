@@ -168,17 +168,17 @@ export class ProjectsController {
     );
   }
 
-@Post(':projectId/members')
-@Roles('ADMIN', 'MANAGER')
-addProjectMember(
-  @Param('projectId', ParseUUIDPipe) projectId: string,
-  @Body() addProjectMemberDto: AddProjectMemberDto,
-) {
-  return this.projectsService.addProjectMember(
-    projectId,
-    addProjectMemberDto,
-  );
-}
+  @Post(':projectId/members')
+  @Roles('ADMIN', 'MANAGER')
+  addProjectMember(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() addProjectMemberDto: AddProjectMemberDto,
+  ) {
+    return this.projectsService.addProjectMember(
+      projectId,
+      addProjectMemberDto,
+    );
+  }
 
   @Get(':id/members')
   findProjectMembers(

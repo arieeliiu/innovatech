@@ -21,9 +21,9 @@ export class ProjectsService {
   );
 
   private canAccessAllProjects(role?: string | null) {
-  const normalizedRole = normalizeRole(role);
+    const normalizedRole = normalizeRole(role);
 
-  return normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER';
+    return normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER';
   }
 
   private async getAssociatedProjectIds(userId: string) {
@@ -39,7 +39,7 @@ export class ProjectsService {
     return (data ?? []).map((member) => member.project_id);
   }
 
-    private async ensureProjectAccess(
+  private async ensureProjectAccess(
     projectId: string,
     userId: string,
     role?: string | null,
@@ -99,7 +99,7 @@ export class ProjectsService {
     }
   }
 
-    private async ensureTaskAccess(
+  private async ensureTaskAccess(
     taskId: string,
     userId: string,
     role?: string | null,
@@ -187,33 +187,33 @@ export class ProjectsService {
   }
 
   async findAll(userId: string, role?: string | null) {
-  let query = this.supabase
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false });
+    let query = this.supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (!this.canAccessAllProjects(role)) {
-    const associatedProjectIds = await this.getAssociatedProjectIds(userId);
+    if (!this.canAccessAllProjects(role)) {
+      const associatedProjectIds = await this.getAssociatedProjectIds(userId);
 
-    if (associatedProjectIds.length === 0) {
-      return {
-        success: true,
-        projects: [],
-      };
+      if (associatedProjectIds.length === 0) {
+        return {
+          success: true,
+          projects: [],
+        };
+      }
+
+      query = query.in('id', associatedProjectIds);
     }
 
-    query = query.in('id', associatedProjectIds);
-  }
+    const { data, error } = await query;
 
-  const { data, error } = await query;
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
 
-  if (error) {
-    throw new InternalServerErrorException(error.message);
-  }
-
-  return {
-    success: true,
-    projects: data,
+    return {
+      success: true,
+      projects: data,
     };
   }
 
@@ -281,7 +281,7 @@ export class ProjectsService {
     };
   }
 
-    async findById(id: string, userId: string, role?: string | null) {
+  async findById(id: string, userId: string, role?: string | null) {
     await this.ensureProjectAccess(id, userId, role);
 
     const { data, error } = await this.supabase
@@ -297,8 +297,8 @@ export class ProjectsService {
     return {
       success: true,
       project: data,
-      };
-    }
+    };
+  }
 
   async deleteProject(projectId: string) {
     await this.ensureProjectExists(projectId);
@@ -367,7 +367,7 @@ export class ProjectsService {
     };
   }
 
-    async createTask(
+  async createTask(
     projectId: string,
     createTaskDto: CreateTaskDto,
     requestingUserId: string,
@@ -406,7 +406,7 @@ export class ProjectsService {
     };
   }
 
-    async findTasksByProject(
+  async findTasksByProject(
     projectId: string,
     userId: string,
     role?: string | null,
@@ -429,11 +429,7 @@ export class ProjectsService {
     };
   }
 
-    async findTaskById(
-    taskId: string,
-    userId: string,
-    role?: string | null,
-  ) {
+  async findTaskById(taskId: string, userId: string, role?: string | null) {
     const task = await this.ensureTaskAccess(taskId, userId, role);
 
     return {
@@ -442,7 +438,7 @@ export class ProjectsService {
     };
   }
 
-    async updateTaskStatus(
+  async updateTaskStatus(
     taskId: string,
     updateTaskStatusDto: UpdateTaskStatusDto,
     userId: string,
@@ -524,35 +520,31 @@ export class ProjectsService {
     };
   }
 
-  async findTaskHistory(
-  taskId: string,
-  userId: string,
-  role?: string | null,
-) {
-  await this.ensureTaskAccess(taskId, userId, role);
+  async findTaskHistory(taskId: string, userId: string, role?: string | null) {
+    await this.ensureTaskAccess(taskId, userId, role);
 
-  const { data, error } = await this.supabase
-    .from('project_status_history')
-    .select('*')
-    .eq('task_id', taskId)
-    .order('created_at', { ascending: false });
+    const { data, error } = await this.supabase
+      .from('project_status_history')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    throw new InternalServerErrorException(error.message);
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return {
+      success: true,
+      history: data,
+    };
   }
 
-  return {
-    success: true,
-    history: data,
-  };
-}
-
-   async addTaskComment(
+  async addTaskComment(
     taskId: string,
     userId: string,
     role: string | null,
     createTaskCommentDto: CreateTaskCommentDto,
-    ) {
+  ) {
     const { title, description } = createTaskCommentDto;
 
     await this.ensureUserExists(userId);
@@ -580,11 +572,7 @@ export class ProjectsService {
     };
   }
 
-      async findTaskComments(
-    taskId: string,
-    userId: string,
-    role?: string | null,
-  ) {
+  async findTaskComments(taskId: string, userId: string, role?: string | null) {
     await this.ensureTaskAccess(taskId, userId, role);
 
     const { data, error } = await this.supabase
@@ -604,80 +592,80 @@ export class ProjectsService {
   }
 
   async addProjectMember(
-  projectId: string,
-  addProjectMemberDto: AddProjectMemberDto,
+    projectId: string,
+    addProjectMemberDto: AddProjectMemberDto,
   ) {
-  const { userId, projectRole } = addProjectMemberDto;
+    const { userId, projectRole } = addProjectMemberDto;
 
-  await this.ensureProjectExists(projectId);
-  await this.ensureUserExists(userId);
+    await this.ensureProjectExists(projectId);
+    await this.ensureUserExists(userId);
 
-  const { data, error } = await this.supabase
-    .from('project_members')
-    .insert({
-      project_id: projectId,
-      user_id: userId,
-      project_role: projectRole,
-    })
-    .select()
-    .single();
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .insert({
+        project_id: projectId,
+        user_id: userId,
+        project_role: projectRole,
+      })
+      .select()
+      .single();
 
-  if (error) {
-    throw new InternalServerErrorException(error.message);
-  }
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
 
-  return {
-    success: true,
-    message: 'Miembro agregado correctamente al proyecto',
-    member: data,
+    return {
+      success: true,
+      message: 'Miembro agregado correctamente al proyecto',
+      member: data,
     };
   }
 
   async findProjectMembers(
-  projectId: string,
-  userId: string,
-  role?: string | null,
+    projectId: string,
+    userId: string,
+    role?: string | null,
   ) {
-  await this.ensureProjectAccess(projectId, userId, role);
+    await this.ensureProjectAccess(projectId, userId, role);
 
-  const { data, error } = await this.supabase
-    .from('project_members')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('joined_at', { ascending: false });
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('joined_at', { ascending: false });
 
-  if (error) {
-    throw new InternalServerErrorException(error.message);
-  }
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
 
-  return {
-    success: true,
-    members: data,
+    return {
+      success: true,
+      members: data,
     };
   }
 
   async removeProjectMember(projectId: string, userId: string) {
-  await this.ensureProjectExists(projectId);
-  await this.ensureUserExists(userId);
+    await this.ensureProjectExists(projectId);
+    await this.ensureUserExists(userId);
 
-  const { data, error } = await this.supabase
-    .from('project_members')
-    .delete()
-    .eq('project_id', projectId)
-    .eq('user_id', userId)
-    .select();
+    const { data, error } = await this.supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .select();
 
-  if (error) {
-    throw new InternalServerErrorException(error.message);
-  }
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
 
-  if (!data || data.length === 0) {
-    throw new NotFoundException('Miembro no encontrado en el proyecto');
-  }
+    if (!data || data.length === 0) {
+      throw new NotFoundException('Miembro no encontrado en el proyecto');
+    }
 
-  return {
-    success: true,
-    message: 'Miembro eliminado correctamente del proyecto',
+    return {
+      success: true,
+      message: 'Miembro eliminado correctamente del proyecto',
     };
   }
 }
