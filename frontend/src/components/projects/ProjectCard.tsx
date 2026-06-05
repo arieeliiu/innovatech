@@ -1,15 +1,5 @@
 import { ProgressBar } from '../ui/ProgressBar';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  progress: number;
-  start_date: string;
-  end_date: string;
-  main_responsible_id: string;
-};
+import type { Project } from '../../types';
 
 type ProjectCardProps = {
   project: Project;

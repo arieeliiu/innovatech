@@ -6,24 +6,7 @@ import { ProjectCard } from '../../components/projects/ProjectCard';
 import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
 import { getStoredRole, getStoredUserId, isAdminRole } from '../../lib/auth';
 import { getPermissions } from '../../lib/permissions';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  progress: number;
-  start_date: string;
-  end_date: string;
-  main_responsible_id: string;
-};
-
-type User = {
-  id: string;
-  name?: string;
-  email?: string;
-  role?: string;
-};
+import type { Project, User } from '../../types';
 
 export default function ProjectsPage() {
   const router = useRouter();

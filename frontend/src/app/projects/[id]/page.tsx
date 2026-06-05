@@ -25,44 +25,7 @@ import {
   canViewTaskBoard,
   getPermissions,
 } from '../../../lib/permissions';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  progress: number;
-  start_date: string;
-  end_date: string;
-  main_responsible_id: string;
-};
-
-type Task = {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string;
-  responsible_id: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
-  progress: number;
-  start_date: string;
-  end_date: string;
-};
-
-type User = {
-  id: string;
-  name?: string;
-  email?: string;
-  role?: string;
-};
-
-type ProjectMember = {
-  id: string;
-  project_id: string;
-  user_id: string;
-  project_role: string;
-  joined_at: string;
-};
+import type { Project, ProjectMember, Task, User } from '../../../types';
 
 const columns = [
   { title: 'Por hacer', status: 'TODO' },
