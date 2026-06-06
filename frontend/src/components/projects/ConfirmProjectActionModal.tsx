@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
+
 type ConfirmProjectActionModalProps = {
   title: string;
-  description: React.ReactNode;
+  description: ReactNode;
   confirmationLabel: string;
   confirmationValue: string;
   error: string;
