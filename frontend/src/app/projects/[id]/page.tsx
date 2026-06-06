@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ProjectHeader } from '../../../components/projects/ProjectHeader';
-import { ProgressBar } from '../../../components/ui/ProgressBar';
 import { ProjectMembersPanel } from '../../../components/projects/ProjectMembersPanel';
 import { ProjectTaskBoard } from '../../../components/projects/ProjectTaskBoard';
 import {
