@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ProjectHeader } from '../../../components/projects/ProjectHeader';
 import { ProjectMembersPanel } from '../../../components/projects/ProjectMembersPanel';
 import { ProjectTaskBoard } from '../../../components/projects/ProjectTaskBoard';
+import { ConfirmProjectActionModal } from '../../../components/projects/ConfirmProjectActionModal';
 import {
   addProjectMember,
   deleteProject,
@@ -313,112 +314,50 @@ export default function ProjectDetailPage() {
         )}
 
         {showDeleteModal && canDeleteCurrentProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-slate-900">
-                Eliminar proyecto
-              </h2>
-
-              <p className="mt-3 text-sm text-slate-600">
+          <ConfirmProjectActionModal
+            title="Eliminar proyecto"
+            description={
+              <p>
                 Para eliminar este proyecto{' '}
-                <strong className="text-slate-900">{project.name}</strong>,
-                escribe <strong className="text-slate-900">eliminar</strong>.
+                <strong className="text-slate-900">{project.name}</strong>.
               </p>
-
-              <input
-                className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-red-500"
-                value={deleteConfirmation}
-                onChange={(event) => setDeleteConfirmation(event.target.value)}
-                placeholder="Escribe eliminar"
-              />
-
-              {deleteError && (
-                <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
-                  {deleteError}
-                </p>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeDeleteModal}
-                  className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDeleteProject}
-                  disabled={
-                    isDeleting ||
-                    deleteConfirmation.trim().toLowerCase() !== 'eliminar'
-                  }
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
-                >
-                  {isDeleting ? 'Eliminando...' : 'Confirmar eliminación'}
-                </button>
-              </div>
-            </div>
-          </div>
+            }
+            confirmationLabel="eliminar"
+            confirmationValue={deleteConfirmation}
+            error={deleteError}
+            isLoading={isDeleting}
+            confirmButtonLabel="Confirmar eliminación"
+            loadingButtonLabel="Eliminando..."
+            variant="danger"
+            onConfirmationChange={setDeleteConfirmation}
+            onCancel={closeDeleteModal}
+            onConfirm={handleDeleteProject}
+          />
         )}
 
         {showFinalizeModal && canFinalizeCurrentProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-slate-900">
-                Finalizar proyecto
-              </h2>
-
-              <p className="mt-3 text-sm text-slate-600">
-                Al finalizar{' '}
-                <strong className="text-slate-900">{project.name}</strong>, se
-                removerán todos los miembros del proyecto.
-              </p>
-
-              <p className="mt-3 text-sm text-slate-600">
-                Para confirmar, escribe{' '}
-                <strong className="text-slate-900">finalizar</strong>.
-              </p>
-
-              <input
-                className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-amber-500"
-                value={finalizeConfirmation}
-                onChange={(event) =>
-                  setFinalizeConfirmation(event.target.value)
-                }
-                placeholder="Escribe finalizar"
-              />
-
-              {finalizeError && (
-                <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
-                  {finalizeError}
+          <ConfirmProjectActionModal
+            title="Finalizar proyecto"
+            description={
+              <>
+                <p>
+                  Al finalizar{' '}
+                  <strong className="text-slate-900">{project.name}</strong>, se
+                  removerán todos los miembros del proyecto.
                 </p>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeFinalizeModal}
-                  className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleFinalizeProject}
-                  disabled={
-                    isFinalizing ||
-                    finalizeConfirmation.trim().toLowerCase() !== 'finalizar'
-                  }
-                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
-                >
-                  {isFinalizing ? 'Finalizando...' : 'Confirmar finalización'}
-                </button>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+            confirmationLabel="finalizar"
+            confirmationValue={finalizeConfirmation}
+            error={finalizeError}
+            isLoading={isFinalizing}
+            confirmButtonLabel="Confirmar finalización"
+            loadingButtonLabel="Finalizando..."
+            variant="warning"
+            onConfirmationChange={setFinalizeConfirmation}
+            onCancel={closeFinalizeModal}
+            onConfirm={handleFinalizeProject}
+          />
         )}
         {canViewTasks && (
           <ProjectTaskBoard tasks={tasks} getUserName={getUserName} />
