@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ProjectHeader } from '../../../components/projects/ProjectHeader';
 import { ProgressBar } from '../../../components/ui/ProgressBar';
+import { ProjectMembersPanel } from '../../../components/projects/ProjectMembersPanel';
 import {
   addProjectMember,
   deleteProject,
@@ -301,111 +302,20 @@ export default function ProjectDetailPage() {
         />
 
         {canViewMembers && (
-          <div
-            id="members-section"
-            className="mt-8 rounded-xl bg-white p-6 shadow"
-          >
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">
-                  Miembros del proyecto
-                </h2>
-
-                <p className="mt-1 text-slate-600">
-                  {canManageMembers
-                    ? 'Gestiona los miembros del equipo del proyecto.'
-                    : 'Consulta los miembros asociados al proyecto.'}
-                </p>
-              </div>
-
-              {canManageMembers && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddMemberForm(!showAddMemberForm)}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800"
-                >
-                  {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
-                </button>
-              )}
-            </div>
-
-            {memberError && (
-              <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
-                {memberError}
-              </div>
-            )}
-
-            {showAddMemberForm && canManageMembers && (
-              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-900">
-                      Usuario
-                    </label>
-
-                    <select
-                      value={selectedMemberId}
-                      onChange={(e) => setSelectedMemberId(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
-                    >
-                      <option value="">Selecciona un usuario</option>
-
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name || user.email} ({user.role})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddMember}
-                    disabled={loadingAddMember}
-                    className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {members.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-slate-500">
-                  No hay miembros en este proyecto.
-                </p>
-              ) : (
-                members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        {getUserName(member.user_id)}
-                      </p>
-
-                      <p className="text-sm text-slate-500">
-                        Rol: {member.project_role} · Unido:{' '}
-                        {new Date(member.joined_at).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    {canManageMembers && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(member.user_id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <ProjectMembersPanel
+            members={members}
+            users={users}
+            canManageMembers={canManageMembers}
+            showAddMemberForm={showAddMemberForm}
+            selectedMemberId={selectedMemberId}
+            loadingAddMember={loadingAddMember}
+            memberError={memberError}
+            onToggleAddMemberForm={() => setShowAddMemberForm(!showAddMemberForm)}
+            onSelectedMemberChange={setSelectedMemberId}
+            onAddMember={handleAddMember}
+            onRemoveMember={handleRemoveMember}
+            getUserName={getUserName}
+          />
         )}
 
         {showDeleteModal && canDeleteCurrentProject && (
