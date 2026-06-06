@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { ProjectHeader } from '../../../components/projects/ProjectHeader';
 import { ProgressBar } from '../../../components/ui/ProgressBar';
 import {
   addProjectMember,
@@ -13,11 +14,7 @@ import {
   getUsers,
   removeProjectMember,
 } from '../../../lib/api';
-import { formatDateShort } from '../../../lib/date';
-import {
-  getStoredRole,
-  getStoredUserId,
-} from '../../../lib/auth';
+import { getStoredRole, getStoredUserId } from '../../../lib/auth';
 import {
   canManageProjectMembers,
   canViewProjectDetail,
@@ -293,96 +290,21 @@ export default function ProjectDetailPage() {
   return (
     <main className="min-h-screen bg-slate-100 p-8">
       <section className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => router.push('/projects')}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow transition hover:bg-slate-50"
-          >
-            Volver a proyectos
-          </button>
-
-          {(canFinalizeCurrentProject || canDeleteCurrentProject) && (
-            <div className="flex gap-2">
-              {canFinalizeCurrentProject && (
-                <button
-                  type="button"
-                  onClick={() => setShowFinalizeModal(true)}
-                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
-                >
-                  Finalizar proyecto
-                </button>
-              )}
-
-              {canDeleteCurrentProject && (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-                >
-                  Eliminar proyecto
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-xl bg-white p-6 shadow">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                {project.name}
-              </h1>
-
-              <p className="mt-2 max-w-3xl text-slate-600">
-                {project.description}
-              </p>
-            </div>
-
-            <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-              {project.status}
-            </span>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Fecha de inicio</p>
-
-              <p className="font-medium text-slate-900">
-                {formatDateShort(project.start_date)}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Fecha de término</p>
-
-              <p className="font-medium text-slate-900">
-                {formatDateShort(project.end_date)}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">
-                Responsable principal
-              </p>
-
-              <p className="font-medium text-slate-900">
-                {getUserName(project.main_responsible_id)}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <ProgressBar
-              value={project.progress}
-              label="Avance general"
-              size="md"
-            />
-          </div>
-        </div>
+        <ProjectHeader
+          project={project}
+          responsibleName={getUserName(project.main_responsible_id)}
+          canFinalizeProject={canFinalizeCurrentProject}
+          canDeleteProject={canDeleteCurrentProject}
+          onBack={() => router.push('/projects')}
+          onFinalize={() => setShowFinalizeModal(true)}
+          onDelete={() => setShowDeleteModal(true)}
+        />
 
         {canViewMembers && (
-          <div id="members-section" className="mt-8 rounded-xl bg-white p-6 shadow">
+          <div
+            id="members-section"
+            className="mt-8 rounded-xl bg-white p-6 shadow"
+          >
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
@@ -546,8 +468,8 @@ export default function ProjectDetailPage() {
 
               <p className="mt-3 text-sm text-slate-600">
                 Al finalizar{' '}
-                <strong className="text-slate-900">{project.name}</strong>,
-                se removerán todos los miembros del proyecto.
+                <strong className="text-slate-900">{project.name}</strong>, se
+                removerán todos los miembros del proyecto.
               </p>
 
               <p className="mt-3 text-sm text-slate-600">
@@ -637,41 +559,39 @@ export default function ProjectDetailPage() {
                         </p>
                       )}
 
-                        {columnTasks.map((task) => {
-                          return (
-                          <article
-                            key={task.id}
-                            className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-                          >
-                            <h4 className="font-semibold text-slate-900">
-                              {task.title}
-                            </h4>
+                      {columnTasks.map((task) => (
+                        <article
+                          key={task.id}
+                          className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                        >
+                          <h4 className="font-semibold text-slate-900">
+                            {task.title}
+                          </h4>
 
-                            <p className="mt-2 text-sm text-slate-600">
-                              {task.description}
+                          <p className="mt-2 text-sm text-slate-600">
+                            {task.description}
+                          </p>
+
+                          <div className="mt-4 text-xs text-slate-600">
+                            <p>
+                              <strong>Inicio:</strong> {task.start_date}
                             </p>
 
-                            <div className="mt-4 text-xs text-slate-600">
-                              <p>
-                                <strong>Inicio:</strong> {task.start_date}
-                              </p>
+                            <p>
+                              <strong>Término:</strong> {task.end_date}
+                            </p>
 
-                              <p>
-                                <strong>Término:</strong> {task.end_date}
-                              </p>
+                            <p>
+                              <strong>Responsable:</strong>{' '}
+                              {getUserName(task.responsible_id)}
+                            </p>
+                          </div>
 
-                              <p>
-                                <strong>Responsable:</strong>{' '}
-                                {getUserName(task.responsible_id)}
-                              </p>
-                            </div>
-
-                            <div className="mt-4">
-                              <ProgressBar value={task.progress} />
-                            </div>
-                          </article>
-                        );
-                      })}
+                          <div className="mt-4">
+                            <ProgressBar value={task.progress} />
+                          </div>
+                        </article>
+                      ))}
                     </div>
                   </section>
                 );
