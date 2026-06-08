@@ -40,22 +40,21 @@ export function ProjectMembersPanel({
 
   const availableUsers = users.filter(
     (user) =>
-      !memberUserIds.has(user.id) &&
-      assignableProjectRoles.has(user.role),
+      !memberUserIds.has(user.id) && assignableProjectRoles.has(user.role),
   );
 
   return (
     <div
       id="members-section"
-      className="mt-8 rounded-xl bg-white p-6 shadow"
+      className="mt-8 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
     >
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">
+          <h2 className="text-2xl font-bold text-[#F5F7FA]">
             Miembros del proyecto
           </h2>
 
-          <p className="mt-1 text-slate-600">
+          <p className="mt-1 text-[#AAB4C0]">
             {canManageMembers
               ? 'Gestiona los miembros del equipo del proyecto.'
               : 'Consulta los miembros asociados al proyecto.'}
@@ -66,7 +65,7 @@ export function ProjectMembersPanel({
           <button
             type="button"
             onClick={onToggleAddMemberForm}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800"
+            className="rounded-lg border border-[#52E0DC]/40 bg-[#52E0DC]/10 px-4 py-2 font-semibold text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22]"
           >
             {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
           </button>
@@ -74,23 +73,23 @@ export function ProjectMembersPanel({
       </div>
 
       {memberError && (
-        <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
           {memberError}
         </div>
       )}
 
       {showAddMemberForm && canManageMembers && (
-        <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-6 rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-900">
+              <label className="mb-2 block text-sm font-medium text-[#F5F7FA]">
                 Usuario
               </label>
 
               <select
                 value={selectedMemberId}
                 onChange={(event) => onSelectedMemberChange(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
+                className="w-full rounded-lg border border-[#2A3B55] bg-[#162233] px-3 py-2 text-[#F5F7FA] outline-none transition focus:border-[#52E0DC]"
               >
                 <option value="">
                   {availableUsers.length > 0
@@ -110,7 +109,7 @@ export function ProjectMembersPanel({
               type="button"
               onClick={onAddMember}
               disabled={loadingAddMember || availableUsers.length === 0}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
+              className="w-full rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
             </button>
@@ -120,21 +119,21 @@ export function ProjectMembersPanel({
 
       <div className="space-y-2">
         {members.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-300 p-4 text-slate-500">
+          <p className="rounded-lg border border-dashed border-[#3A4A63] bg-[#1D2B42] p-4 text-[#AAB4C0]">
             No hay miembros en este proyecto.
           </p>
         ) : (
           members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
+              className="flex items-center justify-between rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4"
             >
               <div>
-                <p className="font-medium text-slate-900">
+                <p className="font-semibold text-[#F5F7FA]">
                   {getUserName(member.user_id)}
                 </p>
 
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[#AAB4C0]">
                   Rol: {member.project_role} · Unido:{' '}
                   {new Date(member.joined_at).toLocaleDateString()}
                 </p>
@@ -144,7 +143,7 @@ export function ProjectMembersPanel({
                 <button
                   type="button"
                   onClick={() => onRemoveMember(member.user_id)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-sm font-semibold text-red-300 transition hover:text-red-200"
                 >
                   Remover
                 </button>

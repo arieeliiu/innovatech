@@ -110,24 +110,31 @@ export default function AdminCreateProjectPage() {
     }
   }
 
+  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+
+  const inputClass =
+    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+
+  const dateInputClass = `${inputClass} calendar-accent`;
+
   return (
     <section>
-      <h1 className="text-3xl font-bold text-slate-900">Crear proyecto</h1>
+      <h1 className="text-3xl font-bold text-[#F5F7FA]">Crear proyecto</h1>
 
-      <p className="mt-2 text-slate-600">
+      <p className="mt-2 text-[#AAB4C0]">
         Registra un nuevo proyecto en la plataforma.
       </p>
 
       <form
         onSubmit={handleSubmit}
-        className="mt-8 max-w-xl space-y-4 rounded-xl bg-white p-6 shadow"
+        className="mt-8 max-w-xl space-y-4 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
       >
         <div>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             Nombre
           </label>
           <input
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+            className={inputClass}
             value={form.name}
             onChange={(event) =>
               setForm({ ...form, name: event.target.value })
@@ -137,11 +144,11 @@ export default function AdminCreateProjectPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             Descripción
           </label>
           <textarea
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+            className={inputClass}
             value={form.description}
             onChange={(event) =>
               setForm({ ...form, description: event.target.value })
@@ -151,12 +158,12 @@ export default function AdminCreateProjectPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             Fecha de inicio
           </label>
           <input
             type="date"
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+            className={dateInputClass}
             value={form.startDate}
             onChange={(event) =>
               setForm({ ...form, startDate: event.target.value })
@@ -168,12 +175,12 @@ export default function AdminCreateProjectPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             Fecha de término
           </label>
           <input
             type="date"
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+            className={dateInputClass}
             value={form.endDate}
             onChange={(event) =>
               setForm({ ...form, endDate: event.target.value })
@@ -185,12 +192,12 @@ export default function AdminCreateProjectPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             Responsable del proyecto
           </label>
 
           <select
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+            className={inputClass}
             value={form.managerId}
             onChange={(event) =>
               setForm({ ...form, managerId: event.target.value })
@@ -210,20 +217,20 @@ export default function AdminCreateProjectPage() {
           </select>
 
           {!loadingUsers && managers.length === 0 && (
-            <p className="mt-2 text-sm text-red-700">
+            <p className="mt-2 text-sm text-red-300">
               No hay gestores disponibles para asignar como responsable.
             </p>
           )}
         </div>
 
         {error && (
-          <p className="rounded-lg bg-red-100 p-3 text-red-700">
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
             {error}
           </p>
         )}
 
         {message && (
-          <p className="rounded-lg bg-green-100 p-3 text-green-700">
+          <p className="rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">
             {message}
           </p>
         )}
@@ -232,7 +239,7 @@ export default function AdminCreateProjectPage() {
           <button
             type="submit"
             disabled={saving || loadingUsers || managers.length === 0}
-            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Creando...' : 'Crear proyecto'}
           </button>
@@ -240,12 +247,21 @@ export default function AdminCreateProjectPage() {
           <button
             type="button"
             onClick={() => router.push('/admin/projects')}
-            className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-white/10 bg-[#162233] px-4 py-2 font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]"
           >
             Cancelar
           </button>
         </div>
       </form>
+
+      <style jsx global>{`
+        .calendar-accent::-webkit-calendar-picker-indicator {
+          cursor: pointer;
+          opacity: 1;
+          filter: invert(78%) sepia(56%) saturate(559%) hue-rotate(129deg)
+            brightness(96%) contrast(94%);
+        }
+      `}</style>
     </section>
   );
 }

@@ -34,33 +34,35 @@ export function ConfirmProjectActionModal({
 
   const buttonClasses =
     variant === 'danger'
-      ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-300'
-      : 'bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300';
+      ? 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/40'
+      : 'border border-amber-400/30 bg-amber-400/15 text-amber-300 hover:bg-amber-400 hover:text-[#171C22] disabled:bg-amber-400/10 disabled:text-amber-300/40';
 
   const focusBorderClass =
-    variant === 'danger' ? 'focus:border-red-500' : 'focus:border-amber-500';
+    variant === 'danger' ? 'focus:border-red-400' : 'focus:border-amber-400';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
+        <h2 className="text-xl font-bold text-[#F5F7FA]">{title}</h2>
 
-        <div className="mt-3 text-sm text-slate-600">{description}</div>
+        <div className="mt-3 text-sm leading-6 text-[#AAB4C0]">
+          {description}
+        </div>
 
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-[#AAB4C0]">
           Para confirmar, escribe{' '}
-          <strong className="text-slate-900">{confirmationLabel}</strong>.
+          <strong className="text-[#F5F7FA]">{confirmationLabel}</strong>.
         </p>
 
         <input
-          className={`mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none ${focusBorderClass}`}
+          className={`mt-4 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 ${focusBorderClass}`}
           value={confirmationValue}
           onChange={(event) => onConfirmationChange(event.target.value)}
           placeholder={`Escribe ${confirmationLabel}`}
         />
 
         {error && (
-          <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+          <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
             {error}
           </p>
         )}
@@ -69,7 +71,7 @@ export function ConfirmProjectActionModal({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+            className="rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]"
           >
             Cancelar
           </button>
@@ -78,7 +80,7 @@ export function ConfirmProjectActionModal({
             type="button"
             onClick={onConfirm}
             disabled={isLoading || !isConfirmed}
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed ${buttonClasses}`}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed ${buttonClasses}`}
           >
             {isLoading ? loadingButtonLabel : confirmButtonLabel}
           </button>
