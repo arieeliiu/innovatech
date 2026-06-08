@@ -15,14 +15,14 @@ export function ProgressBar({
 
   return (
     <div>
-      <div className="mb-1 flex justify-between text-sm text-slate-700">
+      <div className="mb-1 flex justify-between text-sm text-[#AAB4C0]">
         <span>{label}</span>
         <span>{progress}%</span>
       </div>
 
-      <div className={`${barHeight} rounded-full bg-slate-200`}>
+      <div className={`${barHeight} rounded-full bg-[#24344F]`}>
         <div
-          className={`${barHeight} rounded-full bg-slate-900`}
+          className={`${barHeight} rounded-full bg-[#52E0DC]`}
           style={{ width: `${progress}%` }}
         />
       </div>

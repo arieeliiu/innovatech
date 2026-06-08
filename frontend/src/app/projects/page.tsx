@@ -113,11 +113,11 @@ export default function ProjectsPage() {
       <section className="mx-auto max-w-6xl">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="text-3xl font-bold text-[#F5F7FA]">
               Gestión de proyectos
             </h1>
 
-            <p className="mt-2 text-slate-600">
+            <p className="mt-2 text-[#AAB4C0]">
               Listado de proyectos registrados en Innovatech Solutions.
             </p>
           </div>
@@ -126,7 +126,7 @@ export default function ProjectsPage() {
             <button
               type="button"
               onClick={() => router.push('/projects/create')}
-              className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+              className="rounded-lg bg-[#162233] px-5 py-2 font-medium text-[#F5F7FA] transition hover:bg-[#24344F]"
             >
               Crear proyecto
             </button>
@@ -140,11 +140,11 @@ export default function ProjectsPage() {
         )}
 
         {isLoading && (
-          <p className="mt-8 text-slate-600">Cargando proyectos...</p>
+          <p className="mt-8 text-[#F5F7FA]">Cargando proyectos...</p>
         )}
 
         {!error && !isLoading && projects.length === 0 && (
-          <div className="mt-8 rounded-xl bg-white p-6 text-slate-600 shadow">
+          <div className="mt-8 rounded-xl bg-[#162233] p-6 text-[#AAB4C0] shadow">
             No hay proyectos disponibles para tu usuario.
           </div>
         )}
@@ -152,11 +152,11 @@ export default function ProjectsPage() {
         {!error && !isLoading && activeProjects.length > 0 && (
           <section className="mt-8">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-[#F5F7FA]">
                 Proyectos activos
               </h2>
 
-              <p className="mt-1 text-slate-600">
+              <p className="mt-1 text-[#AAB4C0]">
                 Proyectos en curso o pendientes de ejecución.
               </p>
             </div>
@@ -183,11 +183,11 @@ export default function ProjectsPage() {
         {!error && !isLoading && finishedProjects.length > 0 && (
           <section className="mt-10">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-[#F5F7FA]">
                 Proyectos finalizados
               </h2>
 
-              <p className="mt-1 text-slate-600">
+              <p className="mt-1 text-[#AAB4C0]">
                 Historial de proyectos cerrados.
               </p>
             </div>

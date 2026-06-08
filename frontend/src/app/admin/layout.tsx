@@ -37,8 +37,8 @@ export default function AdminLayout({
     const isActive = matcher.test(pathname);
 
     return isActive
-      ? 'block rounded-lg border-l-4 border-slate-900 bg-slate-200 px-3 py-2 text-sm font-medium text-slate-900'
-      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-normal text-slate-700 transition hover:bg-slate-100';
+      ? 'block rounded-lg border-l-4 border-[#52E0DC] bg-[#52E0DC]/10 px-3 py-2 text-sm font-semibold text-[#F5F7FA]'
+      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]';
   }
 
   useEffect(() => {
@@ -66,12 +66,14 @@ export default function AdminLayout({
   }
 
   return (
-    <main className="flex min-h-screen bg-[#1F2E49] text-[#EEFAFA]">
-      <aside className="w-64 border-r border-slate-200 bg-white p-6">
-        <h1 className="text-xl font-bold">Innovatech Solutions</h1>
+    <main className="flex min-h-screen bg-[#1F2E49] text-[#F5F7FA]">
+      <aside className="w-64 border-r border-white/10 bg-[#171C22] p-6">
+        <h1 className="text-xl font-bold text-[#52E0DC]">
+          Innovatech Solutions
+        </h1>
 
         <nav className="mt-8 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
             Panel de Administración
           </p>
 
@@ -82,7 +84,7 @@ export default function AdminLayout({
             Dashboard
           </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
             Gestión
           </p>
 
