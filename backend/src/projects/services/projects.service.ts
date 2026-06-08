@@ -192,6 +192,14 @@ export class ProjectsService {
       .select('*')
       .order('created_at', { ascending: false });
 
+    const normalizedRole = normalizeRole(role);
+    const canSeeFinishedProjects =
+      normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER';
+
+    if (!canSeeFinishedProjects) {
+      query = query.neq('status', 'DONE');
+    }
+
     if (!this.canAccessAllProjects(role)) {
       const associatedProjectIds = await this.getAssociatedProjectIds(userId);
 
@@ -387,7 +395,7 @@ export class ProjectsService {
         'No se pueden crear tareas en un proyecto finalizado',
       );
     }
-    
+
     await this.ensureUserExists(responsibleId);
     await this.ensureUserIsProjectMember(projectId, responsibleId);
 
