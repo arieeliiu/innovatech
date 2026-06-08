@@ -371,6 +371,23 @@ export class ProjectsService {
       createTaskDto;
 
     await this.ensureProjectAccess(projectId, requestingUserId, role);
+
+    const { data: projectData, error: projectError } = await this.supabase
+      .from('projects')
+      .select('id, status')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !projectData) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    if (projectData.status === 'DONE') {
+      throw new BadRequestException(
+        'No se pueden crear tareas en un proyecto finalizado',
+      );
+    }
+    
     await this.ensureUserExists(responsibleId);
     await this.ensureUserIsProjectMember(projectId, responsibleId);
 
