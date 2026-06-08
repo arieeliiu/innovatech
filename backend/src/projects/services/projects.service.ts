@@ -255,10 +255,9 @@ export class ProjectsService {
     }
 
     const { error: historyErr } = await this.supabase
-      .from('project_status_history')
+      .from('project_history')
       .insert({
         project_id: projectId,
-        task_id: null,
         previous_status: previousStatus,
         new_status: 'DONE',
         changed_by: userId,
