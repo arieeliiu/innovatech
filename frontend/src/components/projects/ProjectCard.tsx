@@ -16,7 +16,7 @@ function getStatusBadgeClasses(status: string) {
     return 'border border-amber-400/30 bg-amber-400/15 text-amber-300';
   }
 
-  return 'border border-white/10 bg-[#162233] text-[#AAB4C0]';
+  return 'border border-[#2A3B55] bg-[#162233] text-[#AAB4C0]';
 }
 
 function getStatusLabel(status: string) {
@@ -33,7 +33,7 @@ export function ProjectCard({
   onViewDetail,
 }: ProjectCardProps) {
   return (
-    <article className="rounded-xl border border-white/10 bg-[#171C22] p-5 shadow-lg transition hover:-translate-y-0.5 hover:border-[#52E0DC]/40 hover:shadow-xl">
+    <article className="rounded-xl border border-[#2A3B55] bg-[#171C22] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:border-[#52E0DC]/40">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-xl font-semibold text-[#F5F7FA]">
           {project.name}

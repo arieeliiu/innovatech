@@ -176,8 +176,8 @@ export default function ProfileTopbar() {
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-white/10 bg-[#171C22] shadow-lg">
-                <div className="border-b border-slate-100 px-4 py-3">
+              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[#2A3B55] bg-[#171C22] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+                <div className="border-b border-[#2A3B55] px-4 py-3">
                   <p className="text-xs uppercase tracking-wide text-[#AAB4C0]">
                     Mi cuenta
                   </p>
@@ -193,7 +193,7 @@ export default function ProfileTopbar() {
                       setNotice('Perfil disponible pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0]  hover:bg-[#162233]"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
                   >
                     Perfil
                   </button>
@@ -204,7 +204,7 @@ export default function ProfileTopbar() {
                       setNotice('Configuraciones disponibles pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0]  hover:bg-[#162233]"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
                   >
                     Configuraciones
                   </button>
@@ -215,7 +215,7 @@ export default function ProfileTopbar() {
                       setNotice('Cambio de contraseña disponible pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0]  hover:bg-slate-100"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
                   >
                     Cambiar contraseña
                   </button>
@@ -231,7 +231,7 @@ export default function ProfileTopbar() {
                   )}
                 </div>
 
-                <div className="border-t border-slate-100 p-2">
+                <div className="border-t border-[#2A3B55] p-2">
                   <button
                     type="button"
                     onClick={logout}

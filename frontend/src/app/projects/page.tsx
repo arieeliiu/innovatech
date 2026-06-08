@@ -109,7 +109,7 @@ export default function ProjectsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-100 p-8">
+    <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
       <section className="mx-auto max-w-6xl">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -134,7 +134,7 @@ export default function ProjectsPage() {
         </div>
 
         {error && (
-          <p className="mt-4 rounded-lg bg-red-100 p-3 text-red-700">
+          <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
             {error}
           </p>
         )}
@@ -144,7 +144,7 @@ export default function ProjectsPage() {
         )}
 
         {!error && !isLoading && projects.length === 0 && (
-          <div className="mt-8 rounded-xl bg-[#162233] p-6 text-[#AAB4C0] shadow">
+          <div className="mt-8 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
             No hay proyectos disponibles para tu usuario.
           </div>
         )}

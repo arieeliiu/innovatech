@@ -246,14 +246,14 @@ export default function ProjectDetailPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-slate-100 p-8">
+      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
         <section className="mx-auto max-w-6xl">
-          <p className="rounded-lg bg-red-100 p-4 text-red-700">{error}</p>
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>
 
           <button
             type="button"
             onClick={() => router.push('/projects')}
-            className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white"
+            className="mt-4 rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
           >
             Volver a proyectos
           </button>
@@ -264,9 +264,9 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <main className="min-h-screen bg-slate-100 p-8">
+      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
         <section className="mx-auto max-w-6xl">
-          <p className="text-slate-600">Cargando proyecto...</p>
+          <p className="text-[#AAB4C0]">Cargando proyecto...</p>
         </section>
       </main>
     );
@@ -286,7 +286,7 @@ export default function ProjectDetailPage() {
   const canFinalizeCurrentProject = permissions.canFinalizeProject;
 
   return (
-    <main className="min-h-screen bg-slate-100 p-8">
+    <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
       <section className="mx-auto max-w-7xl">
         <ProjectHeader
           project={project}
@@ -321,7 +321,7 @@ export default function ProjectDetailPage() {
             description={
               <p>
                 Para eliminar este proyecto{' '}
-                <strong className="text-slate-900">{project.name}</strong>.
+                <strong className="text-[#F5F7FA]">{project.name}</strong>.
               </p>
             }
             confirmationLabel="eliminar"
@@ -344,7 +344,7 @@ export default function ProjectDetailPage() {
               <>
                 <p>
                   Al finalizar{' '}
-                  <strong className="text-slate-900">{project.name}</strong>, se
+                  <strong className="text-[#F5F7FA]">{project.name}</strong>, se
                   removerán todos los miembros del proyecto.
                 </p>
               </>

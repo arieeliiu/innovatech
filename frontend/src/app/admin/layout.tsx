@@ -55,7 +55,7 @@ export default function AdminLayout({
 
   if (isChecking) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-700">
+      <main className="flex min-h-screen items-center justify-center bg-[#1F2E49] text-[#AAB4C0]">
         Validando permisos...
       </main>
     );
