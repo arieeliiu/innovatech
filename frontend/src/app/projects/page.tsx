@@ -102,6 +102,11 @@ export default function ProjectsPage() {
 
   const permissions = getPermissions(role);
   const canCreateProject = permissions.canCreateProject;
+  const activeProjects = projects.filter((project) => project.status !== 'DONE');
+
+  const finishedProjects = projects.filter(
+    (project) => project.status === 'DONE',
+  );
 
   return (
     <main className="min-h-screen bg-slate-100 p-8">
@@ -144,22 +149,67 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {projects.map((project) => {
-            const responsibleName = getResponsibleName(
-              project.main_responsible_id,
-            );
+        {!error && !isLoading && activeProjects.length > 0 && (
+          <section className="mt-8">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Proyectos activos
+              </h2>
 
-            return (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                responsibleName={responsibleName}
-                onViewDetail={() => router.push(getProjectRoute(project.id))}
-              />
-            );
-          })}
-        </div>
+              <p className="mt-1 text-slate-600">
+                Proyectos en curso o pendientes de ejecución.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {activeProjects.map((project) => {
+                const responsibleName = getResponsibleName(
+                  project.main_responsible_id,
+                );
+
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    responsibleName={responsibleName}
+                    onViewDetail={() => router.push(getProjectRoute(project.id))}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {!error && !isLoading && finishedProjects.length > 0 && (
+          <section className="mt-10">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Proyectos finalizados
+              </h2>
+
+              <p className="mt-1 text-slate-600">
+                Historial de proyectos cerrados.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {finishedProjects.map((project) => {
+                const responsibleName = getResponsibleName(
+                  project.main_responsible_id,
+                );
+
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    responsibleName={responsibleName}
+                    onViewDetail={() => router.push(getProjectRoute(project.id))}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
       </section>
     </main>
   );
