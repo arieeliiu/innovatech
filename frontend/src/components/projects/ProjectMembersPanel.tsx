@@ -102,7 +102,7 @@ export function ProjectMembersPanel({
                   <option key={user.id} value={user.id}>
                     {user.name || user.email} ({user.role})
                   </option>
-                ))}ProjectMembersPanel
+                ))}
               </select>
             </div>
 
