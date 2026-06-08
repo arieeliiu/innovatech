@@ -217,9 +217,11 @@ export default function ProjectDetailPage() {
       await finalizeProject(project.id);
 
       router.push('/projects');
-    } catch {
-      setFinalizeError('No se pudo finalizar el proyecto');
-    } finally {
+      } catch (err) {
+        setFinalizeError(
+          err instanceof Error ? err.message : 'No se pudo finalizar el proyecto',
+        );
+      } finally {
       setIsFinalizing(false);
     }
   }

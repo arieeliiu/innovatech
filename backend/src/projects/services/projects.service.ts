@@ -218,68 +218,63 @@ export class ProjectsService {
   }
 
   async finalizeProject(projectId: string, userId: string, comment?: string) {
-    await this.ensureProjectExists(projectId);
-    await this.ensureUserExists(userId);
+  await this.ensureProjectExists(projectId);
+  await this.ensureUserExists(userId);
 
-    const { data: projectData, error: projectErr } = await this.supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .single();
+  const { data: projectData, error: projectErr } = await this.supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single();
 
-    if (projectErr || !projectData) {
-      throw new NotFoundException('Proyecto no encontrado');
-    }
-
-    const previousStatus = projectData.status;
-
-    const { data: updatedProject, error: updateErr } = await this.supabase
-      .from('projects')
-      .update({
-        status: 'DONE',
-        progress: 100,
-        end_date: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', projectId)
-      .select()
-      .single();
-
-    if (updateErr) {
-      throw new InternalServerErrorException(updateErr.message);
-    }
-
-    // remove all members from project
-    const { error: membersErr } = await this.supabase
-      .from('project_members')
-      .delete()
-      .eq('project_id', projectId);
-
-    if (membersErr) {
-      throw new InternalServerErrorException(membersErr.message);
-    }
-
-    const { error: historyErr } = await this.supabase
-      .from('project_status_history')
-      .insert({
-        project_id: projectId,
-        task_id: null,
-        previous_status: previousStatus,
-        new_status: 'DONE',
-        changed_by: userId,
-        comment: comment ?? 'Proyecto finalizado',
-      });
-
-    if (historyErr) {
-      throw new InternalServerErrorException(historyErr.message);
-    }
-
-    return {
-      success: true,
-      message: 'Proyecto finalizado correctamente',
-      project: updatedProject,
-    };
+  if (projectErr || !projectData) {
+    throw new NotFoundException('Proyecto no encontrado');
   }
+
+  if (projectData.status === 'DONE') {
+    throw new BadRequestException('El proyecto ya se encuentra finalizado');
+  }
+
+  const previousStatus = projectData.status;
+  const currentDate = new Date().toISOString().split('T')[0];
+
+  const { data: updatedProject, error: updateErr } = await this.supabase
+    .from('projects')
+    .update({
+      status: 'DONE',
+      progress: 100,
+      end_date: currentDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', projectId)
+    .select()
+    .single();
+
+  if (updateErr) {
+    throw new InternalServerErrorException(updateErr.message);
+  }
+
+  const { error: historyErr } = await this.supabase
+    .from('project_status_history')
+    .insert({
+      project_id: projectId,
+      task_id: null,
+      previous_status: previousStatus,
+      new_status: 'DONE',
+      changed_by: userId,
+      comment: comment ?? 'Proyecto finalizado',
+    });
+
+  if (historyErr) {
+    throw new InternalServerErrorException(historyErr.message);
+  }
+
+  return {
+    success: true,
+    message: 'Proyecto finalizado correctamente',
+    project: updatedProject,
+  };
+}
 
   async findById(id: string, userId: string, role?: string | null) {
     await this.ensureProjectAccess(id, userId, role);
@@ -656,6 +651,13 @@ export class ProjectsService {
       .select();
 
     if (error) {
+      if (
+        error.code === '23505' ||
+        error.message.includes('project_members_project_id_user_id_key')
+      ) {
+        throw new BadRequestException('Este usuario ya pertenece al proyecto');
+      }
+
       throw new InternalServerErrorException(error.message);
     }
 
