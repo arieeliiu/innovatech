@@ -29,6 +29,21 @@ export function ProjectMembersPanel({
   onRemoveMember,
   getUserName,
 }: ProjectMembersPanelProps) {
+  const assignableProjectRoles = new Set([
+    'MANAGER',
+    'DEVELOPER',
+    'ARCHITECT',
+    'CONSULTANT',
+  ]);
+
+  const memberUserIds = new Set(members.map((member) => member.user_id));
+
+  const availableUsers = users.filter(
+    (user) =>
+      !memberUserIds.has(user.id) &&
+      assignableProjectRoles.has(user.role),
+  );
+
   return (
     <div
       id="members-section"
@@ -77,20 +92,24 @@ export function ProjectMembersPanel({
                 onChange={(event) => onSelectedMemberChange(event.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
               >
-                <option value="">Selecciona un usuario</option>
+                <option value="">
+                  {availableUsers.length > 0
+                    ? 'Selecciona un usuario'
+                    : 'No hay usuarios disponibles para agregar'}
+                </option>
 
-                {users.map((user) => (
+                {availableUsers.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name || user.email} ({user.role})
                   </option>
-                ))}
+                ))}ProjectMembersPanel
               </select>
             </div>
 
             <button
               type="button"
               onClick={onAddMember}
-              disabled={loadingAddMember}
+              disabled={loadingAddMember || availableUsers.length === 0}
               className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
             >
               {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
