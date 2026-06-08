@@ -14,7 +14,11 @@ import {
 } from '../../../lib/api';
 import { formatDateShort } from '../../../lib/date';
 
-type Project = { id: string; name: string };
+type Project = {
+  id: string;
+  name: string;
+  status?: string;
+};
 
 type User = { id: string; name?: string; email?: string; role?: string };
 
@@ -94,7 +98,15 @@ export default function AdminTasksPage() {
       setProjects(loadedProjects);
       setUsers(loadedUsers);
 
-      if (loadedProjects.length > 0) setSelectedProjectId(loadedProjects[0].id);
+      const activeLoadedProjects = loadedProjects.filter(
+        (project: Project) => project.status !== 'DONE',
+      );
+
+      if (activeLoadedProjects.length > 0) {
+        setSelectedProjectId(activeLoadedProjects[0].id);
+      } else {
+        setSelectedProjectId('');
+      }
     } catch {
       setError('No se pudieron cargar los datos iniciales');
     } finally {
@@ -125,7 +137,15 @@ export default function AdminTasksPage() {
     if (selectedProjectId) loadTasks(selectedProjectId);
   }, [selectedProjectId]);
 
-  const selectedProject = useMemo(() => projects.find((p) => p.id === selectedProjectId), [projects, selectedProjectId]);
+  const activeProjects = useMemo(
+      () => projects.filter((project) => project.status !== 'DONE'),
+      [projects],
+    );
+
+    const selectedProject = useMemo(
+      () => activeProjects.find((project) => project.id === selectedProjectId),
+      [activeProjects, selectedProjectId],
+    );
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -278,11 +298,11 @@ export default function AdminTasksPage() {
     );
   }
 
-  if (projects.length === 0) {
+  if (activeProjects.length === 0) {
     return (
       <section>
         <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
-        <div className="mt-6 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">No hay proyectos disponibles.</div>
+        <div className="mt-6 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">No hay proyectos activos disponibles para gestionar tareas.</div>
       </section>
     );
   }
@@ -301,7 +321,7 @@ export default function AdminTasksPage() {
       <div className="mt-6 max-w-xl">
         <label className={labelClass}>Proyecto</label>
         <select className={inputClass} value={selectedProjectId} onChange={(e)=>setSelectedProjectId(e.target.value)}>
-          {projects.map((project)=>(<option key={project.id} value={project.id}>{project.name}</option>))}
+          {activeProjects.map((project)=>(<option key={project.id} value={project.id}>{project.name}</option>))}
         </select>
       </div>
 
