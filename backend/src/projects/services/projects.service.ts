@@ -488,6 +488,7 @@ export class ProjectsService {
     await this.ensureUserExists(userId);
 
     const existingTask = await this.ensureTaskAccess(taskId, userId, role);
+    await this.ensureProjectIsNotFinished(existingTask.project_id);
     this.ensureUserCanUpdateTask(existingTask, userId, role);
 
     let newProgress = progress;
@@ -587,6 +588,7 @@ export class ProjectsService {
     const { title, description } = createTaskCommentDto;
 
     await this.ensureUserExists(userId);
+    const task = await this.ensureTaskAccess(taskId, userId, role);
     await this.ensureTaskAccess(taskId, userId, role);
 
     const { data, error } = await this.supabase
