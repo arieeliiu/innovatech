@@ -22,8 +22,9 @@ import { formatDateShort } from '../../../lib/date';
 type Project = {
   id: string;
   name: string;
+  status?: string;
+  main_responsible_id?: string;
 };
-
 type User = {
   id: string;
   name?: string;
@@ -124,8 +125,14 @@ export default function ProjectTasksPage() {
 
       setUsers(loadedUsers);
 
-      if (loadedProjects.length > 0) {
-        setSelectedProjectId(loadedProjects[0].id);
+      const activeLoadedProjects = normalizedProjects.filter(
+        (project: Project) => project.status !== 'DONE',
+      );
+
+      if (activeLoadedProjects.length > 0) {
+        setSelectedProjectId(activeLoadedProjects[0].id);
+      } else {
+        setSelectedProjectId('');
       }
     } catch {
       setError('No se pudieron cargar los datos iniciales');
@@ -164,9 +171,14 @@ export default function ProjectTasksPage() {
     }
   }, [selectedProjectId]);
 
+  const activeProjects = useMemo(
+    () => projects.filter((project) => project.status !== 'DONE'),
+    [projects],
+  );
+
   const selectedProject = useMemo(() => {
-    return projects.find((project) => project.id === selectedProjectId);
-  }, [projects, selectedProjectId]);
+    return activeProjects.find((project) => project.id === selectedProjectId);
+  }, [activeProjects, selectedProjectId]);
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -320,7 +332,7 @@ export default function ProjectTasksPage() {
     );
   }
 
-  if (projects.length === 0) {
+  if (activeProjects.length === 0) {
     return (
       <section>
         <h1 className="text-3xl font-bold text-[#F5F7FA]">
@@ -328,7 +340,7 @@ export default function ProjectTasksPage() {
         </h1>
 
         <div className="mt-6 rounded-xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-          No estás asociado a ningún proyecto.
+          No tienes proyectos activos disponibles para gestionar tareas.
         </div>
       </section>
     );
@@ -366,7 +378,7 @@ export default function ProjectTasksPage() {
           value={selectedProjectId}
           onChange={(event) => setSelectedProjectId(event.target.value)}
         >
-          {projects.map((project) => (
+          {activeProjects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
             </option>
