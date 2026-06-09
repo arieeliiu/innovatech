@@ -217,11 +217,11 @@ export default function ProjectDetailPage() {
       await finalizeProject(project.id);
 
       router.push('/projects');
-      } catch (err) {
-        setFinalizeError(
-          err instanceof Error ? err.message : 'No se pudo finalizar el proyecto',
-        );
-      } finally {
+    } catch (err) {
+      setFinalizeError(
+        err instanceof Error ? err.message : 'No se pudo finalizar el proyecto',
+      );
+    } finally {
       setIsFinalizing(false);
     }
   }
@@ -277,13 +277,16 @@ export default function ProjectDetailPage() {
     members.some((member) => member.user_id === currentUserId);
 
   const permissions = getPermissions(role);
+  const isProjectFinished = project.status === 'DONE';
 
-  const canManageMembers = canManageProjectMembers(role);
+  const canManageMembers =
+    canManageProjectMembers(role) && !isProjectFinished;
   const canViewMembers = canViewProjectMembers(role, isAssociatedProject);
   const canViewTasks = canViewTaskBoard(role, isAssociatedProject);
 
   const canDeleteCurrentProject = permissions.canDeleteProject;
-  const canFinalizeCurrentProject = permissions.canFinalizeProject;
+  const canFinalizeCurrentProject =
+    permissions.canFinalizeProject && !isProjectFinished;
 
   return (
     <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
@@ -345,7 +348,7 @@ export default function ProjectDetailPage() {
                 <p>
                   Al finalizar{' '}
                   <strong className="text-[#F5F7FA]">{project.name}</strong>, se
-                  removerán todos los miembros del proyecto.
+                  marcará como finalizado y quedará como historial.
                 </p>
               </>
             }
