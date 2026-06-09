@@ -588,8 +588,10 @@ export class ProjectsService {
     const { title, description } = createTaskCommentDto;
 
     await this.ensureUserExists(userId);
+
     const task = await this.ensureTaskAccess(taskId, userId, role);
-    await this.ensureTaskAccess(taskId, userId, role);
+
+    await this.ensureProjectIsNotFinished(task.project_id);
 
     const { data, error } = await this.supabase
       .from('task_comments')
