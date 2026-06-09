@@ -135,6 +135,26 @@ export class ProjectsService {
     }
   }
 
+  private async ensureProjectIsNotFinished(projectId: string) {
+    const { data, error } = await this.supabase
+      .from('projects')
+      .select('id, status')
+      .eq('id', projectId)
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    if (data.status === 'DONE') {
+      throw new BadRequestException(
+        'No se pueden modificar tareas de un proyecto finalizado',
+      );
+    }
+
+    return data;
+  }
+
   private async ensureUserIsProjectMember(projectId: string, userId: string) {
     const { data, error } = await this.supabase
       .from('project_members')
