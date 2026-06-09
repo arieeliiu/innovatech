@@ -68,9 +68,13 @@ export default function AdminLayout({
   return (
     <main className="flex min-h-screen bg-[#1F2E49] text-[#F5F7FA]">
       <aside className="w-64 border-r border-white/10 bg-[#171C22] p-6">
-        <h1 className="text-xl font-bold text-[#52E0DC]">
-          Innovatech Solutions
-        </h1>
+        <Link href="/admin" className="block">
+          <img
+            src="/innovatech-logo.png"
+            alt="Innovatech Solutions"
+            className="h-auto w-[190px] object-contain"
+          />
+        </Link>
 
         <nav className="mt-8 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
