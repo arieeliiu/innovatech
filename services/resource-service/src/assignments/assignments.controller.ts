@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { AssignmentsService } from './assignments.service';
@@ -25,6 +26,13 @@ export class AssignmentsController {
     @Param('userId', new ParseUUIDPipe()) userId: string,
   ) {
     return this.assignmentsService.findByUserId(userId);
+  }
+
+  @Patch(':assignmentId/deactivate')
+  deactivate(
+    @Param('assignmentId', new ParseUUIDPipe()) assignmentId: string,
+  ) {
+    return this.assignmentsService.deactivate(assignmentId);
   }
 
 }

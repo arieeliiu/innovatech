@@ -1,17 +1,21 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient, User } from '@supabase/supabase-js';
+import {
+  getAvailabilityStatus,
+  getUniqueActiveProjectIds,
+  getUniqueValues,
+  isDoneProjectStatus,
+  MAX_ACTIVE_PROJECTS,
+  normalizeProfessionalRole,
+  ProfessionalRole,
+} from '../common/resource-domain.utils';
 import { SUPABASE_CLIENT } from '../supabase/supabase.constants';
-
-const MAX_ACTIVE_PROJECTS = 3;
-const PROFESSIONAL_ROLES = ['ARCHITECT', 'DEVELOPER', 'CONSULTANT'] as const;
-type ProfessionalRole = (typeof PROFESSIONAL_ROLES)[number];
-type AvailabilityStatus = 'AVAILABLE' | 'UNAVAILABLE';
 
 interface ResourceAssignment {
   id: string;
@@ -55,7 +59,7 @@ export interface ResourceSummary {
   role: ProfessionalRole;
   activeProjects: number;
   maximumProjects: number;
-  availabilityStatus: AvailabilityStatus;
+  availabilityStatus: 'AVAILABLE' | 'UNAVAILABLE';
   canReceiveNewProjects: boolean;
   projects: ResourceProjectSummary[];
 }
@@ -67,16 +71,8 @@ export class ResourcesService {
     private readonly supabase: SupabaseClient,
   ) {}
 
-  private normalizeRole(role: string | null | undefined): ProfessionalRole | null {
-    const normalizedRole = role?.trim().toUpperCase();
-
-    if (!normalizedRole) {
-      return null;
-    }
-
-    return (PROFESSIONAL_ROLES as readonly string[]).includes(normalizedRole)
-      ? (normalizedRole as ProfessionalRole)
-      : null;
+  private throwDatabaseError(message: string): never {
+    throw new InternalServerErrorException('No se pudo consultar la información de recursos');
   }
 
   private getMetadataString(
@@ -95,21 +91,15 @@ export class ResourcesService {
     user_metadata: Record<string, unknown> | null;
   }): string {
     return (
-      this.getMetadataString(
-        user.user_metadata as Record<string, unknown> | null,
-        'name',
-      ) ??
-      this.getMetadataString(
-        user.user_metadata as Record<string, unknown> | null,
-        'full_name',
-      ) ??
+      this.getMetadataString(user.user_metadata, 'name') ??
+      this.getMetadataString(user.user_metadata, 'full_name') ??
       user.email ??
       'Usuario sin nombre'
     );
   }
 
   private getUserRole(user: User): ProfessionalRole | null {
-    return this.normalizeRole(
+    return normalizeProfessionalRole(
       this.getMetadataString(
         user.user_metadata as Record<string, unknown> | null,
         'role',
@@ -119,10 +109,6 @@ export class ResourcesService {
           'role',
         ),
     );
-  }
-
-  private isProfessionalUser(user: User): boolean {
-    return this.getUserRole(user) !== null;
   }
 
   private async getProfessionalUsers(): Promise<ProfessionalUser[]> {
@@ -137,7 +123,7 @@ export class ResourcesService {
       });
 
       if (error) {
-        throw new InternalServerErrorException(error.message);
+        this.throwDatabaseError(error.message);
       }
 
       const users = data.users ?? [];
@@ -189,7 +175,7 @@ export class ResourcesService {
       .maybeSingle();
 
     if (error) {
-      throw new InternalServerErrorException(error.message);
+      this.throwDatabaseError(error.message);
     }
 
     if (!data) {
@@ -213,7 +199,7 @@ export class ResourcesService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new InternalServerErrorException(error.message);
+      this.throwDatabaseError(error.message);
     }
 
     return (data ?? []) as ResourceAssignment[];
@@ -233,7 +219,7 @@ export class ResourcesService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new InternalServerErrorException(error.message);
+      this.throwDatabaseError(error.message);
     }
 
     return (data ?? []) as ResourceAssignment[];
@@ -242,7 +228,9 @@ export class ResourcesService {
   private async getAssignmentsByUserIds(
     userIds: string[],
   ): Promise<ResourceAssignment[]> {
-    if (userIds.length === 0) {
+    const uniqueUserIds = getUniqueValues(userIds);
+
+    if (uniqueUserIds.length === 0) {
       return [];
     }
 
@@ -253,18 +241,20 @@ export class ResourcesService {
         'id, user_id, project_id, role_in_project, start_date, end_date, status, created_at, updated_at',
       )
       .eq('status', 'ACTIVE')
-      .in('user_id', userIds)
+      .in('user_id', uniqueUserIds)
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new InternalServerErrorException(error.message);
+      this.throwDatabaseError(error.message);
     }
 
     return (data ?? []) as ResourceAssignment[];
   }
 
   private async getProjectsByIds(projectIds: string[]): Promise<ProjectRecord[]> {
-    if (projectIds.length === 0) {
+    const uniqueProjectIds = getUniqueValues(projectIds);
+
+    if (uniqueProjectIds.length === 0) {
       return [];
     }
 
@@ -272,25 +262,13 @@ export class ResourcesService {
       .schema('public')
       .from('projects')
       .select('id, name, status')
-      .in('id', projectIds);
+      .in('id', uniqueProjectIds);
 
     if (error) {
-      throw new InternalServerErrorException(error.message);
+      this.throwDatabaseError(error.message);
     }
 
     return (data ?? []) as ProjectRecord[];
-  }
-
-  private getActiveProjects(projects: ProjectRecord[]): ProjectRecord[] {
-    return projects.filter((project) => project.status.trim().toUpperCase() !== 'DONE');
-  }
-
-  private countActiveProjects(projects: ProjectRecord[]): number {
-    return this.getActiveProjects(projects).length;
-  }
-
-  private getAvailabilityStatus(activeProjects: number): AvailabilityStatus {
-    return activeProjects < MAX_ACTIVE_PROJECTS ? 'AVAILABLE' : 'UNAVAILABLE';
   }
 
   private buildResourceSummary(
@@ -298,51 +276,55 @@ export class ResourcesService {
     assignments: ResourceAssignment[],
     projectsById: Map<string, ProjectRecord>,
   ): ResourceSummary {
-    const activeProjectRows = assignments
-      .map((assignment) => {
-        const project = projectsById.get(assignment.project_id);
+    const projectsByIdUnique = new Map<string, ResourceProjectSummary>();
 
-        if (!project || project.status.trim().toUpperCase() === 'DONE') {
-          return null;
-        }
+    for (const assignment of assignments) {
+      const project = projectsById.get(assignment.project_id);
 
-        return {
-          id: project.id,
-          name: project.name,
-          status: project.status,
-          roleInProject: assignment.role_in_project,
-          startDate: assignment.start_date,
-          endDate: assignment.end_date,
-        };
-      })
-      .filter((project): project is ResourceProjectSummary => project !== null);
+      if (!project || isDoneProjectStatus(project.status)) {
+        continue;
+      }
 
-    const activeProjects = activeProjectRows.length;
+      if (projectsByIdUnique.has(project.id)) {
+        continue;
+      }
+
+      projectsByIdUnique.set(project.id, {
+        id: project.id,
+        name: project.name,
+        status: project.status,
+        roleInProject: assignment.role_in_project,
+        startDate: assignment.start_date,
+        endDate: assignment.end_date,
+      });
+    }
+
+    const projects = [...projectsByIdUnique.values()];
+    const activeProjects = projects.length;
 
     return {
       userId: user.id,
       name: this.resolveName({
-        email: user.email ?? null,
-        user_metadata:
-          (user.user_metadata as Record<string, unknown> | null) ?? null,
+        email: user.email,
+        user_metadata: user.user_metadata,
       }),
       email: user.email,
       role: user.role,
       activeProjects,
       maximumProjects: MAX_ACTIVE_PROJECTS,
-      availabilityStatus: this.getAvailabilityStatus(activeProjects),
+      availabilityStatus: getAvailabilityStatus(activeProjects),
       canReceiveNewProjects: activeProjects < MAX_ACTIVE_PROJECTS,
-      projects: activeProjectRows,
+      projects,
     };
   }
 
   private sortResources(resources: ResourceSummary[]): ResourceSummary[] {
     return [...resources].sort((left, right) => {
-      const leftAvailable = left.availabilityStatus === 'AVAILABLE' ? 0 : 1;
-      const rightAvailable = right.availabilityStatus === 'AVAILABLE' ? 0 : 1;
+      const leftAvailability = left.availabilityStatus === 'AVAILABLE' ? 0 : 1;
+      const rightAvailability = right.availabilityStatus === 'AVAILABLE' ? 0 : 1;
 
-      if (leftAvailable !== rightAvailable) {
-        return leftAvailable - rightAvailable;
+      if (leftAvailability !== rightAvailability) {
+        return leftAvailability - rightAvailability;
       }
 
       if (left.activeProjects !== right.activeProjects) {
@@ -353,11 +335,29 @@ export class ResourcesService {
     });
   }
 
+  private toProfessionalUser(user: User): ProfessionalUser {
+    const role = this.getUserRole(user);
+
+    if (!role) {
+      throw new BadRequestException('El usuario no corresponde a un profesional');
+    }
+
+    return {
+      id: user.id,
+      email: user.email ?? null,
+      role,
+      user_metadata:
+        (user.user_metadata as Record<string, unknown> | null) ?? null,
+      app_metadata:
+        (user.app_metadata as Record<string, unknown> | null) ?? null,
+    };
+  }
+
   async findAll() {
     const professionalUsers = await this.getProfessionalUsers();
     const userIds = professionalUsers.map((user) => user.id);
     const assignments = await this.getAssignmentsByUserIds(userIds);
-    const projectIds = [...new Set(assignments.map((assignment) => assignment.project_id))];
+    const projectIds = getUniqueActiveProjectIds(assignments);
     const projects = await this.getProjectsByIds(projectIds);
     const projectsById = new Map(projects.map((project) => [project.id, project]));
     const assignmentsByUserId = new Map<string, ResourceAssignment[]>();
@@ -381,35 +381,23 @@ export class ResourcesService {
     return {
       success: true,
       total: resources.length,
-      available: resources.filter((resource) => resource.availabilityStatus === 'AVAILABLE').length,
-      unavailable: resources.filter((resource) => resource.availabilityStatus === 'UNAVAILABLE').length,
+      available: resources.filter(
+        (resource) => resource.availabilityStatus === 'AVAILABLE',
+      ).length,
+      unavailable: resources.filter(
+        (resource) => resource.availabilityStatus === 'UNAVAILABLE',
+      ).length,
       resources,
     };
   }
 
   async findByUserId(userId: string) {
     const user = await this.getUserById(userId);
-    const role = this.getUserRole(user);
-
-    if (!role) {
-      throw new BadRequestException(
-        'El usuario no corresponde a un profesional',
-      );
-    }
-
+    const professionalUser = this.toProfessionalUser(user);
     const assignments = await this.getAssignmentsByUserId(userId);
-    const projectIds = assignments.map((assignment) => assignment.project_id);
+    const projectIds = getUniqueActiveProjectIds(assignments);
     const projects = await this.getProjectsByIds(projectIds);
     const projectsById = new Map(projects.map((project) => [project.id, project]));
-    const professionalUser: ProfessionalUser = {
-      id: user.id,
-      email: user.email ?? null,
-      role,
-      user_metadata:
-        (user.user_metadata as Record<string, unknown> | null) ?? null,
-      app_metadata:
-        (user.app_metadata as Record<string, unknown> | null) ?? null,
-    };
 
     return {
       success: true,
@@ -424,43 +412,41 @@ export class ResourcesService {
   async findByProjectId(projectId: string) {
     const project = await this.getProjectById(projectId);
     const assignments = await this.getAssignmentsByProjectId(projectId);
-    const users = await this.getProfessionalUsers();
-    const usersById = new Map(users.map((user) => [user.id, user]));
-    const resources = assignments
-      .map((assignment) => {
-        const user = usersById.get(assignment.user_id);
+    const professionalUsers = await this.getProfessionalUsers();
+    const usersById = new Map(professionalUsers.map((user) => [user.id, user]));
+    const resourcesByUserId = new Map<
+      string,
+      {
+        userId: string;
+        name: string;
+        email: string | null;
+        role: ProfessionalRole;
+        roleInProject: string | null;
+        startDate: string | null;
+        endDate: string | null;
+      }
+    >();
 
-        if (!user) {
-          return null;
-        }
+    for (const assignment of assignments) {
+      const user = usersById.get(assignment.user_id);
 
-        return {
-          userId: user.id,
-          name: this.resolveName({
-            email: user.email ?? null,
-            user_metadata:
-              (user.user_metadata as Record<string, unknown> | null) ?? null,
-          }),
+      if (!user || resourcesByUserId.has(user.id)) {
+        continue;
+      }
+
+      resourcesByUserId.set(user.id, {
+        userId: user.id,
+        name: this.resolveName({
           email: user.email,
-          role: user.role,
-          roleInProject: assignment.role_in_project,
-          startDate: assignment.start_date,
-          endDate: assignment.end_date,
-        };
-      })
-      .filter(
-        (
-          resource,
-        ): resource is {
-          userId: string;
-          name: string;
-          email: string | null;
-          role: ProfessionalRole;
-          roleInProject: string | null;
-          startDate: string | null;
-          endDate: string | null;
-        } => resource !== null,
-      );
+          user_metadata: user.user_metadata,
+        }),
+        email: user.email,
+        role: user.role,
+        roleInProject: assignment.role_in_project,
+        startDate: assignment.start_date,
+        endDate: assignment.end_date,
+      });
+    }
 
     return {
       success: true,
@@ -469,8 +455,8 @@ export class ResourcesService {
         name: project.name,
         status: project.status,
       },
-      totalResources: resources.length,
-      resources,
+      totalResources: resourcesByUserId.size,
+      resources: [...resourcesByUserId.values()],
     };
   }
 }

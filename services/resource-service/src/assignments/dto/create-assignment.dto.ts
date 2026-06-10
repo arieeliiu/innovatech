@@ -1,9 +1,11 @@
 import {
   IsDateString,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { PROFESSIONAL_ROLES } from '../../common/resource-domain.utils';
 
 export class CreateAssignmentDto {
   @IsUUID()
@@ -14,6 +16,7 @@ export class CreateAssignmentDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(PROFESSIONAL_ROLES)
   roleInProject?: string;
 
   @IsOptional()
