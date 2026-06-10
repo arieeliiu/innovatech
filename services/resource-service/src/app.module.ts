@@ -3,8 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
-import { AvailabilityModule } from './availability/availability.module';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { ResourcesModule } from './resources/resources.module';
 
 @Module({
   imports: [
@@ -12,8 +12,8 @@ import { AssignmentsModule } from './assignments/assignments.module';
       isGlobal: true,
     }),
     SupabaseModule,
-    AvailabilityModule,
     AssignmentsModule,
+    ResourcesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

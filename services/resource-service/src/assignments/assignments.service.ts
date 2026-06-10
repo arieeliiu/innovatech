@@ -6,12 +6,31 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, User } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../supabase/supabase.constants';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 
 const MAX_ACTIVE_PROJECTS = 3;
-const MAX_ALLOCATION_PERCENTAGE = 100;
+const PROFESSIONAL_ROLES = ['ARCHITECT', 'DEVELOPER', 'CONSULTANT'] as const;
+type ProfessionalRole = (typeof PROFESSIONAL_ROLES)[number];
+
+interface AssignmentRecord {
+  id: string;
+  user_id: string;
+  project_id: string;
+  role_in_project: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ProjectRecord {
+  id: string;
+  name: string | null;
+  status: string;
+}
 
 @Injectable()
 export class AssignmentsService {
@@ -20,130 +39,80 @@ export class AssignmentsService {
     private readonly supabase: SupabaseClient,
   ) {}
 
-  private async getLatestAvailability(userId: string) {
+  private normalizeRole(role: string | null | undefined): ProfessionalRole | null {
+    const normalizedRole = role?.trim().toUpperCase();
+
+    if (!normalizedRole) {
+      return null;
+    }
+
+    return (PROFESSIONAL_ROLES as readonly string[]).includes(normalizedRole)
+      ? (normalizedRole as ProfessionalRole)
+      : null;
+  }
+
+  private getMetadataString(
+    metadata: Record<string, unknown> | null | undefined,
+    key: string,
+  ): string | undefined {
+    const value = metadata?.[key];
+
+    return typeof value === 'string' && value.trim() !== ''
+      ? value.trim()
+      : undefined;
+  }
+
+  private getUserRole(user: User): ProfessionalRole | null {
+    return this.normalizeRole(
+      this.getMetadataString(
+        user.user_metadata as Record<string, unknown> | null,
+        'role',
+      ) ??
+        this.getMetadataString(
+          user.app_metadata as Record<string, unknown> | null,
+          'role',
+        ),
+    );
+  }
+
+  private async getUserById(userId: string): Promise<User> {
+    const { data, error } = await this.supabase.auth.admin.getUserById(userId);
+
+    if (error || !data.user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return data.user;
+  }
+
+  private async getProjectById(projectId: string): Promise<ProjectRecord> {
     const { data, error } = await this.supabase
-      .from('resource_availability')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .schema('public')
+      .from('projects')
+      .select('id, name, status')
+      .eq('id', projectId)
       .maybeSingle();
 
     if (error) {
       throw new InternalServerErrorException(error.message);
     }
 
-    return data;
+    if (!data) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    return data as ProjectRecord;
   }
 
-  private async getActiveAssignments(userId: string) {
+  private async getAssignmentsByUserId(
+    userId: string,
+  ): Promise<AssignmentRecord[]> {
     const { data, error } = await this.supabase
+      .schema('resource_service')
       .from('resource_assignments')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'ACTIVE');
-
-    if (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-
-    return data ?? [];
-  }
-
-  async create(createAssignmentDto: CreateAssignmentDto) {
-    const {
-      userId,
-      projectId,
-      roleInProject,
-      allocationPercentage,
-      startDate,
-      endDate,
-    } = createAssignmentDto;
-
-    const availability = await this.getLatestAvailability(userId);
-
-    if (!availability) {
-      throw new BadRequestException(
-        'El usuario no tiene disponibilidad registrada',
-      );
-    }
-
-    if (availability.status === 'UNAVAILABLE') {
-      throw new BadRequestException(
-        'El usuario no se encuentra disponible para nuevos proyectos',
-      );
-    }
-
-    const activeAssignments = await this.getActiveAssignments(userId);
-
-    const alreadyAssigned = activeAssignments.some(
-      (assignment) => assignment.project_id === projectId,
-    );
-
-    if (alreadyAssigned) {
-      throw new ConflictException(
-        'El usuario ya está asignado activamente a este proyecto',
-      );
-    }
-
-    if (activeAssignments.length >= MAX_ACTIVE_PROJECTS) {
-      throw new BadRequestException(
-        `El usuario ya alcanzó el máximo de ${MAX_ACTIVE_PROJECTS} proyectos activos`,
-      );
-    }
-
-    const currentAllocation = activeAssignments.reduce(
-      (total, assignment) =>
-        total + Number(assignment.allocation_percentage ?? 0),
-      0,
-    );
-
-    const resultingAllocation =
-      currentAllocation + allocationPercentage;
-
-    if (resultingAllocation > MAX_ALLOCATION_PERCENTAGE) {
-      throw new BadRequestException(
-        `La asignación supera el 100% de capacidad. Capacidad disponible: ${
-          MAX_ALLOCATION_PERCENTAGE - currentAllocation
-        }%`,
-      );
-    }
-
-    const { data, error } = await this.supabase
-      .from('resource_assignments')
-      .insert({
-        user_id: userId,
-        project_id: projectId,
-        role_in_project: roleInProject ?? null,
-        allocation_percentage: allocationPercentage,
-        start_date: startDate ?? null,
-        end_date: endDate ?? null,
-        status: 'ACTIVE',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-
-    return {
-      success: true,
-      message: 'Recurso asignado correctamente',
-      assignment: data,
-      workload: {
-        activeProjects: activeAssignments.length + 1,
-        allocationPercentage: resultingAllocation,
-        remainingCapacity:
-          MAX_ALLOCATION_PERCENTAGE - resultingAllocation,
-      },
-    };
-  }
-
-  async findByUserId(userId: string) {
-    const { data, error } = await this.supabase
-      .from('resource_assignments')
-      .select('*')
+      .select(
+        'id, user_id, project_id, role_in_project, start_date, end_date, status, created_at, updated_at',
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -151,47 +120,152 @@ export class AssignmentsService {
       throw new InternalServerErrorException(error.message);
     }
 
-    return {
-      success: true,
-      assignments: data ?? [],
-    };
+    return (data ?? []) as AssignmentRecord[];
   }
 
-  async getWorkload(userId: string) {
-    const availability = await this.getLatestAvailability(userId);
+  private async getActiveAssignmentsByUserId(
+    userId: string,
+  ): Promise<AssignmentRecord[]> {
+    const assignments = await this.getAssignmentsByUserId(userId);
 
-    if (!availability) {
-      throw new NotFoundException(
-        'No se encontró disponibilidad para este usuario',
+    return assignments.filter((assignment) => assignment.status === 'ACTIVE');
+  }
+
+  private async getProjectsByIds(projectIds: string[]): Promise<ProjectRecord[]> {
+    if (projectIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await this.supabase
+      .schema('public')
+      .from('projects')
+      .select('id, name, status')
+      .in('id', projectIds);
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return (data ?? []) as ProjectRecord[];
+  }
+
+  private getActiveProjects(projects: ProjectRecord[]): ProjectRecord[] {
+    return projects.filter(
+      (project) => project.status.trim().toUpperCase() !== 'DONE',
+    );
+  }
+
+  private countActiveProjects(projects: ProjectRecord[]): number {
+    return this.getActiveProjects(projects).length;
+  }
+
+  async create(createAssignmentDto: CreateAssignmentDto) {
+    const { userId, projectId, roleInProject, startDate, endDate } =
+      createAssignmentDto;
+
+    const user = await this.getUserById(userId);
+
+    if (!this.getUserRole(user)) {
+      throw new BadRequestException(
+        'El usuario no corresponde a un profesional asignable',
       );
     }
 
-    const activeAssignments = await this.getActiveAssignments(userId);
+    const project = await this.getProjectById(projectId);
 
-    const allocationPercentage = activeAssignments.reduce(
-      (total, assignment) =>
-        total + Number(assignment.allocation_percentage ?? 0),
-      0,
+    if (project.status.trim().toUpperCase() === 'DONE') {
+      throw new BadRequestException(
+        'No se puede asignar un profesional a un proyecto finalizado',
+      );
+    }
+
+    const activeAssignments = await this.getActiveAssignmentsByUserId(userId);
+
+    if (
+      activeAssignments.some(
+        (assignment) => assignment.project_id === projectId,
+      )
+    ) {
+      throw new ConflictException(
+        'El usuario ya está asignado activamente a este proyecto',
+      );
+    }
+
+    const activeProjects = this.countActiveProjects(
+      await this.getProjectsByIds(
+        activeAssignments.map((assignment) => assignment.project_id),
+      ),
     );
+
+    if (activeProjects >= MAX_ACTIVE_PROJECTS) {
+      throw new BadRequestException(
+        'El usuario ya alcanzó el máximo de 3 proyectos activos',
+      );
+    }
+
+    const { data, error } = await this.supabase
+      .schema('resource_service')
+      .from('resource_assignments')
+      .insert({
+        user_id: userId,
+        project_id: projectId,
+        role_in_project: roleInProject ?? null,
+        start_date: startDate ?? null,
+        end_date: endDate ?? null,
+        status: 'ACTIVE',
+      })
+      .select(
+        'id, user_id, project_id, role_in_project, start_date, end_date, status',
+      )
+      .single();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    const nextActiveProjects = activeProjects + 1;
 
     return {
       success: true,
-      workload: {
-        userId,
-        availabilityStatus: availability.status,
-        weeklyHours: availability.weekly_hours,
-        activeProjects: activeAssignments.length,
+      message: 'Profesional asignado correctamente',
+      assignment: data,
+      resourceStatus: {
+        activeProjects: nextActiveProjects,
         maximumProjects: MAX_ACTIVE_PROJECTS,
-        allocationPercentage,
-        remainingCapacity: Math.max(
-          0,
-          MAX_ALLOCATION_PERCENTAGE - allocationPercentage,
-        ),
-        canReceiveNewAssignments:
-          availability.status !== 'UNAVAILABLE' &&
-          activeAssignments.length < MAX_ACTIVE_PROJECTS &&
-          allocationPercentage < MAX_ALLOCATION_PERCENTAGE,
+        availabilityStatus:
+          nextActiveProjects < MAX_ACTIVE_PROJECTS
+            ? 'AVAILABLE'
+            : 'UNAVAILABLE',
+        canReceiveNewProjects: nextActiveProjects < MAX_ACTIVE_PROJECTS,
       },
+    };
+  }
+
+  async findByUserId(userId: string) {
+    const assignments = await this.getAssignmentsByUserId(userId);
+    const projectIds = [
+      ...new Set(assignments.map((assignment) => assignment.project_id)),
+    ];
+    const projects = await this.getProjectsByIds(projectIds);
+    const projectMap = new Map(projects.map((project) => [project.id, project]));
+
+    return {
+      success: true,
+      userId,
+      assignments: assignments.map((assignment) => {
+        const project = projectMap.get(assignment.project_id);
+
+        return {
+          assignmentId: assignment.id,
+          projectId: assignment.project_id,
+          projectName: project?.name ?? null,
+          projectStatus: project?.status ?? null,
+          roleInProject: assignment.role_in_project,
+          assignmentStatus: assignment.status,
+          startDate: assignment.start_date,
+          endDate: assignment.end_date,
+        };
+      }),
     };
   }
 }

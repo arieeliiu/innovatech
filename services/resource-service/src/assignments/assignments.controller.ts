@@ -27,10 +27,4 @@ export class AssignmentsController {
     return this.assignmentsService.findByUserId(userId);
   }
 
-  @Get('user/:userId/workload')
-  getWorkload(
-    @Param('userId', new ParseUUIDPipe()) userId: string,
-  ) {
-    return this.assignmentsService.getWorkload(userId);
-  }
 }
