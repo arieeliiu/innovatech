@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AvailabilityModule } from './availability/availability.module';
+import { AssignmentsModule } from './assignments/assignments.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AvailabilityModule } from './availability/availability.module';
     }),
     SupabaseModule,
     AvailabilityModule,
+    AssignmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
