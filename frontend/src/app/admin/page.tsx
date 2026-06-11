@@ -74,28 +74,28 @@ export default function AdminDashboard() {
 
       {!isLoading && (
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
             <p className="text-sm text-[#AAB4C0]">Total de Proyectos</p>
             <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
               {projects.length}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
             <p className="text-sm text-[#AAB4C0]">Proyectos Activos</p>
             <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
               {activeProjects}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
             <p className="text-sm text-[#AAB4C0]">Proyectos Completados</p>
             <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
               {completedProjects}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#123746]/70 bg-[#162233] p-6 shadow-lg shadow-black/20">
+          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
             <p className="text-sm text-[#AAB4C0]">Total de Usuarios</p>
             <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
               {users.length}
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
+        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#F5F7FA]">
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
+        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#F5F7FA]">
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
+        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#F5F7FA]">
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20">
+        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#F5F7FA]">
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#123746]/70 bg-[#171C22] p-6 shadow-lg shadow-black/20 md:col-span-2">
+        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)] md:col-span-2">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#F5F7FA]">

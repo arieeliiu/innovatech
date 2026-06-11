@@ -179,22 +179,30 @@ export default function AdminUsersPage() {
     }
   }
 
+  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+
+  const inputClass =
+    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+
+  const secondaryButtonClass =
+    'rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]';
+
   return (
     <section>
-      <h1 className="text-3xl font-bold text-slate-900">Usuarios registrados</h1>
-      <p className="mt-2 text-slate-600">Listado completo de cuentas registradas en la plataforma.</p>
+      <h1 className="text-3xl font-bold text-[#F5F7FA]">Usuarios registrados</h1>
+      <p className="mt-2 text-[#AAB4C0]">Listado completo de cuentas registradas en la plataforma.</p>
 
       {error && (
-        <p className="mt-4 rounded-lg bg-red-100 p-3 text-red-700">{error}</p>
+        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-red-300">{error}</p>
       )}
 
       {message && (
-        <p className="mt-4 rounded-lg bg-green-100 p-3 text-green-700">{message}</p>
+        <p className="mt-4 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-[#7DEBE8]">{message}</p>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-xl bg-white shadow">
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-[#2A3B55] bg-[#172235] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
+          <thead className="border-b border-[#2A3B55] bg-[#162233] text-[#AAB4C0]">
             <tr>
               <th className="px-4 py-3 font-semibold">ID</th>
               <th className="px-4 py-3 font-semibold">Nombre</th>
@@ -207,7 +215,7 @@ export default function AdminUsersPage() {
           <tbody>
             {!loading && users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-[#AAB4C0]">
                   No hay usuarios registrados.
                 </td>
               </tr>
@@ -215,7 +223,7 @@ export default function AdminUsersPage() {
 
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-[#AAB4C0]">
                   Cargando usuarios...
                 </td>
               </tr>
@@ -226,18 +234,18 @@ export default function AdminUsersPage() {
                 const isCurrentUser = user.id === currentUserId;
 
                 return (
-                  <tr key={user.id} className="border-b border-slate-100">
-                    <td className="px-4 py-3 text-slate-600">{user.id}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900">
+                  <tr key={user.id} className="border-b border-[#2A3B55] transition hover:bg-[#1D2B42]">
+                    <td className="px-4 py-3 text-[#AAB4C0]">{user.id}</td>
+                    <td className="px-4 py-3 font-medium text-[#F5F7FA]">
                       {user.name || 'Usuario sin nombre'}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{user.email || 'Sin correo'}</td>
-                    <td className="px-4 py-3 text-slate-700">{getUserRoleLabel(user.role)}</td>
+                    <td className="px-4 py-3 text-[#AAB4C0]">{user.email || 'Sin correo'}</td>
+                    <td className="px-4 py-3 text-[#AAB4C0]">{getUserRoleLabel(user.role)}</td>
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
                         onClick={() => openEditModal(user)}
-                        className="mr-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                        className="mr-2 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1.5 text-xs font-semibold text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22]"
                       >
                         Editar
                       </button>
@@ -246,7 +254,7 @@ export default function AdminUsersPage() {
                         type="button"
                         onClick={() => openDeleteModal(user)}
                         disabled={isCurrentUser}
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isCurrentUser ? 'Tu cuenta' : 'Eliminar'}
                       </button>
@@ -259,27 +267,27 @@ export default function AdminUsersPage() {
       </div>
 
       {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-slate-900">Eliminar usuario</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
+            <h2 className="text-xl font-bold text-[#F5F7FA]">Eliminar usuario</h2>
 
-            <p className="mt-3 text-sm text-slate-600">
+            <p className="mt-3 text-sm text-[#AAB4C0]">
               Para eliminar al usuario{' '}
-              <strong className="text-slate-900">
+              <strong className="text-[#F5F7FA]">
                 {selectedUser.name || selectedUser.email || selectedUser.id}
               </strong>
-              , escribe <strong className="text-slate-900">eliminar</strong>.
+              , escribe <strong className="text-[#F5F7FA]">eliminar</strong>.
             </p>
 
             <input
-              className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-red-500"
+              className={inputClass}
               value={confirmText}
               onChange={(event) => setConfirmText(event.target.value)}
               placeholder="Escribe eliminar"
             />
 
             {deleteError && (
-              <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+              <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                 {deleteError}
               </p>
             )}
@@ -288,7 +296,7 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={closeDeleteModal}
-                className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                className={secondaryButtonClass}
               >
                 Cancelar
               </button>
@@ -297,7 +305,7 @@ export default function AdminUsersPage() {
                 type="button"
                 onClick={handleDeleteUser}
                 disabled={deleting || confirmText.trim().toLowerCase() !== 'eliminar'}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? 'Eliminando...' : 'Confirmar eliminación'}
               </button>
@@ -307,13 +315,13 @@ export default function AdminUsersPage() {
       )}
 
       {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-slate-900">Editar usuario</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
+            <h2 className="text-xl font-bold text-[#F5F7FA]">Editar usuario</h2>
 
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-[#AAB4C0]">
               Actualiza los datos de{' '}
-              <strong className="text-slate-900">
+              <strong className="text-[#F5F7FA]">
                 {editingUser.name || editingUser.email || editingUser.id}
               </strong>
               .
@@ -321,11 +329,11 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleUpdateUser} className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className={labelClass}>
                   Nombre
                 </label>
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-slate-900"
+                  className={inputClass}
                   value={editForm.name}
                   onChange={(event) =>
                     setEditForm({ ...editForm, name: event.target.value })
@@ -335,12 +343,12 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className={labelClass}>
                   Correo
                 </label>
                 <input
                   type="email"
-                  className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-slate-900"
+                  className={inputClass}
                   value={editForm.email}
                   onChange={(event) =>
                     setEditForm({ ...editForm, email: event.target.value })
@@ -350,11 +358,11 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className={labelClass}>
                   Rol
                 </label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-slate-900"
+                  className={inputClass}
                   value={editForm.role}
                   onChange={(event) =>
                     setEditForm({ ...editForm, role: event.target.value })
@@ -370,12 +378,12 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className={labelClass}>
                   Nueva contraseña (opcional)
                 </label>
                 <input
                   type="password"
-                  className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-slate-900"
+                  className={inputClass}
                   value={editForm.password}
                   onChange={(event) =>
                     setEditForm({ ...editForm, password: event.target.value })
@@ -386,7 +394,7 @@ export default function AdminUsersPage() {
               </div>
 
               {editError && (
-                <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700">
+                <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                   {editError}
                 </p>
               )}
@@ -395,7 +403,7 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                  className={secondaryButtonClass}
                 >
                   Cancelar
                 </button>
@@ -403,7 +411,7 @@ export default function AdminUsersPage() {
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  className="rounded-lg bg-[#52E0DC] px-4 py-2 text-sm font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingEdit ? 'Guardando...' : 'Guardar cambios'}
                 </button>

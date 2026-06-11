@@ -3,24 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjects, getUsers } from '../../../lib/api';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  progress: number;
-  start_date: string;
-  end_date: string;
-  main_responsible_id: string;
-};
-
-type User = {
-  id: string;
-  name?: string;
-  email?: string;
-  role?: string;
-};
+import { ProjectCard } from '../../../components/projects/ProjectCard';
+import type { Project, User } from '../../../types';
 
 export default function AdminProjectsPage() {
   const router = useRouter();
@@ -67,16 +51,20 @@ export default function AdminProjectsPage() {
   useEffect(() => {
     loadData();
   }, []);
+  const activeProjects = projects.filter((project) => project.status !== 'DONE');
 
+  const finishedProjects = projects.filter(
+    (project) => project.status === 'DONE',
+  );
   return (
     <section>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-bold text-[#F5F7FA]">
             Gestión de proyectos
           </h1>
 
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-[#AAB4C0]">
             Todos los proyectos registrados en Innovatech Solutions.
           </p>
         </div>
@@ -84,7 +72,7 @@ export default function AdminProjectsPage() {
         <button
           type="button"
           onClick={() => router.push('/admin/projects/create')}
-          className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+          className="rounded-lg bg-[#162233] px-5 py-2 font-medium text-[#F5F7FA] transition hover:bg-[#24344F]"
         >
           Crear proyecto
         </button>
@@ -97,80 +85,76 @@ export default function AdminProjectsPage() {
       )}
 
       {isLoading && (
-        <p className="mt-8 text-slate-600">Cargando proyectos...</p>
+        <p className="mt-8 text-[#F5F7FA]">Cargando proyectos...</p>
       )}
 
       {!error && !isLoading && projects.length === 0 && (
-        <div className="mt-8 rounded-xl bg-white p-6 text-slate-600 shadow">
+        <div className="mt-8 rounded-xl bg-[#162233] p-6 text-[#AAB4C0] shadow">
           No hay proyectos registrados todavía.
         </div>
       )}
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {projects.map((project) => {
-          const progress = Math.min(Math.max(project.progress ?? 0, 0), 100);
+      {!error && !isLoading && activeProjects.length > 0 && (
+        <section className="mt-8">
+          <div>
+            <h2 className="text-2xl font-bold text-[#F5F7FA]">
+              Proyectos activos
+            </h2>
 
-          const responsibleName = getResponsibleName(
-            project.main_responsible_id,
-          );
+            <p className="mt-1 text-[#AAB4C0]">
+              Proyectos en curso o pendientes de ejecución.
+            </p>
+          </div>
 
-          return (
-            <article
-              key={project.id}
-              className="rounded-xl bg-white p-5 shadow transition hover:shadow-lg"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <h2 className="text-xl font-semibold text-slate-900">
-                  {project.name}
-                </h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {activeProjects.map((project) => {
+              const responsibleName = getResponsibleName(
+                project.main_responsible_id,
+              );
 
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {project.status}
-                </span>
-              </div>
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  responsibleName={responsibleName}
+                  onViewDetail={() => router.push(`/admin/projects/${project.id}`)}
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
 
-              <p className="mt-2 text-sm text-slate-600">
-                {project.description}
-              </p>
+      {!error && !isLoading && finishedProjects.length > 0 && (
+        <section className="mt-10">
+          <div>
+            <h2 className="text-2xl font-bold text-[#F5F7FA]">
+              Proyectos finalizados
+            </h2>
 
-              <div className="mt-4">
-                <div className="mb-1 flex justify-between text-sm text-slate-700">
-                  <span>Avance</span>
-                  <span>{progress}%</span>
-                </div>
+            <p className="mt-1 text-[#AAB4C0]">
+              Historial de proyectos cerrados.
+            </p>
+          </div>
 
-                <div className="h-2 rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-slate-900"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {finishedProjects.map((project) => {
+              const responsibleName = getResponsibleName(
+                project.main_responsible_id,
+              );
 
-              <div className="mt-4 text-sm text-slate-700">
-                <p>
-                  <strong>Responsable:</strong> {responsibleName}
-                </p>
-
-                <p>
-                  <strong>Inicio:</strong> {project.start_date}
-                </p>
-
-                <p>
-                  <strong>Término:</strong> {project.end_date}
-                </p>
-              </div>
-
-              <button
-                onClick={() => router.push(`/admin/projects/${project.id}`)}
-                className="mt-4 w-full rounded-lg bg-slate-900 py-2 text-center text-sm font-medium text-white transition hover:bg-slate-700"
-              >
-                Ver detalles
-              </button>
-            </article>
-          );
-        })}
-      </div>
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  responsibleName={responsibleName}
+                  onViewDetail={() => router.push(`/admin/projects/${project.id}`)}
+                />
+              );
+            })}
+          </div>
+      </section>
+    )}
     </section>
   );
 }

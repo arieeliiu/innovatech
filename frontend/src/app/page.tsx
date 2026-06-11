@@ -52,12 +52,12 @@ export default function Home() {
           <div className="absolute right-0 top-0 h-full w-7 bg-gradient-to-l from-[#00feff]/30 to-transparent blur-md" />
 
           <section className="relative z-10 w-full max-w-[350px] -translate-y-15">
-            <div className="relative mb-10 w-fit -translate-x-23 translate-y-7">
+            <div className="relative mb-8 w-fit translate-x-0 -translate-y-4">
 
               <img
                 src="/innovatech-logo.png"
                 alt="Innovatech Solutions"
-                className="relative z-10 h-auto w-[490px] max-w-none"
+                className="relative z-10 h-auto w-[350px] max-w-none"
               />
             </div>
 

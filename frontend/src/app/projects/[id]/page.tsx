@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ProgressBar } from '../../../components/ui/ProgressBar';
+import { ProjectHeader } from '../../../components/projects/ProjectHeader';
+import { ProjectMembersPanel } from '../../../components/projects/ProjectMembersPanel';
+import { ProjectTaskBoard } from '../../../components/projects/ProjectTaskBoard';
+import { ConfirmProjectActionModal } from '../../../components/projects/ConfirmProjectActionModal';
 import {
   addProjectMember,
   deleteProject,
@@ -13,11 +16,7 @@ import {
   getUsers,
   removeProjectMember,
 } from '../../../lib/api';
-import { formatDateShort } from '../../../lib/date';
-import {
-  getStoredRole,
-  getStoredUserId,
-} from '../../../lib/auth';
+import { getStoredRole, getStoredUserId } from '../../../lib/auth';
 import {
   canManageProjectMembers,
   canViewProjectDetail,
@@ -25,50 +24,7 @@ import {
   canViewTaskBoard,
   getPermissions,
 } from '../../../lib/permissions';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  progress: number;
-  start_date: string;
-  end_date: string;
-  main_responsible_id: string;
-};
-
-type Task = {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string;
-  responsible_id: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
-  progress: number;
-  start_date: string;
-  end_date: string;
-};
-
-type User = {
-  id: string;
-  name?: string;
-  email?: string;
-  role?: string;
-};
-
-type ProjectMember = {
-  id: string;
-  project_id: string;
-  user_id: string;
-  project_role: string;
-  joined_at: string;
-};
-
-const columns = [
-  { title: 'Por hacer', status: 'TODO' },
-  { title: 'En progreso', status: 'IN_PROGRESS' },
-  { title: 'Finalizadas', status: 'DONE' },
-] as const;
+import type { Project, ProjectMember, Task, User } from '../../../types';
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -261,8 +217,10 @@ export default function ProjectDetailPage() {
       await finalizeProject(project.id);
 
       router.push('/projects');
-    } catch {
-      setFinalizeError('No se pudo finalizar el proyecto');
+    } catch (err) {
+      setFinalizeError(
+        err instanceof Error ? err.message : 'No se pudo finalizar el proyecto',
+      );
     } finally {
       setIsFinalizing(false);
     }
@@ -288,14 +246,14 @@ export default function ProjectDetailPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-slate-100 p-8">
+      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
         <section className="mx-auto max-w-6xl">
-          <p className="rounded-lg bg-red-100 p-4 text-red-700">{error}</p>
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>
 
           <button
             type="button"
             onClick={() => router.push('/projects')}
-            className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white"
+            className="mt-4 rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
           >
             Volver a proyectos
           </button>
@@ -306,9 +264,9 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <main className="min-h-screen bg-slate-100 p-8">
+      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
         <section className="mx-auto max-w-6xl">
-          <p className="text-slate-600">Cargando proyecto...</p>
+          <p className="text-[#AAB4C0]">Cargando proyecto...</p>
         </section>
       </main>
     );
@@ -319,402 +277,95 @@ export default function ProjectDetailPage() {
     members.some((member) => member.user_id === currentUserId);
 
   const permissions = getPermissions(role);
+  const isProjectFinished = project.status === 'DONE';
 
-  const canManageMembers = canManageProjectMembers(role);
+  const canManageMembers =
+    canManageProjectMembers(role) && !isProjectFinished;
   const canViewMembers = canViewProjectMembers(role, isAssociatedProject);
   const canViewTasks = canViewTaskBoard(role, isAssociatedProject);
 
   const canDeleteCurrentProject = permissions.canDeleteProject;
-  const canFinalizeCurrentProject = permissions.canFinalizeProject;
+  const canFinalizeCurrentProject =
+    permissions.canFinalizeProject && !isProjectFinished;
 
   return (
-    <main className="min-h-screen bg-slate-100 p-8">
+    <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
       <section className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => router.push('/projects')}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow transition hover:bg-slate-50"
-          >
-            Volver a proyectos
-          </button>
-
-          {(canFinalizeCurrentProject || canDeleteCurrentProject) && (
-            <div className="flex gap-2">
-              {canFinalizeCurrentProject && (
-                <button
-                  type="button"
-                  onClick={() => setShowFinalizeModal(true)}
-                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700"
-                >
-                  Finalizar proyecto
-                </button>
-              )}
-
-              {canDeleteCurrentProject && (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-                >
-                  Eliminar proyecto
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-xl bg-white p-6 shadow">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                {project.name}
-              </h1>
-
-              <p className="mt-2 max-w-3xl text-slate-600">
-                {project.description}
-              </p>
-            </div>
-
-            <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-              {project.status}
-            </span>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Fecha de inicio</p>
-
-              <p className="font-medium text-slate-900">
-                {formatDateShort(project.start_date)}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Fecha de término</p>
-
-              <p className="font-medium text-slate-900">
-                {formatDateShort(project.end_date)}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">
-                Responsable principal
-              </p>
-
-              <p className="font-medium text-slate-900">
-                {getUserName(project.main_responsible_id)}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <ProgressBar
-              value={project.progress}
-              label="Avance general"
-              size="md"
-            />
-          </div>
-        </div>
+        <ProjectHeader
+          project={project}
+          responsibleName={getUserName(project.main_responsible_id)}
+          canFinalizeProject={canFinalizeCurrentProject}
+          canDeleteProject={canDeleteCurrentProject}
+          onBack={() => router.push('/projects')}
+          onFinalize={() => setShowFinalizeModal(true)}
+          onDelete={() => setShowDeleteModal(true)}
+        />
 
         {canViewMembers && (
-          <div id="members-section" className="mt-8 rounded-xl bg-white p-6 shadow">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">
-                  Miembros del proyecto
-                </h2>
-
-                <p className="mt-1 text-slate-600">
-                  {canManageMembers
-                    ? 'Gestiona los miembros del equipo del proyecto.'
-                    : 'Consulta los miembros asociados al proyecto.'}
-                </p>
-              </div>
-
-              {canManageMembers && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddMemberForm(!showAddMemberForm)}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800"
-                >
-                  {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
-                </button>
-              )}
-            </div>
-
-            {memberError && (
-              <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
-                {memberError}
-              </div>
-            )}
-
-            {showAddMemberForm && canManageMembers && (
-              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-900">
-                      Usuario
-                    </label>
-
-                    <select
-                      value={selectedMemberId}
-                      onChange={(e) => setSelectedMemberId(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-900 focus:outline-none"
-                    >
-                      <option value="">Selecciona un usuario</option>
-
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name || user.email} ({user.role})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddMember}
-                    disabled={loadingAddMember}
-                    className="w-full rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {members.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-slate-500">
-                  No hay miembros en este proyecto.
-                </p>
-              ) : (
-                members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        {getUserName(member.user_id)}
-                      </p>
-
-                      <p className="text-sm text-slate-500">
-                        Rol: {member.project_role} · Unido:{' '}
-                        {new Date(member.joined_at).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    {canManageMembers && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(member.user_id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <ProjectMembersPanel
+            members={members}
+            users={users}
+            canManageMembers={canManageMembers}
+            showAddMemberForm={showAddMemberForm}
+            selectedMemberId={selectedMemberId}
+            loadingAddMember={loadingAddMember}
+            memberError={memberError}
+            onToggleAddMemberForm={() => setShowAddMemberForm(!showAddMemberForm)}
+            onSelectedMemberChange={setSelectedMemberId}
+            onAddMember={handleAddMember}
+            onRemoveMember={handleRemoveMember}
+            getUserName={getUserName}
+          />
         )}
 
         {showDeleteModal && canDeleteCurrentProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-slate-900">
-                Eliminar proyecto
-              </h2>
-
-              <p className="mt-3 text-sm text-slate-600">
+          <ConfirmProjectActionModal
+            title="Eliminar proyecto"
+            description={
+              <p>
                 Para eliminar este proyecto{' '}
-                <strong className="text-slate-900">{project.name}</strong>,
-                escribe <strong className="text-slate-900">eliminar</strong>.
+                <strong className="text-[#F5F7FA]">{project.name}</strong>.
               </p>
-
-              <input
-                className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-red-500"
-                value={deleteConfirmation}
-                onChange={(event) => setDeleteConfirmation(event.target.value)}
-                placeholder="Escribe eliminar"
-              />
-
-              {deleteError && (
-                <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
-                  {deleteError}
-                </p>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeDeleteModal}
-                  className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDeleteProject}
-                  disabled={
-                    isDeleting ||
-                    deleteConfirmation.trim().toLowerCase() !== 'eliminar'
-                  }
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
-                >
-                  {isDeleting ? 'Eliminando...' : 'Confirmar eliminación'}
-                </button>
-              </div>
-            </div>
-          </div>
+            }
+            confirmationLabel="eliminar"
+            confirmationValue={deleteConfirmation}
+            error={deleteError}
+            isLoading={isDeleting}
+            confirmButtonLabel="Confirmar eliminación"
+            loadingButtonLabel="Eliminando..."
+            variant="danger"
+            onConfirmationChange={setDeleteConfirmation}
+            onCancel={closeDeleteModal}
+            onConfirm={handleDeleteProject}
+          />
         )}
 
         {showFinalizeModal && canFinalizeCurrentProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="text-xl font-bold text-slate-900">
-                Finalizar proyecto
-              </h2>
-
-              <p className="mt-3 text-sm text-slate-600">
-                Al finalizar{' '}
-                <strong className="text-slate-900">{project.name}</strong>,
-                se removerán todos los miembros del proyecto.
-              </p>
-
-              <p className="mt-3 text-sm text-slate-600">
-                Para confirmar, escribe{' '}
-                <strong className="text-slate-900">finalizar</strong>.
-              </p>
-
-              <input
-                className="mt-4 w-full rounded-lg border border-slate-300 p-2 text-slate-900 outline-none focus:border-amber-500"
-                value={finalizeConfirmation}
-                onChange={(event) =>
-                  setFinalizeConfirmation(event.target.value)
-                }
-                placeholder="Escribe finalizar"
-              />
-
-              {finalizeError && (
-                <p className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-700">
-                  {finalizeError}
+          <ConfirmProjectActionModal
+            title="Finalizar proyecto"
+            description={
+              <>
+                <p>
+                  Al finalizar{' '}
+                  <strong className="text-[#F5F7FA]">{project.name}</strong>, se
+                  marcará como finalizado y quedará como historial.
                 </p>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeFinalizeModal}
-                  className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleFinalizeProject}
-                  disabled={
-                    isFinalizing ||
-                    finalizeConfirmation.trim().toLowerCase() !== 'finalizar'
-                  }
-                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
-                >
-                  {isFinalizing ? 'Finalizando...' : 'Confirmar finalización'}
-                </button>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+            confirmationLabel="finalizar"
+            confirmationValue={finalizeConfirmation}
+            error={finalizeError}
+            isLoading={isFinalizing}
+            confirmButtonLabel="Confirmar finalización"
+            loadingButtonLabel="Finalizando..."
+            variant="warning"
+            onConfirmationChange={setFinalizeConfirmation}
+            onCancel={closeFinalizeModal}
+            onConfirm={handleFinalizeProject}
+          />
         )}
-
         {canViewTasks && (
-          <>
-            <div className="mt-8 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">
-                  Tablero de tareas
-                </h2>
-
-                <p className="mt-1 text-slate-600">
-                  Seguimiento de tareas asociadas al proyecto.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
-              {columns.map((column) => {
-                const columnTasks = tasks.filter(
-                  (task) => task.status === column.status,
-                );
-
-                return (
-                  <section
-                    key={column.status}
-                    className="min-h-96 rounded-xl bg-white p-4 shadow"
-                  >
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="font-semibold text-slate-900">
-                        {column.title}
-                      </h3>
-
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                        {columnTasks.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {columnTasks.length === 0 && (
-                        <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                          No hay tareas en esta columna.
-                        </p>
-                      )}
-
-                        {columnTasks.map((task) => {
-                          return (
-                          <article
-                            key={task.id}
-                            className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-                          >
-                            <h4 className="font-semibold text-slate-900">
-                              {task.title}
-                            </h4>
-
-                            <p className="mt-2 text-sm text-slate-600">
-                              {task.description}
-                            </p>
-
-                            <div className="mt-4 text-xs text-slate-600">
-                              <p>
-                                <strong>Inicio:</strong> {task.start_date}
-                              </p>
-
-                              <p>
-                                <strong>Término:</strong> {task.end_date}
-                              </p>
-
-                              <p>
-                                <strong>Responsable:</strong>{' '}
-                                {getUserName(task.responsible_id)}
-                              </p>
-                            </div>
-
-                            <div className="mt-4">
-                              <ProgressBar value={task.progress} />
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
-          </>
+          <ProjectTaskBoard tasks={tasks} getUserName={getUserName} />
         )}
       </section>
     </main>

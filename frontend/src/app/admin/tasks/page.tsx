@@ -14,7 +14,11 @@ import {
 } from '../../../lib/api';
 import { formatDateShort } from '../../../lib/date';
 
-type Project = { id: string; name: string };
+type Project = {
+  id: string;
+  name: string;
+  status?: string;
+};
 
 type User = { id: string; name?: string; email?: string; role?: string };
 
@@ -94,7 +98,15 @@ export default function AdminTasksPage() {
       setProjects(loadedProjects);
       setUsers(loadedUsers);
 
-      if (loadedProjects.length > 0) setSelectedProjectId(loadedProjects[0].id);
+      const activeLoadedProjects = loadedProjects.filter(
+        (project: Project) => project.status !== 'DONE',
+      );
+
+      if (activeLoadedProjects.length > 0) {
+        setSelectedProjectId(activeLoadedProjects[0].id);
+      } else {
+        setSelectedProjectId('');
+      }
     } catch {
       setError('No se pudieron cargar los datos iniciales');
     } finally {
@@ -125,7 +137,15 @@ export default function AdminTasksPage() {
     if (selectedProjectId) loadTasks(selectedProjectId);
   }, [selectedProjectId]);
 
-  const selectedProject = useMemo(() => projects.find((p) => p.id === selectedProjectId), [projects, selectedProjectId]);
+  const activeProjects = useMemo(
+      () => projects.filter((project) => project.status !== 'DONE'),
+      [projects],
+    );
+
+    const selectedProject = useMemo(
+      () => activeProjects.find((project) => project.id === selectedProjectId),
+      [activeProjects, selectedProjectId],
+    );
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -255,20 +275,34 @@ export default function AdminTasksPage() {
     }
   }
 
+  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+
+  const inputClass =
+    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+
+  const panelClass =
+    'rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]';
+
+  const secondaryButtonClass =
+    'rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]';
+
+  const primaryButtonClass =
+    'rounded-lg bg-[#52E0DC] px-5 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50';
+
   if (loading) {
     return (
       <section>
-        <h1 className="text-3xl font-bold text-slate-900">Tablero de tareas</h1>
-        <div className="mt-6 rounded-xl bg-white p-6 text-slate-700 shadow">Cargando proyectos...</div>
+        <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
+        <div className="mt-6 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">Cargando proyectos...</div>
       </section>
     );
   }
 
-  if (projects.length === 0) {
+  if (activeProjects.length === 0) {
     return (
       <section>
-        <h1 className="text-3xl font-bold text-slate-900">Tablero de tareas</h1>
-        <div className="mt-6 rounded-xl bg-white p-6 text-slate-700 shadow">No hay proyectos disponibles.</div>
+        <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
+        <div className="mt-6 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">No hay proyectos activos disponibles para gestionar tareas.</div>
       </section>
     );
   }
@@ -277,65 +311,65 @@ export default function AdminTasksPage() {
     <section>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tablero de tareas</h1>
-          <p className="mt-2 text-slate-600">Gestiona todas las tareas asociadas a cada proyecto.</p>
+          <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
+          <p className="mt-2 text-[#AAB4C0]">Gestiona todas las tareas asociadas a cada proyecto.</p>
         </div>
 
-        <button type="button" onClick={() => setShowCreateForm(true)} className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700">+ Nueva tarea</button>
+        <button type="button" onClick={() => setShowCreateForm(true)} className={primaryButtonClass}>+ Nueva tarea</button>
       </div>
 
       <div className="mt-6 max-w-xl">
-        <label className="block text-sm font-medium text-slate-700">Proyecto</label>
-        <select className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none" value={selectedProjectId} onChange={(e)=>setSelectedProjectId(e.target.value)}>
-          {projects.map((project)=>(<option key={project.id} value={project.id}>{project.name}</option>))}
+        <label className={labelClass}>Proyecto</label>
+        <select className={inputClass} value={selectedProjectId} onChange={(e)=>setSelectedProjectId(e.target.value)}>
+          {activeProjects.map((project)=>(<option key={project.id} value={project.id}>{project.name}</option>))}
         </select>
       </div>
 
       {selectedProject && (
-        <p className="mt-4 text-sm text-slate-600">Proyecto seleccionado:{' '}<span className="font-medium text-slate-900">{selectedProject.name}</span></p>
+        <p className="mt-4 text-sm text-[#AAB4C0]">Proyecto seleccionado:{' '}<span className="font-medium text-[#F5F7FA]">{selectedProject.name}</span></p>
       )}
 
-      {error && <p className="mt-4 rounded-lg bg-red-100 p-3 text-red-700">{error}</p>}
-      {message && <p className="mt-4 rounded-lg bg-green-100 p-3 text-green-700">{message}</p>}
+      {error && <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
+      {message && <p className="mt-4 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">{message}</p>}
 
       {showCreateForm && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow">
+        <div className={`mt-6 ${panelClass}`}>
           <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold text-slate-900">Crear nueva tarea</h2>
-            <button type="button" onClick={()=>setShowCreateForm(false)} className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-100">Cerrar</button>
+            <h2 className="text-xl font-semibold text-[#F5F7FA]">Crear nueva tarea</h2>
+            <button type="button" onClick={()=>setShowCreateForm(false)} className={secondaryButtonClass}>Cerrar</button>
           </div>
 
           <form onSubmit={handleCreateTask} className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700">Título</label>
-              <input className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none" value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} required />
+              <label className={labelClass}>Título</label>
+              <input className={inputClass} value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} required />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700">Descripción</label>
-              <textarea className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none" value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} required />
+              <label className={labelClass}>Descripción</label>
+              <textarea className={inputClass} value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} required />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Responsable</label>
-              <select className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none" value={form.responsibleId} onChange={(e)=>setForm({...form,responsibleId:e.target.value})} required>
+              <label className={labelClass}>Responsable</label>
+              <select className={inputClass} value={form.responsibleId} onChange={(e)=>setForm({...form,responsibleId:e.target.value})} required>
                 <option value="">Selecciona un responsable</option>
                 {users.map((user)=>(<option key={user.id} value={user.id}>{user.name||user.email||'Usuario sin nombre'}</option>))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Fecha de inicio</label>
-              <input type="date" className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none" value={form.startDate} onChange={(e)=>setForm({...form,startDate:e.target.value})} required />
+              <label className={labelClass}>Fecha de inicio</label>
+              <input type="date" className={inputClass} value={form.startDate} onChange={(e)=>setForm({...form,startDate:e.target.value})} required />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Fecha de término</label>
-              <input type="date" className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none" value={form.endDate} onChange={(e)=>setForm({...form,endDate:e.target.value})} />
+              <label className={labelClass}>Fecha de término</label>
+              <input type="date" className={inputClass} value={form.endDate} onChange={(e)=>setForm({...form,endDate:e.target.value})} />
             </div>
 
             <div className="flex items-end">
-              <button type="submit" className="w-full rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700">Crear tarea</button>
+              <button type="submit" className={`w-full ${primaryButtonClass}`}>Crear tarea</button>
             </div>
           </form>
         </div>
@@ -345,31 +379,31 @@ export default function AdminTasksPage() {
         {columns.map((column)=>{
           const columnTasks = tasks.filter((task)=>task.status===column.status);
           return (
-            <div key={column.status} className="flex max-h-[650px] min-h-[420px] flex-col rounded-xl bg-slate-200 p-4">
+            <div key={column.status} className="flex max-h-[650px] min-h-[420px] flex-col rounded-2xl border border-[#2A3B55] bg-[#172235] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-semibold text-slate-900">{column.title}</h2>
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">{columnTasks.length}</span>
+                <h2 className="font-semibold text-[#F5F7FA]">{column.title}</h2>
+                <span className="rounded-full border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1 text-xs font-semibold text-[#52E0DC]">{columnTasks.length}</span>
               </div>
 
               {loadingTasks ? (
-                <p className="rounded-lg bg-white p-4 text-sm text-slate-600 shadow">Cargando tareas...</p>
+                <p className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">Cargando tareas...</p>
               ) : columnTasks.length===0 ? (
-                <p className="rounded-lg bg-white p-4 text-sm text-slate-500 shadow">No hay tareas en esta columna.</p>
+                <p className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">No hay tareas en esta columna.</p>
               ) : (
                 <div className="space-y-3 overflow-y-auto pr-2">
                   {columnTasks.map((task)=>(
-                    <article key={task.id} onClick={() => openTaskModal(task)} className="cursor-pointer rounded-xl bg-white p-4 shadow transition hover:shadow-lg">
-                      <h3 className="font-semibold text-slate-900">{task.title}</h3>
-                      <p className="mt-2 line-clamp-2 text-sm text-slate-600">{task.description}</p>
-                      <div className="mt-3 space-y-1 text-xs text-slate-700">
+                    <article key={task.id} onClick={() => openTaskModal(task)} className="cursor-pointer rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4 transition hover:border-[#52E0DC]/40 hover:bg-[#22344E]">
+                      <h3 className="font-semibold text-[#F5F7FA]">{task.title}</h3>
+                      <p className="mt-2 line-clamp-2 text-sm text-[#AAB4C0]">{task.description}</p>
+                      <div className="mt-3 space-y-1 text-xs text-[#AAB4C0]">
                         <p><strong>Responsable:</strong> {getResponsibleName(task)}</p>
                         <p><strong>Inicio:</strong> {formatDateShort(task.start_date ?? task.startDate)}</p>
-                        <p><strong>Avance:</strong> <span className="font-semibold text-slate-900">{task.progress}%</span></p>
+                        <p><strong>Avance:</strong> <span className="font-semibold text-[#F5F7FA]">{task.progress}%</span></p>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-                        {task.status!=='TODO' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'TODO');}} className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">Pasar a Por hacer</button>)}
-                        {task.status!=='IN_PROGRESS' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'IN_PROGRESS');}} className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">Pasar a En progreso</button>)}
-                        {task.status!=='DONE' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'DONE');}} className="rounded-lg bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700">Finalizar</button>)}
+                        {task.status!=='TODO' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'TODO');}} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">Pasar a Por hacer</button>)}
+                        {task.status!=='IN_PROGRESS' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'IN_PROGRESS');}} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">Pasar a En progreso</button>)}
+                        {task.status!=='DONE' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'DONE');}} className="rounded-lg bg-[#52E0DC] px-3 py-1 text-xs font-semibold text-[#171C22] transition hover:bg-[#43C3CF]">Finalizar</button>)}
                       </div>
                     </article>
                   ))}
@@ -381,47 +415,47 @@ export default function AdminTasksPage() {
       </div>
 
       {selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeTaskModal}>
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={closeTaskModal}>
+          <div className="w-full max-w-lg rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{selectedTask.title}</h3>
-              <button onClick={closeTaskModal} className="text-lg text-slate-600 hover:text-slate-900">✕</button>
+              <h3 className="text-lg font-semibold text-[#F5F7FA]">{selectedTask.title}</h3>
+              <button onClick={closeTaskModal} className="text-lg text-[#AAB4C0] transition hover:text-[#F5F7FA]">✕</button>
             </div>
 
-            <p className="mt-2 text-sm text-slate-600">{selectedTask.description}</p>
+            <p className="mt-2 text-sm text-[#AAB4C0]">{selectedTask.description}</p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
-                <p className="text-xs text-slate-500">Responsable</p>
-                <p className="font-medium text-slate-900">{getResponsibleName(selectedTask)}</p>
+                <p className="text-xs text-[#AAB4C0]">Responsable</p>
+                <p className="font-medium text-[#F5F7FA]">{getResponsibleName(selectedTask)}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Estado</p>
-                <p className="font-medium text-slate-900">
+                <p className="text-xs text-[#AAB4C0]">Estado</p>
+                <p className="font-medium text-[#F5F7FA]">
                   {selectedTask.status === 'TODO' ? 'Por hacer' : selectedTask.status === 'IN_PROGRESS' ? 'En progreso' : 'Finalizada'}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Inicio</p>
-                <p className="font-medium text-slate-900">{formatDateShort(selectedTask.start_date ?? selectedTask.startDate)}</p>
+                <p className="text-xs text-[#AAB4C0]">Inicio</p>
+                <p className="font-medium text-[#F5F7FA]">{formatDateShort(selectedTask.start_date ?? selectedTask.startDate)}</p>
               </div>
 
               {selectedTask.status === 'DONE' && (
                 <div>
-                  <p className="text-xs text-slate-500">Término</p>
-                  <p className="font-medium text-slate-900">{formatDateShort(selectedTask.end_date ?? selectedTask.endDate)}</p>
+                  <p className="text-xs text-[#AAB4C0]">Término</p>
+                  <p className="font-medium text-[#F5F7FA]">{formatDateShort(selectedTask.end_date ?? selectedTask.endDate)}</p>
                 </div>
               )}
 
               <div className="md:col-span-2">
-                <p className="text-xs text-slate-500 mb-2">Avance</p>
+                <p className="mb-2 text-xs text-[#AAB4C0]">Avance</p>
                 <div className="flex items-center gap-3">
                   <input type="range" min={0} max={100} value={editProgress} onChange={(e) => setEditProgress(Number(e.target.value))} className="flex-1 cursor-pointer" />
                   <div className="flex items-center gap-1">
-                    <input type="number" min={0} max={100} value={editProgress} onChange={(e) => setEditProgress(Number(e.target.value))} className="w-16 rounded-lg border border-slate-300 p-1 text-center text-sm" />
-                    <span className="text-sm font-medium text-slate-600">%</span>
+                    <input type="number" min={0} max={100} value={editProgress} onChange={(e) => setEditProgress(Number(e.target.value))} className="w-16 rounded-lg border border-[#2A3B55] bg-[#162233] p-1 text-center text-sm text-[#F5F7FA] outline-none focus:border-[#52E0DC]" />
+                    <span className="text-sm font-medium text-[#AAB4C0]">%</span>
                   </div>
                 </div>
               </div>
@@ -429,41 +463,41 @@ export default function AdminTasksPage() {
 
             <div className="mt-4 flex flex-wrap gap-2">
               {selectedTask.status !== 'TODO' && (
-                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'TODO'); closeTaskModal(); }} className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">
+                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'TODO'); closeTaskModal(); }} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">
                   Mover a Por hacer
                 </button>
               )}
               {selectedTask.status !== 'IN_PROGRESS' && (
-                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'IN_PROGRESS'); closeTaskModal(); }} className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">
+                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'IN_PROGRESS'); closeTaskModal(); }} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">
                   Mover a En progreso
                 </button>
               )}
               {selectedTask.status !== 'DONE' && (
-                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'DONE'); closeTaskModal(); }} className="rounded-lg bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700">
+                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'DONE'); closeTaskModal(); }} className="rounded-lg bg-[#52E0DC] px-3 py-1 text-xs font-semibold text-[#171C22] transition hover:bg-[#43C3CF]">
                   Finalizar
                 </button>
               )}
             </div>
 
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-900">Agregar comentario</p>
+            <div className="mt-4 rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
+              <p className="text-sm font-medium text-[#F5F7FA]">Agregar comentario</p>
               <div className="mt-3 grid gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600">Título</label>
+                  <label className="block text-xs font-medium text-[#AAB4C0]">Título</label>
                   <input
                     value={commentForm.title}
                     onChange={(e) => setCommentForm({ ...commentForm, title: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-sm text-[#F5F7FA] outline-none placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]"
                     placeholder="Resumen corto del comentario"
                     maxLength={120}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600">Descripción</label>
+                  <label className="block text-xs font-medium text-[#AAB4C0]">Descripción</label>
                   <textarea
                     value={commentForm.description}
                     onChange={(e) => setCommentForm({ ...commentForm, description: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-sm text-[#F5F7FA] outline-none placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]"
                     placeholder="Escribe el comentario..."
                     maxLength={2000}
                     rows={4}
@@ -475,7 +509,7 @@ export default function AdminTasksPage() {
                   type="button"
                   onClick={handleSaveComment}
                   disabled={savingComment}
-                  className="rounded-lg border border-slate-900 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-900 hover:text-white disabled:opacity-60"
+                  className="rounded-lg border border-[#52E0DC]/40 bg-[#52E0DC]/10 px-4 py-2 text-sm font-medium text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22] disabled:opacity-60"
                 >
                   {savingComment ? 'Guardando...' : 'Agregar comentario'}
                 </button>
@@ -484,49 +518,49 @@ export default function AdminTasksPage() {
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Historial de cambios</p>
+                <p className="text-sm font-semibold text-[#F5F7FA]">Historial de cambios</p>
                 {loadingHistory ? (
-                  <p className="mt-2 text-sm text-slate-600">Cargando historial...</p>
+                  <p className="mt-2 text-sm text-[#AAB4C0]">Cargando historial...</p>
                 ) : taskHistory && taskHistory.length > 0 ? (
-                  <div className="mt-2 max-h-48 space-y-2 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="mt-2 max-h-48 space-y-2 overflow-auto rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-3">
                     {taskHistory.map((h) => (
-                      <div key={h.id} className="rounded-lg border-l-2 border-slate-300 bg-white p-2">
-                        <p className="text-xs text-slate-500">{new Date(h.created_at).toLocaleString('es-CL')}</p>
-                        <p className="mt-1 text-sm text-slate-700">{h.previous_status} → {h.new_status}</p>
-                        {h.comment && <p className="mt-1 text-xs text-slate-500">{h.comment}</p>}
+                      <div key={h.id} className="rounded-lg border border-[#2A3B55] bg-[#162233] p-2">
+                        <p className="text-xs text-[#AAB4C0]">{new Date(h.created_at).toLocaleString('es-CL')}</p>
+                        <p className="mt-1 text-sm text-[#F5F7FA]">{h.previous_status} → {h.new_status}</p>
+                        {h.comment && <p className="mt-1 text-xs text-[#AAB4C0]">{h.comment}</p>}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-slate-500">Sin cambios registrados</p>
+                  <p className="mt-2 text-sm text-[#AAB4C0]">Sin cambios registrados</p>
                 )}
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-slate-900">Comentarios</p>
+                <p className="text-sm font-semibold text-[#F5F7FA]">Comentarios</p>
                 {loadingComments ? (
-                  <p className="mt-2 text-sm text-slate-600">Cargando comentarios...</p>
+                  <p className="mt-2 text-sm text-[#AAB4C0]">Cargando comentarios...</p>
                 ) : taskComments && taskComments.length > 0 ? (
-                  <div className="mt-2 max-h-48 space-y-2 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="mt-2 max-h-48 space-y-2 overflow-auto rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-3">
                     {taskComments.map((comment) => (
-                      <div key={comment.id} className="rounded-lg bg-white p-2 shadow-sm">
+                      <div key={comment.id} className="rounded-lg border border-[#2A3B55] bg-[#162233] p-2">
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-medium text-slate-900">{comment.title}</p>
-                          <p className="shrink-0 text-xs text-slate-500">{new Date(comment.created_at).toLocaleString('es-CL')}</p>
+                          <p className="text-sm font-medium text-[#F5F7FA]">{comment.title}</p>
+                          <p className="shrink-0 text-xs text-[#AAB4C0]">{new Date(comment.created_at).toLocaleString('es-CL')}</p>
                         </div>
-                        <p className="mt-1 text-sm text-slate-700">{comment.description}</p>
+                        <p className="mt-1 text-sm text-[#AAB4C0]">{comment.description}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-slate-500">Sin comentarios</p>
+                  <p className="mt-2 text-sm text-[#AAB4C0]">Sin comentarios</p>
                 )}
               </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={closeTaskModal} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">Cancelar</button>
-              <button onClick={handleSaveProgress} disabled={savingProgress} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60">
+              <button onClick={closeTaskModal} className={secondaryButtonClass}>Cancelar</button>
+              <button onClick={handleSaveProgress} disabled={savingProgress} className="rounded-lg bg-[#52E0DC] px-4 py-2 text-sm font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50">
                 {savingProgress ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>

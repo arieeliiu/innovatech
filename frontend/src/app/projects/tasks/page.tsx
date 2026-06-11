@@ -22,8 +22,9 @@ import { formatDateShort } from '../../../lib/date';
 type Project = {
   id: string;
   name: string;
+  status?: string;
+  main_responsible_id?: string;
 };
-
 type User = {
   id: string;
   name?: string;
@@ -124,8 +125,14 @@ export default function ProjectTasksPage() {
 
       setUsers(loadedUsers);
 
-      if (loadedProjects.length > 0) {
-        setSelectedProjectId(loadedProjects[0].id);
+      const activeLoadedProjects = normalizedProjects.filter(
+        (project: Project) => project.status !== 'DONE',
+      );
+
+      if (activeLoadedProjects.length > 0) {
+        setSelectedProjectId(activeLoadedProjects[0].id);
+      } else {
+        setSelectedProjectId('');
       }
     } catch {
       setError('No se pudieron cargar los datos iniciales');
@@ -164,9 +171,14 @@ export default function ProjectTasksPage() {
     }
   }, [selectedProjectId]);
 
+  const activeProjects = useMemo(
+    () => projects.filter((project) => project.status !== 'DONE'),
+    [projects],
+  );
+
   const selectedProject = useMemo(() => {
-    return projects.find((project) => project.id === selectedProjectId);
-  }, [projects, selectedProjectId]);
+    return activeProjects.find((project) => project.id === selectedProjectId);
+  }, [activeProjects, selectedProjectId]);
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -292,29 +304,43 @@ export default function ProjectTasksPage() {
     }
   }
 
+  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+
+  const inputClass =
+    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+
+  const panelClass =
+    'rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]';
+
+  const secondaryButtonClass =
+    'rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]';
+
+  const primaryButtonClass =
+    'rounded-lg bg-[#52E0DC] px-5 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50';
+
   if (loading) {
     return (
       <section>
-        <h1 className="text-3xl font-bold text-slate-900">
+        <h1 className="text-3xl font-bold text-[#F5F7FA]">
           Tablero de tareas
         </h1>
 
-        <div className="mt-6 rounded-xl bg-white p-6 text-slate-700 shadow">
+        <div className="mt-6 rounded-xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
           Cargando proyectos...
         </div>
       </section>
     );
   }
 
-  if (projects.length === 0) {
+  if (activeProjects.length === 0) {
     return (
       <section>
-        <h1 className="text-3xl font-bold text-slate-900">
+        <h1 className="text-3xl font-bold text-[#F5F7FA]">
           Tablero de tareas
         </h1>
 
-        <div className="mt-6 rounded-xl bg-white p-6 text-slate-700 shadow">
-          No estás asociado a ningún proyecto.
+        <div className="mt-6 rounded-xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+          No tienes proyectos activos disponibles para gestionar tareas.
         </div>
       </section>
     );
@@ -324,11 +350,11 @@ export default function ProjectTasksPage() {
     <section>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-bold text-[#F5F7FA]">
             Tablero de tareas
           </h1>
 
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-[#AAB4C0]">
             Gestiona las tareas asociadas a cada proyecto.
           </p>
         </div>
@@ -336,23 +362,23 @@ export default function ProjectTasksPage() {
         <button
           type="button"
           onClick={() => setShowCreateForm(true)}
-          className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+          className={primaryButtonClass}
         >
           + Nueva tarea
         </button>
       </div>
 
       <div className="mt-6 max-w-xl">
-        <label className="block text-sm font-medium text-slate-700">
+        <label className={labelClass}>
           Proyecto
         </label>
 
         <select
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none"
+          className={inputClass}
           value={selectedProjectId}
           onChange={(event) => setSelectedProjectId(event.target.value)}
         >
-          {projects.map((project) => (
+          {activeProjects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
             </option>
@@ -361,35 +387,35 @@ export default function ProjectTasksPage() {
       </div>
 
       {selectedProject && (
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-[#AAB4C0]">
           Proyecto seleccionado:{' '}
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-[#F5F7FA]">
             {selectedProject.name}
           </span>
         </p>
       )}
 
       {error && (
-        <p className="mt-4 rounded-lg bg-red-100 p-3 text-red-700">{error}</p>
+        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>
       )}
 
       {message && (
-        <p className="mt-4 rounded-lg bg-green-100 p-3 text-green-700">
+        <p className="mt-4 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">
           {message}
         </p>
       )}
 
       {showCreateForm && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow">
+        <div className={`mt-6 ${panelClass}`}>
           <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold text-slate-900">
+            <h2 className="text-xl font-semibold text-[#F5F7FA]">
               Crear nueva tarea
             </h2>
 
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
-              className="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-100"
+              className={secondaryButtonClass}
             >
               Cerrar
             </button>
@@ -397,12 +423,12 @@ export default function ProjectTasksPage() {
 
           <form onSubmit={handleCreateTask} className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700">
+              <label className={labelClass}>
                 Título
               </label>
 
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none"
+                className={inputClass}
                 value={form.title}
                 onChange={(event) =>
                   setForm({ ...form, title: event.target.value })
@@ -412,12 +438,12 @@ export default function ProjectTasksPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700">
+              <label className={labelClass}>
                 Descripción
               </label>
 
               <textarea
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none"
+                className={inputClass}
                 value={form.description}
                 onChange={(event) =>
                   setForm({ ...form, description: event.target.value })
@@ -427,12 +453,12 @@ export default function ProjectTasksPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">
+              <label className={labelClass}>
                 Responsable
               </label>
 
               <select
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none"
+                className={inputClass}
                 value={form.responsibleId}
                 onChange={(event) =>
                   setForm({ ...form, responsibleId: event.target.value })
@@ -450,13 +476,13 @@ export default function ProjectTasksPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">
+              <label className={labelClass}>
                 Fecha de inicio
               </label>
 
               <input
                 type="date"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none"
+                className={inputClass}
                 value={form.startDate}
                 onChange={(event) =>
                   setForm({ ...form, startDate: event.target.value })
@@ -466,13 +492,13 @@ export default function ProjectTasksPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">
+              <label className={labelClass}>
                 Fecha de término
               </label>
 
               <input
                 type="date"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none"
+                className={inputClass}
                 value={form.endDate}
                 onChange={(event) =>
                   setForm({ ...form, endDate: event.target.value })
@@ -484,7 +510,7 @@ export default function ProjectTasksPage() {
             <div className="flex items-end">
               <button
                 type="submit"
-                className="w-full rounded-lg bg-slate-900 px-5 py-2 font-medium text-white transition hover:bg-slate-700"
+                className={primaryButtonClass}
               >
                 Crear tarea
               </button>
@@ -502,24 +528,24 @@ export default function ProjectTasksPage() {
           return (
               <div
                 key={column.status}
-                className="flex max-h-[650px] min-h-[420px] flex-col rounded-xl bg-slate-200 p-4"
+                className="flex max-h-[650px] min-h-[420px] flex-col rounded-2xl border border-[#2A3B55] bg-[#172235] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
               >
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-semibold text-slate-900">
+                  <h2 className="font-semibold text-[#F5F7FA]">
                   {column.title}
                 </h2>
 
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                  <span className="rounded-full border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1 text-xs font-semibold text-[#52E0DC]">
                   {columnTasks.length}
                 </span>
               </div>
 
               {loadingTasks ? (
-                <p className="rounded-lg bg-white p-4 text-sm text-slate-600 shadow">
+                  <p className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">
                   Cargando tareas...
                 </p>
               ) : columnTasks.length === 0 ? (
-                <p className="rounded-lg bg-white p-4 text-sm text-slate-500 shadow">
+                  <p className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">
                   No hay tareas en esta columna.
                 </p>
               ) : (
@@ -527,33 +553,33 @@ export default function ProjectTasksPage() {
                   {columnTasks.map((task) => (
                     <article
                       key={task.id}
-                      className="rounded-xl bg-white p-4 shadow"
+                        className="cursor-pointer rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4 transition hover:border-[#52E0DC]/40 hover:bg-[#22344E]"
                     >
-                      <h3 className="font-semibold text-slate-900">
+                        <h3 className="font-semibold text-[#F5F7FA]">
                         {task.title}
                       </h3>
 
-                      <p className="mt-2 text-sm text-slate-600">
+                        <p className="mt-2 text-sm text-[#AAB4C0]">
                         {task.description}
                       </p>
 
-                      <div className="mt-4 space-y-1 text-sm text-slate-700">
+                        <div className="mt-4 space-y-1 text-sm text-[#AAB4C0]">
                         <p>
-                          <strong>Responsable:</strong>{' '}
+                            <strong className="text-[#F5F7FA]">Responsable:</strong>{' '}
                           {getResponsibleName(task)}
                         </p>
 
                         <p>
-                          <strong>Avance:</strong> {task.progress}%
+                            <strong className="text-[#F5F7FA]">Avance:</strong> {task.progress}%
                         </p>
 
                         <p>
-                          <strong>Inicio:</strong>{' '}
+                            <strong className="text-[#F5F7FA]">Inicio:</strong>{' '}
                           {task.start_date ?? task.startDate}
                         </p>
 
                         <p>
-                          <strong>Término:</strong>{' '}
+                            <strong className="text-[#F5F7FA]">Término:</strong>{' '}
                           {task.end_date ?? task.endDate}
                         </p>
                       </div>
@@ -563,7 +589,7 @@ export default function ProjectTasksPage() {
                           <button
                             type="button"
                             onClick={() => handleChangeStatus(task, 'TODO')}
-                            className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                            className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]"
                           >
                             Pasar a Por hacer
                           </button>
@@ -575,7 +601,7 @@ export default function ProjectTasksPage() {
                             onClick={() =>
                               handleChangeStatus(task, 'IN_PROGRESS')
                             }
-                            className="rounded-lg border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                            className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]"
                           >
                             Pasar a En progreso
                           </button>
@@ -585,7 +611,7 @@ export default function ProjectTasksPage() {
                           <button
                             type="button"
                             onClick={() => handleChangeStatus(task, 'DONE')}
-                            className="rounded-lg bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700"
+                            className="rounded-lg bg-[#52E0DC] px-3 py-1 text-xs font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
                           >
                             Finalizar
                           </button>
@@ -600,33 +626,33 @@ export default function ProjectTasksPage() {
         })}
       </div>
       {selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{selectedTask.title}</h3>
-              <button onClick={closeTaskModal} className="text-sm text-slate-600">Cerrar</button>
+              <h3 className="text-lg font-semibold text-[#F5F7FA]">{selectedTask.title}</h3>
+              <button onClick={closeTaskModal} className="text-sm text-[#AAB4C0] transition hover:text-[#F5F7FA]">Cerrar</button>
             </div>
 
-            <p className="mt-2 text-sm text-slate-600">{selectedTask.description}</p>
+            <p className="mt-2 text-sm text-[#AAB4C0]">{selectedTask.description}</p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
-                <p className="text-xs text-slate-500">Responsable</p>
-                <p className="font-medium text-slate-900">{getResponsibleName(selectedTask)}</p>
+                <p className="text-xs text-[#AAB4C0]">Responsable</p>
+                <p className="font-medium text-[#F5F7FA]">{getResponsibleName(selectedTask)}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Inicio</p>
-                <p className="font-medium text-slate-900">{formatDateShort(selectedTask.start_date ?? selectedTask.startDate)}</p>
+                <p className="text-xs text-[#AAB4C0]">Inicio</p>
+                <p className="font-medium text-[#F5F7FA]">{formatDateShort(selectedTask.start_date ?? selectedTask.startDate)}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Término</p>
-                <p className="font-medium text-slate-900">{formatDateShort(selectedTask.end_date ?? selectedTask.endDate)}</p>
+                <p className="text-xs text-[#AAB4C0]">Término</p>
+                <p className="font-medium text-[#F5F7FA]">{formatDateShort(selectedTask.end_date ?? selectedTask.endDate)}</p>
               </div>
 
               <div>
-                <p className="text-xs text-slate-500">Avance</p>
+                <p className="text-xs text-[#AAB4C0]">Avance</p>
                 <div className="mt-1 flex items-center gap-3">
                   <input
                     type="number"
@@ -634,34 +660,34 @@ export default function ProjectTasksPage() {
                     max={100}
                     value={editProgress}
                     onChange={(e) => setEditProgress(Number(e.target.value))}
-                    className="w-24 rounded-lg border border-slate-300 p-2"
+                    className="w-24 rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-center text-sm text-[#F5F7FA] outline-none focus:border-[#52E0DC]"
                   />
-                  <span className="text-sm text-slate-600">%</span>
+                  <span className="text-sm text-[#AAB4C0]">%</span>
                 </div>
               </div>
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm text-slate-700">Comentarios</label>
-              <textarea value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 p-2" placeholder="Agregar comentario" />
+              <label className="block text-sm font-medium text-[#F5F7FA]">Comentarios</label>
+              <textarea value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="mt-2 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]" placeholder="Agregar comentario" />
             </div>
 
             {loadingHistory ? (
-              <p className="mt-4 text-sm text-slate-600">Cargando historial...</p>
+              <p className="mt-4 text-sm text-[#AAB4C0]">Cargando historial...</p>
             ) : (
               <div className="mt-4 space-y-2 max-h-40 overflow-auto">
                 {taskHistory.map((h) => (
-                  <div key={h.id} className="rounded-lg border border-slate-100 p-2">
-                    <p className="text-xs text-slate-500">{new Date(h.created_at).toLocaleString()}</p>
-                    <p className="text-sm text-slate-700">{h.comment}</p>
+                  <div key={h.id} className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-2">
+                    <p className="text-xs text-[#AAB4C0]">{new Date(h.created_at).toLocaleString()}</p>
+                    <p className="text-sm text-[#F5F7FA]">{h.comment}</p>
                   </div>
                 ))}
               </div>
             )}
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={closeTaskModal} className="rounded-lg border border-slate-300 px-4 py-2">Cancelar</button>
-              <button onClick={handleSaveProgress} disabled={savingProgress} className="rounded-lg bg-slate-900 px-4 py-2 text-white">{savingProgress ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={closeTaskModal} className={secondaryButtonClass}>Cancelar</button>
+              <button onClick={handleSaveProgress} disabled={savingProgress} className="rounded-lg bg-[#52E0DC] px-4 py-2 text-sm font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50">{savingProgress ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>
