@@ -42,8 +42,6 @@ interface ProjectMemberRecord {
   user_id: string;
   project_role: string;
   joined_at: string | null;
-  created_at: string;
-  updated_at: string;
 }
 
 @Injectable()
@@ -54,6 +52,8 @@ export class AssignmentsService {
   ) {}
 
   private throwDatabaseError(message: string): never {
+    console.error('[Resource Service - Supabase]:', message);
+
     const normalizedMessage = message.toLowerCase();
 
     if (
@@ -308,7 +308,7 @@ export class AssignmentsService {
     const { data, error } = await this.supabase
       .schema('public')
       .from('project_members')
-      .select('id, project_id, user_id, project_role, joined_at, created_at, updated_at')
+      .select('id, project_id, user_id, project_role, joined_at')
       .eq('project_id', projectId)
       .eq('user_id', userId)
       .maybeSingle();
