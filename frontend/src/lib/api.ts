@@ -4,7 +4,7 @@ const RESOURCE_SERVICE_URL =
   process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL;
 
 const ANALYTICS_SERVICE_URL =
-process.env.NEXT_PUBLIC_ANALYTICS_SERVICE_URL;
+  process.env.NEXT_PUBLIC_ANALYTICS_SERVICE_URL;
 
 function getApiUrl() {
   if (!API_URL) {
@@ -12,6 +12,15 @@ function getApiUrl() {
   }
 
   return API_URL;
+}
+
+function buildServiceApiUrl(baseUrl: string, endpoint: string) {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+  const apiBaseUrl = normalizedBaseUrl.endsWith('/api')
+    ? normalizedBaseUrl
+    : `${normalizedBaseUrl}/api`;
+
+  return `${apiBaseUrl}${endpoint}`;
 }
 
 function getToken() {
@@ -25,6 +34,7 @@ function getToken() {
 
   return token;
 }
+
 async function request(endpoint: string, options: RequestInit = {}) {
   const token = getToken();
   const apiUrl = getApiUrl();
@@ -165,7 +175,10 @@ export async function deleteProject(projectId: string) {
   });
 }
 
-export async function finalizeProject(projectId: string, body?: { comment?: string }) {
+export async function finalizeProject(
+  projectId: string,
+  body?: { comment?: string },
+) {
   return request(`/projects/${projectId}/finalize`, {
     method: 'PATCH',
     body: JSON.stringify(body ?? {}),
@@ -240,7 +253,7 @@ export async function getResources(): Promise<{
   }
 
   const response = await fetch(
-    `${RESOURCE_SERVICE_URL}/resources`,
+    buildServiceApiUrl(RESOURCE_SERVICE_URL, '/resources'),
   );
 
   const data = await response.json();
@@ -283,7 +296,7 @@ export async function getAnalyticsOverview(): Promise<AnalyticsOverview> {
   }
 
   const response = await fetch(
-    `${ANALYTICS_SERVICE_URL}/analytics/overview`,
+    buildServiceApiUrl(ANALYTICS_SERVICE_URL, '/analytics/overview'),
   );
 
   const data = await response.json();
