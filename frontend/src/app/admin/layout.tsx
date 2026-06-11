@@ -114,6 +114,13 @@ export default function AdminLayout({
           </Link>
 
           <Link
+            href="/admin/resources"
+            className={getNavItemClass(/^\/admin\/resources$/)}
+          >
+            Recursos
+          </Link>
+          
+          <Link
             href="/admin/users/create"
             className={getNavItemClass(/^\/admin\/users\/create$/)}
           >

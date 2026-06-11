@@ -1,4 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const RESOURCE_SERVICE_URL =
+  process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL;
 
 function getApiUrl() {
   if (!API_URL) {
@@ -197,4 +199,53 @@ export async function updateUser(
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+}
+
+export type ResourceProject = {
+  id: string;
+  name: string | null;
+  status: string;
+  roleInProject: string | null;
+  startDate: string | null;
+  endDate: string | null;
+};
+
+export type ResourceSummary = {
+  userId: string;
+  name: string;
+  email: string | null;
+  role: 'ARCHITECT' | 'DEVELOPER' | 'CONSULTANT';
+  activeProjects: number;
+  maximumProjects: number;
+  availabilityStatus: 'AVAILABLE' | 'UNAVAILABLE';
+  canReceiveNewProjects: boolean;
+  projects: ResourceProject[];
+};
+
+export async function getResources(): Promise<{
+  success: boolean;
+  total: number;
+  available: number;
+  unavailable: number;
+  resources: ResourceSummary[];
+}> {
+  if (!RESOURCE_SERVICE_URL) {
+    throw new Error(
+      'Falta configurar NEXT_PUBLIC_RESOURCE_SERVICE_URL',
+    );
+  }
+
+  const response = await fetch(
+    `${RESOURCE_SERVICE_URL}/resources`,
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || 'No se pudieron cargar los recursos',
+    );
+  }
+
+  return data;
 }

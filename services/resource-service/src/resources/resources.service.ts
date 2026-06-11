@@ -35,6 +35,14 @@ interface ProjectRecord {
   status: string;
 }
 
+interface ProjectMemberRecord {
+  id: string;
+  project_id: string;
+  user_id: string;
+  project_role: string;
+  joined_at: string | null;
+}
+
 interface ProfessionalUser {
   id: string;
   email: string | null;
@@ -251,6 +259,76 @@ export class ResourcesService {
     return (data ?? []) as ResourceAssignment[];
   }
 
+  private async getProjectMembersByProjectId(
+    projectId: string,
+  ): Promise<ProjectMemberRecord[]> {
+    const { data, error } = await this.supabase
+      .schema('public')
+      .from('project_members')
+      .select('id, project_id, user_id, project_role, joined_at')
+      .eq('project_id', projectId);
+
+    if (error) {
+      this.throwDatabaseError(error.message);
+    }
+
+    return (data ?? []) as ProjectMemberRecord[];
+  }
+
+  private async getProjectMembersByUserIds(
+    userIds: string[],
+  ): Promise<ProjectMemberRecord[]> {
+    const uniqueUserIds = getUniqueValues(userIds);
+
+    if (uniqueUserIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await this.supabase
+      .schema('public')
+      .from('project_members')
+      .select('id, project_id, user_id, project_role, joined_at')
+      .in('user_id', uniqueUserIds);
+
+    if (error) {
+      this.throwDatabaseError(error.message);
+    }
+
+    return (data ?? []) as ProjectMemberRecord[];
+  }
+
+private mergeAssignmentsWithProjectMembers(
+  assignments: ResourceAssignment[],
+  projectMembers: ProjectMemberRecord[],
+): ResourceAssignment[] {
+  const recordsByUserAndProject = new Map<string, ResourceAssignment>();
+
+  for (const member of projectMembers) {
+    const key = `${member.user_id}:${member.project_id}`;
+
+    recordsByUserAndProject.set(key, {
+      id: member.id,
+      user_id: member.user_id,
+      project_id: member.project_id,
+      role_in_project: member.project_role,
+      start_date: null,
+      end_date: null,
+      status: 'ACTIVE',
+      created_at: member.joined_at ?? '',
+      updated_at: member.joined_at ?? '',
+    });
+  }
+
+  for (const assignment of assignments) {
+    const key = `${assignment.user_id}:${assignment.project_id}`;
+
+    // Una asignación ACTIVE aporta fechas y otros datos más completos.
+    recordsByUserAndProject.set(key, assignment);
+  }
+
+  return [...recordsByUserAndProject.values()];
+}
+
   private async getProjectsByIds(projectIds: string[]): Promise<ProjectRecord[]> {
     const uniqueProjectIds = getUniqueValues(projectIds);
 
@@ -356,14 +434,29 @@ export class ResourcesService {
   async findAll() {
     const professionalUsers = await this.getProfessionalUsers();
     const userIds = professionalUsers.map((user) => user.id);
-    const assignments = await this.getAssignmentsByUserIds(userIds);
-    const projectIds = getUniqueActiveProjectIds(assignments);
+
+    const [assignments, projectMembers] = await Promise.all([
+      this.getAssignmentsByUserIds(userIds),
+      this.getProjectMembersByUserIds(userIds),
+    ]);
+
+    const combinedAssignments = this.mergeAssignmentsWithProjectMembers(
+      assignments,
+      projectMembers,
+    );
+
+    const projectIds = getUniqueActiveProjectIds(combinedAssignments);
     const projects = await this.getProjectsByIds(projectIds);
-    const projectsById = new Map(projects.map((project) => [project.id, project]));
+    const projectsById = new Map(
+      projects.map((project) => [project.id, project]),
+    );
+
     const assignmentsByUserId = new Map<string, ResourceAssignment[]>();
 
-    for (const assignment of assignments) {
-      const currentAssignments = assignmentsByUserId.get(assignment.user_id) ?? [];
+    for (const assignment of combinedAssignments) {
+      const currentAssignments =
+        assignmentsByUserId.get(assignment.user_id) ?? [];
+
       currentAssignments.push(assignment);
       assignmentsByUserId.set(assignment.user_id, currentAssignments);
     }
@@ -394,26 +487,50 @@ export class ResourcesService {
   async findByUserId(userId: string) {
     const user = await this.getUserById(userId);
     const professionalUser = this.toProfessionalUser(user);
-    const assignments = await this.getAssignmentsByUserId(userId);
-    const projectIds = getUniqueActiveProjectIds(assignments);
+
+    const [assignments, projectMembers] = await Promise.all([
+      this.getAssignmentsByUserId(userId),
+      this.getProjectMembersByUserIds([userId]),
+    ]);
+
+    const combinedAssignments = this.mergeAssignmentsWithProjectMembers(
+      assignments,
+      projectMembers,
+    );
+
+    const projectIds = getUniqueActiveProjectIds(combinedAssignments);
     const projects = await this.getProjectsByIds(projectIds);
-    const projectsById = new Map(projects.map((project) => [project.id, project]));
+    const projectsById = new Map(
+      projects.map((project) => [project.id, project]),
+    );
 
     return {
       success: true,
       resource: this.buildResourceSummary(
         professionalUser,
-        assignments,
+        combinedAssignments,
         projectsById,
       ),
     };
-  }
+  } 
 
   async findByProjectId(projectId: string) {
     const project = await this.getProjectById(projectId);
-    const assignments = await this.getAssignmentsByProjectId(projectId);
-    const professionalUsers = await this.getProfessionalUsers();
-    const usersById = new Map(professionalUsers.map((user) => [user.id, user]));
+
+    const [assignments, projectMembers, professionalUsers] = await Promise.all([
+      this.getAssignmentsByProjectId(projectId),
+      this.getProjectMembersByProjectId(projectId),
+      this.getProfessionalUsers(),
+    ]);
+
+    const usersById = new Map(
+      professionalUsers.map((user) => [user.id, user]),
+    );
+
+    const assignmentsByUserId = new Map(
+      assignments.map((assignment) => [assignment.user_id, assignment]),
+    );
+
     const resourcesByUserId = new Map<
       string,
       {
@@ -427,10 +544,38 @@ export class ResourcesService {
       }
     >();
 
+    for (const member of projectMembers) {
+      const user = usersById.get(member.user_id);
+
+      if (!user) {
+        continue;
+      }
+
+      const assignment = assignmentsByUserId.get(member.user_id);
+
+      resourcesByUserId.set(user.id, {
+        userId: user.id,
+        name: this.resolveName({
+          email: user.email,
+          user_metadata: user.user_metadata,
+        }),
+        email: user.email,
+        role: user.role,
+        roleInProject:
+          assignment?.role_in_project ?? member.project_role ?? user.role,
+        startDate: assignment?.start_date ?? null,
+        endDate: assignment?.end_date ?? null,
+      });
+    }
+
     for (const assignment of assignments) {
+      if (resourcesByUserId.has(assignment.user_id)) {
+        continue;
+      }
+
       const user = usersById.get(assignment.user_id);
 
-      if (!user || resourcesByUserId.has(user.id)) {
+      if (!user) {
         continue;
       }
 

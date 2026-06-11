@@ -39,6 +39,38 @@ export class ProjectsService {
     return (data ?? []).map((member) => member.project_id);
   }
 
+  private async getActiveProjectCountForUser(userId: string): Promise<number> {
+    const { data: memberships, error: membershipsError } = await this.supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', userId);
+
+    if (membershipsError) {
+      throw new InternalServerErrorException(membershipsError.message);
+    }
+
+    const projectIds = [
+      ...new Set((memberships ?? []).map((member) => member.project_id)),
+    ];
+
+    if (projectIds.length === 0) {
+      return 0;
+    }
+
+    const { data: projects, error: projectsError } = await this.supabase
+      .from('projects')
+      .select('id, status')
+      .in('id', projectIds);
+
+    if (projectsError) {
+      throw new InternalServerErrorException(projectsError.message);
+    }
+
+    return (projects ?? []).filter(
+      (project) => project.status?.trim().toUpperCase() !== 'DONE',
+    ).length;
+  }
+
   private async ensureProjectAccess(
     projectId: string,
     userId: string,
@@ -640,13 +672,40 @@ export class ProjectsService {
   ) {
     const { userId, projectRole } = addProjectMemberDto;
 
-    await this.ensureProjectExists(projectId);
+    const project = await this.ensureProjectIsNotFinished(projectId);
     await this.ensureUserExists(userId);
+
+    const { data: existingMember, error: existingMemberError } =
+      await this.supabase
+        .from('project_members')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (existingMemberError) {
+      throw new InternalServerErrorException(existingMemberError.message);
+    }
+
+    if (existingMember) {
+      throw new BadRequestException(
+        'Este usuario ya pertenece al proyecto',
+      );
+    }
+
+    const activeProjectCount =
+      await this.getActiveProjectCountForUser(userId);
+
+    if (activeProjectCount >= 3) {
+      throw new BadRequestException(
+        'El profesional ya alcanzó el máximo de 3 proyectos activos',
+      );
+    }
 
     const { data, error } = await this.supabase
       .from('project_members')
       .insert({
-        project_id: projectId,
+        project_id: project.id,
         user_id: userId,
         project_role: projectRole,
       })
@@ -658,7 +717,9 @@ export class ProjectsService {
         error.code === '23505' ||
         error.message.includes('project_members_project_id_user_id_key')
       ) {
-        throw new BadRequestException('Este usuario ya pertenece al proyecto');
+        throw new BadRequestException(
+          'Este usuario ya pertenece al proyecto',
+        );
       }
 
       throw new InternalServerErrorException(error.message);
