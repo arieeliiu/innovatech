@@ -60,6 +60,11 @@ export class MailService {
       };
     } catch (error) {
       console.error('Error al enviar email con Brevo:', error);
+
+      if (error instanceof Error) {
+        console.error('Detalle Brevo:', error.message);
+      }
+
       throw new InternalServerErrorException('Fallo al enviar correo.');
     }
   }

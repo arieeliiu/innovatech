@@ -12,9 +12,12 @@ import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
 import { normalizeRole } from '../../auth/utils/role.utils';
+import { MailService } from '../../mail/mail.service';
 
 @Injectable()
 export class ProjectsService {
+  constructor(private readonly mailService: MailService) {}
+
   private supabase = createClient(
     process.env.SUPABASE_URL as string,
     process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -170,7 +173,7 @@ export class ProjectsService {
   private async ensureProjectIsNotFinished(projectId: string) {
     const { data, error } = await this.supabase
       .from('projects')
-      .select('id, status')
+      .select('id, name, status')
       .eq('id', projectId)
       .single();
 
@@ -724,6 +727,30 @@ export class ProjectsService {
 
       throw new InternalServerErrorException(error.message);
     }
+
+  try {
+    const user = await this.ensureUserExists(userId);
+
+    if (user.email) {
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: `Has sido agregado al proyecto ${project.name}`,
+        text: `Hola, has sido agregado al proyecto "${project.name}" con el rol ${projectRole}. Ingresa a Innovatech para revisar los detalles.`,
+        html: `
+          <h2>Nueva asignación de proyecto</h2>
+          <p>Hola ${user.user_metadata?.name ?? ''},</p>
+          <p>Has sido agregado al proyecto <strong>${project.name}</strong>.</p>
+          <p>Rol asignado: <strong>${projectRole}</strong></p>
+          <p>Ingresa a Innovatech para revisar los detalles.</p>
+        `,
+      });
+    }
+  } catch (mailError) {
+    console.error(
+      'El miembro fue agregado, pero no se pudo enviar el correo:',
+      mailError,
+    );
+  }
 
     return {
       success: true,
