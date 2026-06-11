@@ -66,28 +66,39 @@ export default function CreateUserPage() {
     }
   }
 
+  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+
+  const inputClass =
+    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+
+  const passwordInputClass =
+    'w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 pr-11 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+
+  const iconButtonClass =
+    'absolute right-3 top-1/2 -translate-y-1/2 text-[#AAB4C0] transition hover:text-[#F5F7FA]';
+
   return (
-    <main className="min-h-screen bg-slate-100 p-8">
+    <main className="min-h-screen bg-[#1F2E49] p-8">
       <section className="mx-auto max-w-xl">
-        <h1 className="text-3xl font-bold text-slate-900">
+        <h1 className="text-3xl font-bold text-[#F5F7FA]">
           Registrar usuario
         </h1>
 
-        <p className="mt-2 text-slate-600">
+        <p className="mt-2 text-[#AAB4C0]">
           Crear una nueva cuenta para Innovatech Solutions.
         </p>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 space-y-4 rounded-xl bg-white p-6 shadow"
+          className="mt-8 space-y-4 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
         >
           <div>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className={labelClass}>
               Nombre
             </label>
 
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+              className={inputClass}
               value={form.name}
               onChange={(event) =>
                 setForm({ ...form, name: event.target.value })
@@ -97,13 +108,13 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className={labelClass}>
               Correo electrónico
             </label>
 
             <input
               type="email"
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+              className={inputClass}
               value={form.email}
               onChange={(event) =>
                 setForm({ ...form, email: event.target.value })
@@ -113,14 +124,14 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className={labelClass}>
               Contraseña
             </label>
 
             <div className="relative mt-1">
               <input
                 type={showPassword ? 'text' : 'password'}
-                className="w-full rounded-lg border border-slate-300 bg-white p-2 pr-11 text-slate-900 outline-none focus:border-slate-900"
+                className={passwordInputClass}
                 value={form.password}
                 onChange={(event) =>
                   setForm({ ...form, password: event.target.value })
@@ -132,7 +143,7 @@ export default function CreateUserPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900"
+                className={iconButtonClass}
                 aria-label={
                   showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
                 }
@@ -178,14 +189,14 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className={labelClass}>
               Confirmar contraseña
             </label>
 
             <div className="relative mt-1">
               <input
                 type={showPassword ? 'text' : 'password'}
-                className="w-full rounded-lg border border-slate-300 bg-white p-2 pr-11 text-slate-900 outline-none focus:border-slate-900"
+                className={passwordInputClass}
                 value={form.confirmPassword}
                 onChange={(event) =>
                   setForm({ ...form, confirmPassword: event.target.value })
@@ -196,7 +207,7 @@ export default function CreateUserPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900"
+                className={iconButtonClass}
                 aria-label={
                   showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
                 }
@@ -242,12 +253,12 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className={labelClass}>
               Rol
             </label>
 
             <select
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 outline-none focus:border-slate-900"
+              className={inputClass}
               value={form.role}
               onChange={(event) =>
                 setForm({ ...form, role: event.target.value })
@@ -265,14 +276,22 @@ export default function CreateUserPage() {
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
-              className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700"
+              className="rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
             >
               Crear usuario
             </button>
           </div>
 
-          {message && <p className="text-green-700">{message}</p>}
-          {error && <p className="text-red-700">{error}</p>}
+          {message && (
+            <p className="rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">
+              {message}
+            </p>
+          )}
+          {error && (
+            <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+              {error}
+            </p>
+          )}
         </form>
       </section>
     </main>

@@ -115,22 +115,22 @@ export default function ProfileTopbar() {
   const initial = (user?.name || user?.email || 'U').charAt(0).toUpperCase();
 
   return (
-    <header className="border-b border-slate-200 bg-white/90 px-6 py-3 shadow-sm backdrop-blur">
+    <header className="border-b border-white/10 bg-[#162233] px-6 py-3 shadow-sm backdrop-blur">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-500">Sesión iniciada</p>
-          <p className="text-2xl font-semibold tracking-tight text-slate-900">
+          <p className="text-sm text-[#AAB4C0]">Sesión iniciada</p>
+          <p className="text-2xl font-semibold tracking-tight text-[#F5F7FA]">
             {user?.name || user?.email || 'Usuario no identificado'}
           </p>
         </div>
 
         <div className="flex items-center gap-4" ref={menuRef}>
           <div className="text-right">
-            <p className="text-sm font-medium text-slate-900">
+            <p className="text-sm font-medium text-[#F5F7FA]">
               {user?.email || 'Sin correo'}
             </p>
 
-            <span className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+            <span className="inline-flex rounded-full border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#52E0DC]">
               {getUserRoleLabel(user?.role)}
             </span>
           </div>
@@ -147,7 +147,7 @@ export default function ProfileTopbar() {
             <button
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm transition hover:border-slate-300"
+              className="flex items-center gap-2 rounded-xl border border-white/20 bg-[#162233] px-2 py-1 shadow-sm transition hover:border-white/30"
             >
               {profilePhoto ? (
                 <img
@@ -156,7 +156,7 @@ export default function ProfileTopbar() {
                   className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#52E0DC] text-sm font-bold text-[#171C22]">
                   {initial}
                 </div>
               )}
@@ -165,7 +165,7 @@ export default function ProfileTopbar() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="h-4 w-4 text-slate-500"
+                className="h-4 w-4 text-[#AAB4C0]"
               >
                 <path
                   fillRule="evenodd"
@@ -176,12 +176,12 @@ export default function ProfileTopbar() {
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                <div className="border-b border-slate-100 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">
+              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[#2A3B55] bg-[#171C22] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+                <div className="border-b border-[#2A3B55] px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-[#AAB4C0]">
                     Mi cuenta
                   </p>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-[#F5F7FA]">
                     {user?.name || user?.email || 'Usuario'}
                   </p>
                 </div>
@@ -193,7 +193,7 @@ export default function ProfileTopbar() {
                       setNotice('Perfil disponible pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
                   >
                     Perfil
                   </button>
@@ -204,7 +204,7 @@ export default function ProfileTopbar() {
                       setNotice('Configuraciones disponibles pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
                   >
                     Configuraciones
                   </button>
@@ -215,7 +215,7 @@ export default function ProfileTopbar() {
                       setNotice('Cambio de contraseña disponible pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
                   >
                     Cambiar contraseña
                   </button>
@@ -224,14 +224,14 @@ export default function ProfileTopbar() {
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] hover:bg-[#162233]"
                     >
                       Quitar foto
                     </button>
                   )}
                 </div>
 
-                <div className="border-t border-slate-100 p-2">
+                <div className="border-t border-[#2A3B55] p-2">
                   <button
                     type="button"
                     onClick={logout}
@@ -247,7 +247,7 @@ export default function ProfileTopbar() {
       </div>
 
       {notice && (
-        <p className="mt-2 text-sm text-slate-600">{notice}</p>
+        <p className="mt-2 text-sm text-[#AAB4C0]">{notice}</p>
       )}
     </header>
   );
