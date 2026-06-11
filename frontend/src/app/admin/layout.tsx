@@ -77,64 +77,80 @@ export default function AdminLayout({
         </Link>
 
         <nav className="mt-8 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
-            Panel de Administración
-          </p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Panel de administración
+        </p>
 
-          <Link
-            href="/admin"
-            className={getNavItemClass(/^\/admin$/)}
-          >
-            Dashboard
-          </Link>
+        <Link
+          href="/admin"
+          className={getNavItemClass(/^\/admin$/)}
+        >
+          Dashboard
+        </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
-            Gestión
-          </p>
+        <Link
+          href="/admin/users/create"
+          className={getNavItemClass(/^\/admin\/users\/create$/)}
+        >
+          Registrar usuario
+        </Link>
 
-          <Link
-            href="/admin/projects"
-            className={getNavItemClass(/^\/admin\/projects(?:\/[0-9a-fA-F-]{36})?$/)}
-          >
-            Proyectos
-          </Link>
+        <Link
+          href="/admin/users"
+          className={getNavItemClass(/^\/admin\/users$/)}
+        >
+          Usuarios registrados
+        </Link>
 
-          <Link
-            href="/admin/projects/create"
-            className={getNavItemClass(/^\/admin\/projects\/create$/)}
-          >
-            Crear proyecto
-          </Link>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Gestión de proyectos
+        </p>
 
-          <Link
-            href="/admin/tasks"
-            className={getNavItemClass(/^\/admin\/tasks$/)}
-          >
-            Tareas
-          </Link>
+        <Link
+          href="/admin/projects"
+          className={getNavItemClass(
+            /^\/admin\/projects(?:\/[0-9a-fA-F-]{36})?$/,
+          )}
+        >
+          Proyectos
+        </Link>
 
-          <Link
-            href="/admin/resources"
-            className={getNavItemClass(/^\/admin\/resources$/)}
-          >
-            Recursos
-          </Link>
-          
-          <Link
-            href="/admin/users/create"
-            className={getNavItemClass(/^\/admin\/users\/create$/)}
-          >
-            Registrar usuario
-          </Link>
+        <Link
+          href="/admin/projects/create"
+          className={getNavItemClass(/^\/admin\/projects\/create$/)}
+        >
+          Crear proyecto
+        </Link>
 
-          <Link
-            href="/admin/users"
-            className={getNavItemClass(/^\/admin\/users$/)}
-          >
-            Usuarios registrados
-          </Link>
+        <Link
+          href="/admin/tasks"
+          className={getNavItemClass(/^\/admin\/tasks$/)}
+        >
+          Tareas
+        </Link>
 
-        </nav>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Gestión de recursos
+        </p>
+
+        <Link
+          href="/admin/resources"
+          className={getNavItemClass(/^\/admin\/resources$/)}
+        >
+          Recursos
+        </Link>
+
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Monitoreo
+        </p>
+
+        <Link
+          href="/admin/analytics"
+          className={getNavItemClass(/^\/admin\/analytics$/)}
+        >
+          Analítica
+        </Link>
+      </nav>
       </aside>
 
       <section className="flex min-h-screen flex-1 flex-col overflow-hidden">

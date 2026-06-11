@@ -1,6 +1,10 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const RESOURCE_SERVICE_URL =
   process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL;
+
+const ANALYTICS_SERVICE_URL =
+process.env.NEXT_PUBLIC_ANALYTICS_SERVICE_URL;
 
 function getApiUrl() {
   if (!API_URL) {
@@ -244,6 +248,49 @@ export async function getResources(): Promise<{
   if (!response.ok) {
     throw new Error(
       data.message || 'No se pudieron cargar los recursos',
+    );
+  }
+
+  return data;
+}
+
+export type AnalyticsOverview = {
+  success: boolean;
+  projects: {
+    total: number;
+    active: number;
+    completed: number;
+    averageProgress: number;
+  };
+  tasks: {
+    total: number;
+    todo: number;
+    inProgress: number;
+    completed: number;
+  };
+  resources: {
+    total: number;
+    available: number;
+    unavailable: number;
+  };
+};
+
+export async function getAnalyticsOverview(): Promise<AnalyticsOverview> {
+  if (!ANALYTICS_SERVICE_URL) {
+    throw new Error(
+      'Falta configurar NEXT_PUBLIC_ANALYTICS_SERVICE_URL',
+    );
+  }
+
+  const response = await fetch(
+    `${ANALYTICS_SERVICE_URL}/analytics/overview`,
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || 'No se pudo cargar la analítica',
     );
   }
 
