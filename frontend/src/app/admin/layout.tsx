@@ -68,7 +68,7 @@ export default function AdminLayout({
 
   return (
     <main className="flex min-h-screen bg-app text-content">
-      <aside className="w-64 shrink-0 border-r border-theme-border bg-sidebar p-6">
+      <aside className="theme-sidebar-surface w-64 shrink-0 border-r border-theme-border p-6">
         <Link href="/admin" className="block">
           <ThemeLogo className="w-[190px]" />
         </Link>
