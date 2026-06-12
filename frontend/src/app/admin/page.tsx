@@ -22,6 +22,15 @@ type User = {
   role?: string;
 };
 
+const statCardClass =
+  'rounded-2xl border border-theme-border bg-surface p-6 shadow-card';
+
+const actionCardClass =
+  'rounded-2xl border border-theme-border bg-surface p-6 shadow-card transition hover:-translate-y-0.5 hover:border-theme-border-strong hover:bg-surface-alt';
+
+const actionButtonClass =
+  'rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover';
+
 export default function AdminDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -52,52 +61,59 @@ export default function AdminDashboard() {
     loadData();
   }, []);
 
-  const activeProjects = projects.filter((p) => (p.status || '').toUpperCase() !== 'DONE').length;
-  const completedProjects = projects.filter((p) => (p.status || '').toUpperCase() === 'DONE').length;
+  const activeProjects = projects.filter(
+    (project) => (project.status || '').toUpperCase() !== 'DONE',
+  ).length;
+
+  const completedProjects = projects.filter(
+    (project) => (project.status || '').toUpperCase() === 'DONE',
+  ).length;
 
   return (
-    <div className="space-y-8 text-[#F5F7FA]">
+    <div className="space-y-8 text-content">
       <div>
-        <h1 className="text-3xl font-bold text-[#F5F7FA]">
+        <h1 className="text-3xl font-bold text-content">
           Panel de Administrador
         </h1>
-        <p className="mt-2 text-[#AAB4C0]">
+        <p className="mt-2 text-content-muted">
           Bienvenido al panel de administración de Innovatech Solutions
         </p>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        <div className="rounded-xl border border-danger/30 bg-danger-surface p-4 text-danger">
           {error}
         </div>
       )}
 
       {!isLoading && (
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Total de Proyectos</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+          <div className={statCardClass}>
+            <p className="text-sm text-content-muted">Total de Proyectos</p>
+            <p className="mt-2 text-3xl font-bold text-highlight">
               {projects.length}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Proyectos Activos</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+          <div className={statCardClass}>
+            <p className="text-sm text-content-muted">Proyectos Activos</p>
+            <p className="mt-2 text-3xl font-bold text-highlight">
               {activeProjects}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Proyectos Completados</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+          <div className={statCardClass}>
+            <p className="text-sm text-content-muted">
+              Proyectos Completados
+            </p>
+            <p className="mt-2 text-3xl font-bold text-highlight">
               {completedProjects}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Total de Usuarios</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
+          <div className={statCardClass}>
+            <p className="text-sm text-content-muted">Total de Usuarios</p>
+            <p className="mt-2 text-3xl font-bold text-highlight">
               {users.length}
             </p>
           </div>
@@ -105,96 +121,81 @@ export default function AdminDashboard() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+        <div className={actionCardClass}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+              <h2 className="text-lg font-semibold text-content">
                 Gestión de Proyectos
               </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
+              <p className="mt-1 text-sm text-content-muted">
                 Ver y administrar todos los proyectos
               </p>
             </div>
-            <Link
-              href="/admin/projects"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
+            <Link href="/admin/projects" className={actionButtonClass}>
               Ver proyectos
             </Link>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+        <div className={actionCardClass}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+              <h2 className="text-lg font-semibold text-content">
                 Crear Nuevo Proyecto
               </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
+              <p className="mt-1 text-sm text-content-muted">
                 Registrar un nuevo proyecto en el sistema
               </p>
             </div>
-            <Link
-              href="/admin/projects/create"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
+            <Link href="/admin/projects/create" className={actionButtonClass}>
               Crear
             </Link>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+        <div className={actionCardClass}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+              <h2 className="text-lg font-semibold text-content">
                 Gestión de Tareas
               </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
+              <p className="mt-1 text-sm text-content-muted">
                 Ver y administrar todas las tareas
               </p>
             </div>
-            <Link
-              href="/admin/tasks"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
+            <Link href="/admin/tasks" className={actionButtonClass}>
               Ver tareas
             </Link>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+        <div className={actionCardClass}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+              <h2 className="text-lg font-semibold text-content">
                 Registrar Usuario
               </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
+              <p className="mt-1 text-sm text-content-muted">
                 Agregar nuevos usuarios al sistema
               </p>
             </div>
-            <Link
-              href="/admin/users/create"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
+            <Link href="/admin/users/create" className={actionButtonClass}>
               Registrar
             </Link>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)] md:col-span-2">
+        <div className={`${actionCardClass} md:col-span-2`}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
+              <h2 className="text-lg font-semibold text-content">
                 Usuarios registrados
               </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
+              <p className="mt-1 text-sm text-content-muted">
                 Ver y eliminar usuarios existentes
               </p>
             </div>
-            <Link
-              href="/admin/users"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
+            <Link href="/admin/users" className={actionButtonClass}>
               Ver usuarios
             </Link>
           </div>
