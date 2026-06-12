@@ -19,11 +19,21 @@
   --theme-app: var(--rs-50);
   --theme-sidebar: var(--rs-100);
   --theme-header: var(--rs-100);
+  --theme-shell-background: linear-gradient(
+    135deg,
+    var(--rs-200) 0%,
+    var(--rs-300) 100%
+  );
 
   /* Surfaces */
   --theme-surface: #FFFFFF;
   --theme-surface-alt: var(--rs-100);
   --theme-surface-hover: var(--rs-100);
+  --theme-action-card-background: linear-gradient(
+    135deg,
+    var(--rs-200) 0%,
+    var(--rs-300) 100%
+  );
 
   /* Borders */
   --theme-border: var(--rs-200);
@@ -35,6 +45,11 @@
   --theme-text-muted: var(--rs-500);
   --theme-icon: var(--rs-600);
   --theme-highlight: var(--rs-950);
+
+  /* Feature icons */
+  --theme-feature-icon-background: var(--rs-50);
+  --theme-feature-icon-border: var(--rs-300);
+  --theme-feature-icon-color: var(--rs-800);
 
   /* Primary actions */
   --theme-primary: var(--rs-800);
@@ -80,10 +95,12 @@
   --theme-app: var(--rs-950);
   --theme-sidebar: var(--rs-900);
   --theme-header: var(--rs-900);
+  --theme-shell-background: var(--rs-900);
 
   --theme-surface: var(--rs-800);
   --theme-surface-alt: var(--rs-900);
   --theme-surface-hover: var(--rs-700);
+  --theme-action-card-background: var(--rs-800);
 
   --theme-border: var(--rs-700);
   --theme-border-strong: var(--rs-600);
@@ -93,6 +110,10 @@
   --theme-text-muted: var(--rs-400);
   --theme-icon: var(--rs-300);
   --theme-highlight: var(--rs-50);
+
+  --theme-feature-icon-background: var(--rs-900);
+  --theme-feature-icon-border: var(--rs-600);
+  --theme-feature-icon-color: var(--rs-200);
 
   --theme-primary: var(--rs-200);
   --theme-primary-hover: var(--rs-300);
@@ -147,6 +168,10 @@
   --color-icon: var(--theme-icon);
   --color-highlight: var(--theme-highlight);
 
+  --color-feature-icon: var(--theme-feature-icon-color);
+  --color-feature-icon-background: var(--theme-feature-icon-background);
+  --color-feature-icon-border: var(--theme-feature-icon-border);
+
   --color-primary: var(--theme-primary);
   --color-primary-hover: var(--theme-primary-hover);
   --color-primary-active: var(--theme-primary-active);
@@ -192,6 +217,15 @@ body {
   background: var(--theme-app);
   color: var(--theme-text);
   font-family: var(--font-google-sans), Arial, sans-serif;
+}
+
+.theme-sidebar-surface,
+.theme-header-surface {
+  background: var(--theme-shell-background);
+}
+
+.theme-action-card {
+  background: var(--theme-action-card-background);
 }
 
 .theme-logo-dark {
