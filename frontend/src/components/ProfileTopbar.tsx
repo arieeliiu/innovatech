@@ -115,18 +115,18 @@ export default function ProfileTopbar() {
   const initial = (user?.name || user?.email || 'U').charAt(0).toUpperCase();
 
   return (
-    <header className="border-b border-theme-border bg-header px-6 py-3 shadow-sm">
+    <header className="border-b border-theme-border bg-header px-6 py-3">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-content-muted">Sesión iniciada</p>
-          <p className="text-2xl font-semibold tracking-tight text-content">
+          <p className="text-sm text-content">Sesión iniciada</p>
+          <p className="text-2xl font-semibold tracking-tight text-content-strong">
             {user?.name || user?.email || 'Usuario no identificado'}
           </p>
         </div>
 
         <div className="flex items-center gap-4" ref={menuRef}>
           <div className="text-right">
-            <p className="text-sm font-medium text-content">
+            <p className="text-sm font-medium text-content-strong">
               {user?.email || 'Sin correo'}
             </p>
 
@@ -147,7 +147,7 @@ export default function ProfileTopbar() {
             <button
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-xl border border-theme-border bg-surface px-2 py-1 shadow-sm transition hover:border-theme-border-strong hover:bg-surface-hover"
+              className="flex items-center gap-2 rounded-xl bg-profile-button px-2 py-1.5 text-profile-button-foreground transition hover:bg-profile-button-hover"
             >
               {profilePhoto ? (
                 <img
@@ -156,7 +156,7 @@ export default function ProfileTopbar() {
                   className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-profile-avatar text-sm font-bold text-profile-avatar-foreground">
                   {initial}
                 </div>
               )}
@@ -165,7 +165,7 @@ export default function ProfileTopbar() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="h-4 w-4 text-icon"
+                className="h-4 w-4"
               >
                 <path
                   fillRule="evenodd"
@@ -181,7 +181,7 @@ export default function ProfileTopbar() {
                   <p className="text-xs uppercase tracking-wide text-content-muted">
                     Mi cuenta
                   </p>
-                  <p className="text-sm font-semibold text-content">
+                  <p className="text-sm font-semibold text-content-strong">
                     {user?.name || user?.email || 'Usuario'}
                   </p>
                 </div>
@@ -193,7 +193,7 @@ export default function ProfileTopbar() {
                       setNotice('Perfil disponible pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content-muted transition hover:bg-surface-hover hover:text-content"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
                   >
                     Perfil
                   </button>
@@ -204,7 +204,7 @@ export default function ProfileTopbar() {
                       setNotice('Configuraciones disponibles pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content-muted transition hover:bg-surface-hover hover:text-content"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
                   >
                     Configuraciones
                   </button>
@@ -215,7 +215,7 @@ export default function ProfileTopbar() {
                       setNotice('Cambio de contraseña disponible pronto');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content-muted transition hover:bg-surface-hover hover:text-content"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
                   >
                     Cambiar contraseña
                   </button>
@@ -224,7 +224,7 @@ export default function ProfileTopbar() {
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-content-muted transition hover:bg-surface-hover hover:text-content"
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
                     >
                       Quitar foto
                     </button>
