@@ -21,8 +21,8 @@
   --theme-header: var(--rs-100);
   --theme-shell-background: linear-gradient(
     135deg,
-    var(--rs-200) 0%,
-    var(--rs-300) 100%
+    var(--rs-300) 0%,
+    var(--rs-400) 100%
   );
 
   /* Surfaces */
@@ -31,8 +31,8 @@
   --theme-surface-hover: var(--rs-100);
   --theme-action-card-background: linear-gradient(
     135deg,
-    var(--rs-200) 0%,
-    var(--rs-300) 100%
+    var(--rs-300) 0%,
+    var(--rs-400) 100%
   );
 
   /* Borders */
