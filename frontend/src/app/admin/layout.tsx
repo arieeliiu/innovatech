@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import ProfileTopbar from '../../components/ProfileTopbar';
+import ThemeLogo from '../../components/ThemeLogo';
 
 function getUserRoleFromToken() {
   if (typeof window === 'undefined') return null;
@@ -38,7 +39,7 @@ export default function AdminLayout({
 
     return isActive
       ? 'block rounded-lg border-l-4 border-nav-active-border bg-nav-active px-3 py-2 text-sm font-semibold text-nav-active-foreground'
-      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-content-muted transition hover:bg-nav-hover hover:text-content';
+      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-content transition hover:bg-nav-hover hover:text-content-strong';
   }
 
   useEffect(() => {
@@ -67,17 +68,13 @@ export default function AdminLayout({
 
   return (
     <main className="flex min-h-screen bg-app text-content">
-      <aside className="w-64 border-r border-theme-border bg-sidebar p-6">
+      <aside className="w-64 shrink-0 border-r border-theme-border bg-sidebar p-6">
         <Link href="/admin" className="block">
-          <img
-            src="/innovatech-logo.png"
-            alt="Innovatech Solutions"
-            className="theme-logo h-auto w-[190px] object-contain"
-          />
+          <ThemeLogo className="w-[190px]" />
         </Link>
 
         <nav className="mt-8 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">
+          <p className="text-xs font-semibold uppercase tracking-wide text-content">
             Panel de administración
           </p>
 
@@ -99,7 +96,7 @@ export default function AdminLayout({
             Usuarios registrados
           </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content-muted">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content">
             Gestión de proyectos
           </p>
 
@@ -126,7 +123,7 @@ export default function AdminLayout({
             Tareas
           </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content-muted">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content">
             Gestión de recursos
           </p>
 
@@ -137,7 +134,7 @@ export default function AdminLayout({
             Recursos
           </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content-muted">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content">
             Monitoreo
           </p>
 
@@ -153,7 +150,7 @@ export default function AdminLayout({
       <section className="flex min-h-screen flex-1 flex-col overflow-hidden">
         <ProfileTopbar />
 
-        <div className="flex-1 px-6 py-6 lg:px-8">
+        <div className="flex-1 px-6 py-7 lg:px-10 lg:py-8">
           <div className="mx-auto w-full max-w-[1450px]">{children}</div>
         </div>
       </section>
