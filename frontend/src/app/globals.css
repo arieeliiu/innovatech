@@ -2,6 +2,7 @@
 
 :root {
   color-scheme: light;
+
   --rs-50: #F9FBFB;
   --rs-100: #F4F5F5;
   --rs-200: #E6E9EA;
@@ -14,68 +15,113 @@
   --rs-900: #161F22;
   --rs-950: #060C0F;
 
+  /* Layout */
   --theme-app: var(--rs-50);
   --theme-sidebar: var(--rs-100);
-  --theme-header: #FFFFFF;
+  --theme-header: var(--rs-100);
+
+  /* Surfaces */
   --theme-surface: #FFFFFF;
   --theme-surface-alt: var(--rs-100);
-  --theme-surface-hover: var(--rs-200);
+  --theme-surface-hover: var(--rs-100);
+
+  /* Borders */
   --theme-border: var(--rs-200);
   --theme-border-strong: var(--rs-300);
+
+  /* Text hierarchy */
+  --theme-text-strong: var(--rs-950);
   --theme-text: var(--rs-900);
   --theme-text-muted: var(--rs-500);
   --theme-icon: var(--rs-600);
-  --theme-highlight: var(--rs-700);
+  --theme-highlight: var(--rs-950);
+
+  /* Primary actions */
   --theme-primary: var(--rs-800);
-  --theme-primary-hover: var(--rs-700);
+  --theme-primary-hover: var(--rs-900);
+  --theme-primary-active: var(--rs-950);
   --theme-primary-text: var(--rs-50);
+
+  /* Navigation */
   --theme-nav-active: var(--rs-200);
-  --theme-nav-active-text: var(--rs-900);
-  --theme-nav-border: var(--rs-700);
+  --theme-nav-active-text: var(--rs-950);
+  --theme-nav-border: var(--rs-950);
   --theme-nav-hover: var(--rs-200);
+
+  /* User badge */
   --theme-badge: var(--rs-200);
-  --theme-badge-text: var(--rs-700);
+  --theme-badge-text: var(--rs-900);
   --theme-badge-border: var(--rs-300);
+
+  /* Profile control */
+  --theme-profile-button: var(--rs-950);
+  --theme-profile-button-hover: var(--rs-900);
+  --theme-profile-button-text: var(--rs-100);
+  --theme-profile-avatar: var(--rs-100);
+  --theme-profile-avatar-text: var(--rs-950);
+
+  /* System states */
   --theme-danger: #9C3F3F;
   --theme-danger-hover: #843333;
   --theme-danger-surface: #FBEAEA;
   --theme-danger-text: #FFFFFF;
-  --theme-card-shadow: 0 10px 28px rgb(6 12 15 / 0.08);
+
+  /* Elevation */
+  --theme-card-shadow: 0 8px 24px rgb(6 12 15 / 0.06);
   --theme-floating-shadow: 0 16px 38px rgb(6 12 15 / 0.14);
+
   --background: var(--theme-app);
   --foreground: var(--theme-text);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+
   --theme-app: var(--rs-950);
   --theme-sidebar: var(--rs-900);
   --theme-header: var(--rs-900);
+
   --theme-surface: var(--rs-800);
   --theme-surface-alt: var(--rs-900);
   --theme-surface-hover: var(--rs-700);
-  --theme-border: var(--rs-600);
-  --theme-border-strong: var(--rs-500);
-  --theme-text: var(--rs-50);
+
+  --theme-border: var(--rs-700);
+  --theme-border-strong: var(--rs-600);
+
+  --theme-text-strong: var(--rs-50);
+  --theme-text: var(--rs-200);
   --theme-text-muted: var(--rs-400);
   --theme-icon: var(--rs-300);
-  --theme-highlight: var(--rs-300);
+  --theme-highlight: var(--rs-50);
+
   --theme-primary: var(--rs-200);
   --theme-primary-hover: var(--rs-300);
+  --theme-primary-active: var(--rs-400);
   --theme-primary-text: var(--rs-900);
+
   --theme-nav-active: var(--rs-800);
   --theme-nav-active-text: var(--rs-50);
-  --theme-nav-border: var(--rs-400);
+  --theme-nav-border: var(--rs-300);
   --theme-nav-hover: var(--rs-800);
+
   --theme-badge: var(--rs-800);
-  --theme-badge-text: var(--rs-300);
+  --theme-badge-text: var(--rs-200);
   --theme-badge-border: var(--rs-600);
+
+  --theme-profile-button: var(--rs-50);
+  --theme-profile-button-hover: var(--rs-200);
+  --theme-profile-button-text: var(--rs-900);
+  --theme-profile-avatar: var(--rs-900);
+  --theme-profile-avatar-text: var(--rs-50);
+
   --theme-danger: #B85A5A;
   --theme-danger-hover: #C96B6B;
   --theme-danger-surface: #3A2022;
   --theme-danger-text: #FFFFFF;
+
   --theme-card-shadow: 0 12px 30px rgb(0 0 0 / 0.24);
   --theme-floating-shadow: 0 18px 44px rgb(0 0 0 / 0.36);
+
   --background: var(--theme-app);
   --foreground: var(--theme-text);
 }
@@ -83,51 +129,79 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --color-app: var(--theme-app);
   --color-sidebar: var(--theme-sidebar);
   --color-header: var(--theme-header);
+
   --color-surface: var(--theme-surface);
   --color-surface-alt: var(--theme-surface-alt);
   --color-surface-hover: var(--theme-surface-hover);
+
   --color-theme-border: var(--theme-border);
   --color-theme-border-strong: var(--theme-border-strong);
+
+  --color-content-strong: var(--theme-text-strong);
   --color-content: var(--theme-text);
   --color-content-muted: var(--theme-text-muted);
   --color-icon: var(--theme-icon);
   --color-highlight: var(--theme-highlight);
+
   --color-primary: var(--theme-primary);
   --color-primary-hover: var(--theme-primary-hover);
+  --color-primary-active: var(--theme-primary-active);
   --color-primary-foreground: var(--theme-primary-text);
+
   --color-nav-active: var(--theme-nav-active);
   --color-nav-active-foreground: var(--theme-nav-active-text);
   --color-nav-active-border: var(--theme-nav-border);
   --color-nav-hover: var(--theme-nav-hover);
+
   --color-badge: var(--theme-badge);
   --color-badge-foreground: var(--theme-badge-text);
   --color-badge-border: var(--theme-badge-border);
+
+  --color-profile-button: var(--theme-profile-button);
+  --color-profile-button-hover: var(--theme-profile-button-hover);
+  --color-profile-button-foreground: var(--theme-profile-button-text);
+  --color-profile-avatar: var(--theme-profile-avatar);
+  --color-profile-avatar-foreground: var(--theme-profile-avatar-text);
+
   --color-danger: var(--theme-danger);
   --color-danger-hover: var(--theme-danger-hover);
   --color-danger-surface: var(--theme-danger-surface);
   --color-danger-foreground: var(--theme-danger-text);
+
   --shadow-card: var(--theme-card-shadow);
   --shadow-floating: var(--theme-floating-shadow);
+
   --font-sans: var(--font-google-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-* { box-sizing: border-box; }
-html, body { min-height: 100%; }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   background: var(--theme-app);
   color: var(--theme-text);
   font-family: var(--font-google-sans), Arial, sans-serif;
 }
 
-.theme-logo {
-  filter: grayscale(1) brightness(0.32) contrast(1.25);
-  opacity: 0.94;
+.theme-logo-dark {
+  display: none;
 }
 
-:root[data-theme="dark"] .theme-logo {
-  filter: grayscale(1) brightness(2.8) contrast(0.9);
+:root[data-theme="dark"] .theme-logo-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-logo-dark {
+  display: block;
 }
