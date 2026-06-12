@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
+  ArrowUpRight,
   ClipboardList,
   FolderKanban,
   FolderPlus,
@@ -38,11 +39,21 @@ type ActionCardProps = {
   fullWidth?: boolean;
 };
 
-const statCardClass =
-  'rounded-2xl border border-theme-border bg-surface p-6 shadow-card';
+type StatCardProps = {
+  label: string;
+  value: number;
+};
 
-const actionButtonClass =
-  'shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active';
+function StatCard({ label, value }: StatCardProps) {
+  return (
+    <article className="theme-card-interactive rounded-[22px] border border-theme-border bg-surface px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong">
+      <p className="text-sm font-medium text-content-muted">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-highlight">
+        {value}
+      </p>
+    </article>
+  );
+}
 
 function ActionCard({
   title,
@@ -54,7 +65,7 @@ function ActionCard({
 }: ActionCardProps) {
   return (
     <article
-      className={`theme-action-card rounded-2xl border border-theme-border p-6 shadow-card transition hover:border-theme-border-strong ${
+      className={`theme-action-card theme-card-interactive rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${
         fullWidth ? 'md:col-span-2' : ''
       }`}
     >
@@ -65,15 +76,21 @@ function ActionCard({
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-content-strong">
+            <h2 className="text-lg font-semibold tracking-tight text-content-strong">
               {title}
             </h2>
-            <p className="mt-1 text-sm text-content-muted">{description}</p>
+            <p className="mt-1 text-sm leading-6 text-content-muted">
+              {description}
+            </p>
           </div>
         </div>
 
-        <Link href={href} className={actionButtonClass}>
+        <Link
+          href={href}
+          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active"
+        >
           {buttonLabel}
+          <ArrowUpRight size={15} strokeWidth={2} />
         </Link>
       </div>
     </article>
@@ -120,62 +137,37 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 text-content">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-content-strong lg:text-4xl">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight text-content-strong lg:text-4xl">
           Panel de Administrador
         </h1>
-        <p className="mt-2 text-content-muted">
+        <p className="max-w-2xl text-content-muted">
           Bienvenido al panel de administración de Innovatech Solutions
         </p>
-      </div>
+      </header>
 
       {error && (
-        <div className="rounded-xl border border-danger/30 bg-danger-surface p-4 text-danger">
+        <div className="rounded-2xl border border-danger/30 bg-danger-surface p-4 text-danger">
           {error}
         </div>
       )}
 
       {!isLoading && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className={statCardClass}>
-            <p className="text-sm text-content-muted">Total de Proyectos</p>
-            <p className="mt-2 text-3xl font-bold text-highlight">
-              {projects.length}
-            </p>
-          </div>
-
-          <div className={statCardClass}>
-            <p className="text-sm text-content-muted">Proyectos Activos</p>
-            <p className="mt-2 text-3xl font-bold text-highlight">
-              {activeProjects}
-            </p>
-          </div>
-
-          <div className={statCardClass}>
-            <p className="text-sm text-content-muted">
-              Proyectos Completados
-            </p>
-            <p className="mt-2 text-3xl font-bold text-highlight">
-              {completedProjects}
-            </p>
-          </div>
-
-          <div className={statCardClass}>
-            <p className="text-sm text-content-muted">Total de Usuarios</p>
-            <p className="mt-2 text-3xl font-bold text-highlight">
-              {users.length}
-            </p>
-          </div>
-        </div>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total de Proyectos" value={projects.length} />
+          <StatCard label="Proyectos Activos" value={activeProjects} />
+          <StatCard label="Proyectos Completados" value={completedProjects} />
+          <StatCard label="Total de Usuarios" value={users.length} />
+        </section>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <section className="grid gap-5 md:grid-cols-2">
         <ActionCard
           title="Gestión de Proyectos"
           description="Ver y administrar todos los proyectos"
           href="/admin/projects"
           buttonLabel="Ver proyectos"
-          icon={<FolderKanban size={24} strokeWidth={1.9} />}
+          icon={<FolderKanban size={24} strokeWidth={1.8} />}
         />
 
         <ActionCard
@@ -183,7 +175,7 @@ export default function AdminDashboard() {
           description="Registrar un nuevo proyecto en el sistema"
           href="/admin/projects/create"
           buttonLabel="Crear"
-          icon={<FolderPlus size={24} strokeWidth={1.9} />}
+          icon={<FolderPlus size={24} strokeWidth={1.8} />}
         />
 
         <ActionCard
@@ -191,7 +183,7 @@ export default function AdminDashboard() {
           description="Ver y administrar todas las tareas"
           href="/admin/tasks"
           buttonLabel="Ver tareas"
-          icon={<ClipboardList size={24} strokeWidth={1.9} />}
+          icon={<ClipboardList size={24} strokeWidth={1.8} />}
         />
 
         <ActionCard
@@ -199,7 +191,7 @@ export default function AdminDashboard() {
           description="Agregar nuevos usuarios al sistema"
           href="/admin/users/create"
           buttonLabel="Registrar"
-          icon={<UserPlus size={24} strokeWidth={1.9} />}
+          icon={<UserPlus size={24} strokeWidth={1.8} />}
         />
 
         <ActionCard
@@ -207,10 +199,10 @@ export default function AdminDashboard() {
           description="Ver y eliminar usuarios existentes"
           href="/admin/users"
           buttonLabel="Ver usuarios"
-          icon={<Users size={24} strokeWidth={1.9} />}
+          icon={<Users size={24} strokeWidth={1.8} />}
           fullWidth
         />
-      </div>
+      </section>
     </div>
   );
 }
