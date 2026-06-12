@@ -26,10 +26,10 @@ const statCardClass =
   'rounded-2xl border border-theme-border bg-surface p-6 shadow-card';
 
 const actionCardClass =
-  'rounded-2xl border border-theme-border bg-surface p-6 shadow-card transition hover:-translate-y-0.5 hover:border-theme-border-strong hover:bg-surface-alt';
+  'rounded-2xl border border-theme-border bg-surface p-6 shadow-card transition hover:border-theme-border-strong hover:bg-surface-hover';
 
 const actionButtonClass =
-  'rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover';
+  'rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active';
 
 export default function AdminDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -72,7 +72,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 text-content">
       <div>
-        <h1 className="text-3xl font-bold text-content">
+        <h1 className="text-3xl font-bold tracking-tight text-content-strong lg:text-4xl">
           Panel de Administrador
         </h1>
         <p className="mt-2 text-content-muted">
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
       )}
 
       {!isLoading && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className={statCardClass}>
             <p className="text-sm text-content-muted">Total de Proyectos</p>
             <p className="mt-2 text-3xl font-bold text-highlight">
@@ -122,9 +122,9 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-5">
             <div>
-              <h2 className="text-lg font-semibold text-content">
+              <h2 className="text-lg font-semibold text-content-strong">
                 Gestión de Proyectos
               </h2>
               <p className="mt-1 text-sm text-content-muted">
@@ -138,9 +138,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-5">
             <div>
-              <h2 className="text-lg font-semibold text-content">
+              <h2 className="text-lg font-semibold text-content-strong">
                 Crear Nuevo Proyecto
               </h2>
               <p className="mt-1 text-sm text-content-muted">
@@ -154,9 +154,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-5">
             <div>
-              <h2 className="text-lg font-semibold text-content">
+              <h2 className="text-lg font-semibold text-content-strong">
                 Gestión de Tareas
               </h2>
               <p className="mt-1 text-sm text-content-muted">
@@ -170,9 +170,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-5">
             <div>
-              <h2 className="text-lg font-semibold text-content">
+              <h2 className="text-lg font-semibold text-content-strong">
                 Registrar Usuario
               </h2>
               <p className="mt-1 text-sm text-content-muted">
@@ -186,9 +186,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className={`${actionCardClass} md:col-span-2`}>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-5">
             <div>
-              <h2 className="text-lg font-semibold text-content">
+              <h2 className="text-lg font-semibold text-content-strong">
                 Usuarios registrados
               </h2>
               <p className="mt-1 text-sm text-content-muted">
