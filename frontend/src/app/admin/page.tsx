@@ -1,7 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import {
+  ClipboardList,
+  FolderKanban,
+  FolderPlus,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { getProjects, getUsers } from '../../lib/api';
 
 type Project = {
@@ -22,14 +29,56 @@ type User = {
   role?: string;
 };
 
+type ActionCardProps = {
+  title: string;
+  description: string;
+  href: string;
+  buttonLabel: string;
+  icon: ReactNode;
+  fullWidth?: boolean;
+};
+
 const statCardClass =
   'rounded-2xl border border-theme-border bg-surface p-6 shadow-card';
 
-const actionCardClass =
-  'rounded-2xl border border-theme-border bg-surface p-6 shadow-card transition hover:border-theme-border-strong hover:bg-surface-hover';
-
 const actionButtonClass =
-  'rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active';
+  'shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active';
+
+function ActionCard({
+  title,
+  description,
+  href,
+  buttonLabel,
+  icon,
+  fullWidth = false,
+}: ActionCardProps) {
+  return (
+    <article
+      className={`theme-action-card rounded-2xl border border-theme-border p-6 shadow-card transition hover:border-theme-border-strong ${
+        fullWidth ? 'md:col-span-2' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
+            {icon}
+          </div>
+
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-content-strong">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm text-content-muted">{description}</p>
+          </div>
+        </div>
+
+        <Link href={href} className={actionButtonClass}>
+          {buttonLabel}
+        </Link>
+      </div>
+    </article>
+  );
+}
 
 export default function AdminDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -121,85 +170,46 @@ export default function AdminDashboard() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-5">
-            <div>
-              <h2 className="text-lg font-semibold text-content-strong">
-                Gestión de Proyectos
-              </h2>
-              <p className="mt-1 text-sm text-content-muted">
-                Ver y administrar todos los proyectos
-              </p>
-            </div>
-            <Link href="/admin/projects" className={actionButtonClass}>
-              Ver proyectos
-            </Link>
-          </div>
-        </div>
+        <ActionCard
+          title="Gestión de Proyectos"
+          description="Ver y administrar todos los proyectos"
+          href="/admin/projects"
+          buttonLabel="Ver proyectos"
+          icon={<FolderKanban size={24} strokeWidth={1.9} />}
+        />
 
-        <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-5">
-            <div>
-              <h2 className="text-lg font-semibold text-content-strong">
-                Crear Nuevo Proyecto
-              </h2>
-              <p className="mt-1 text-sm text-content-muted">
-                Registrar un nuevo proyecto en el sistema
-              </p>
-            </div>
-            <Link href="/admin/projects/create" className={actionButtonClass}>
-              Crear
-            </Link>
-          </div>
-        </div>
+        <ActionCard
+          title="Crear Nuevo Proyecto"
+          description="Registrar un nuevo proyecto en el sistema"
+          href="/admin/projects/create"
+          buttonLabel="Crear"
+          icon={<FolderPlus size={24} strokeWidth={1.9} />}
+        />
 
-        <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-5">
-            <div>
-              <h2 className="text-lg font-semibold text-content-strong">
-                Gestión de Tareas
-              </h2>
-              <p className="mt-1 text-sm text-content-muted">
-                Ver y administrar todas las tareas
-              </p>
-            </div>
-            <Link href="/admin/tasks" className={actionButtonClass}>
-              Ver tareas
-            </Link>
-          </div>
-        </div>
+        <ActionCard
+          title="Gestión de Tareas"
+          description="Ver y administrar todas las tareas"
+          href="/admin/tasks"
+          buttonLabel="Ver tareas"
+          icon={<ClipboardList size={24} strokeWidth={1.9} />}
+        />
 
-        <div className={actionCardClass}>
-          <div className="flex items-center justify-between gap-5">
-            <div>
-              <h2 className="text-lg font-semibold text-content-strong">
-                Registrar Usuario
-              </h2>
-              <p className="mt-1 text-sm text-content-muted">
-                Agregar nuevos usuarios al sistema
-              </p>
-            </div>
-            <Link href="/admin/users/create" className={actionButtonClass}>
-              Registrar
-            </Link>
-          </div>
-        </div>
+        <ActionCard
+          title="Registrar Usuario"
+          description="Agregar nuevos usuarios al sistema"
+          href="/admin/users/create"
+          buttonLabel="Registrar"
+          icon={<UserPlus size={24} strokeWidth={1.9} />}
+        />
 
-        <div className={`${actionCardClass} md:col-span-2`}>
-          <div className="flex items-center justify-between gap-5">
-            <div>
-              <h2 className="text-lg font-semibold text-content-strong">
-                Usuarios registrados
-              </h2>
-              <p className="mt-1 text-sm text-content-muted">
-                Ver y eliminar usuarios existentes
-              </p>
-            </div>
-            <Link href="/admin/users" className={actionButtonClass}>
-              Ver usuarios
-            </Link>
-          </div>
-        </div>
+        <ActionCard
+          title="Usuarios registrados"
+          description="Ver y eliminar usuarios existentes"
+          href="/admin/users"
+          buttonLabel="Ver usuarios"
+          icon={<Users size={24} strokeWidth={1.9} />}
+          fullWidth
+        />
       </div>
     </div>
   );
