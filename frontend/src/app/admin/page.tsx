@@ -3,7 +3,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
+  Activity,
   ArrowUpRight,
+  CheckCircle2,
   ClipboardList,
   FolderKanban,
   FolderPlus,
@@ -46,6 +48,7 @@ type ActionCardProps = {
 type StatCardProps = {
   label: string;
   value: number;
+  icon: ReactNode;
   tone?: CardTone;
 };
 
@@ -59,17 +62,25 @@ function getToneClass(tone: CardTone, pattern = false) {
   return `bg-surface${base}`;
 }
 
-function StatCard({ label, value, tone = 'surface' }: StatCardProps) {
+function StatCard({ label, value, icon, tone = 'surface' }: StatCardProps) {
   return (
     <article
       className={`theme-card-interactive ${getToneClass(
         tone,
       )} rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong`}
     >
-      <p className="text-sm font-medium text-content-muted">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-highlight">
-        {value}
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-content-muted">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-highlight">
+            {value}
+          </p>
+        </div>
+
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
+          {icon}
+        </div>
+      </div>
     </article>
   );
 }
@@ -178,10 +189,26 @@ export default function AdminDashboard() {
 
       {!isLoading && (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Total de Proyectos" value={projects.length} />
-          <StatCard label="Proyectos Activos" value={activeProjects} />
-          <StatCard label="Proyectos Completados" value={completedProjects} />
-          <StatCard label="Total de Usuarios" value={users.length} />
+          <StatCard
+            label="Total de Proyectos"
+            value={projects.length}
+            icon={<FolderKanban size={21} strokeWidth={1.8} />}
+          />
+          <StatCard
+            label="Proyectos Activos"
+            value={activeProjects}
+            icon={<Activity size={21} strokeWidth={1.8} />}
+          />
+          <StatCard
+            label="Proyectos Completados"
+            value={completedProjects}
+            icon={<CheckCircle2 size={21} strokeWidth={1.8} />}
+          />
+          <StatCard
+            label="Total de Usuarios"
+            value={users.length}
+            icon={<Users size={21} strokeWidth={1.8} />}
+          />
         </section>
       )}
 
