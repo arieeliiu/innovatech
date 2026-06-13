@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   Activity,
-  ArrowUpRight,
   CheckCircle2,
   ClipboardList,
   FolderKanban,
@@ -32,7 +31,15 @@ type User = {
   role?: string;
 };
 
-type CardTone = 'surface' | 'muted' | 'solid' | 'strong';
+type CardSurface = '50' | '100' | '200' | '400';
+type PatternPosition =
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-right'
+  | 'bottom-right-soft'
+  | 'mid-left'
+  | 'wide-right';
+type RingTone = 'light' | 'mid' | 'dark';
 
 type ActionCardProps = {
   title: string;
@@ -41,35 +48,102 @@ type ActionCardProps = {
   buttonLabel: string;
   icon: ReactNode;
   fullWidth?: boolean;
-  tone?: CardTone;
-  pattern?: boolean;
+  surface?: CardSurface;
+  patternPosition?: PatternPosition;
+  ringTone?: RingTone;
+  tall?: boolean;
 };
 
 type StatCardProps = {
   label: string;
   value: number;
   icon: ReactNode;
-  tone?: CardTone;
+  surface?: CardSurface;
+  patternPosition?: PatternPosition;
+  ringTone?: RingTone;
 };
 
-function getToneClass(tone: CardTone, pattern = false) {
-  const base = pattern ? ' theme-card-pattern' : '';
+const surfaceStyles: Record<CardSurface, CSSProperties> = {
+  '50': {
+    backgroundColor: '#F9FBFB',
+    borderColor: '#D3D8D9',
+  },
+  '100': {
+    backgroundColor: '#F4F5F5',
+    borderColor: '#D3D8D9',
+  },
+  '200': {
+    backgroundColor: '#E6E9EA',
+    borderColor: '#D3D8D9',
+  },
+  '400': {
+    backgroundColor: '#A0A9AB',
+    borderColor: '#6F787B',
+  },
+};
 
-  if (tone === 'muted') return `theme-card-muted${base}`;
-  if (tone === 'solid') return `theme-card-solid${base}`;
-  if (tone === 'strong') return `theme-card-strong${base}`;
+const ringStyles: Record<RingTone, { stroke: string; opacity: number }> = {
+  light: { stroke: '#D3D8D9', opacity: 0.3 },
+  mid: { stroke: '#A0A9AB', opacity: 0.26 },
+  dark: { stroke: '#6F787B', opacity: 0.24 },
+};
 
-  return `bg-surface${base}`;
+const patternPositions: Record<PatternPosition, { x: string; y: string; sizes: number[] }> = {
+  'top-left': { x: '14%', y: '8%', sizes: [320, 200, 100] },
+  'top-right': { x: '102%', y: '4%', sizes: [320, 200, 100] },
+  'bottom-right': { x: '96%', y: '102%', sizes: [320, 200, 100] },
+  'bottom-right-soft': { x: '90%', y: '102%', sizes: [320, 200, 100] },
+  'mid-left': { x: '30%', y: '52%', sizes: [320, 200, 100] },
+  'wide-right': { x: '94%', y: '96%', sizes: [360, 230, 120] },
+};
+
+function Pattern({
+  position,
+  ringTone,
+}: {
+  position: PatternPosition;
+  ringTone: RingTone;
+}) {
+  const currentPosition = patternPositions[position];
+  const currentRing = ringStyles[ringTone];
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      {currentPosition.sizes.map((size) => (
+        <span
+          key={size}
+          className="absolute rounded-full border-2"
+          style={{
+            left: currentPosition.x,
+            top: currentPosition.y,
+            width: size,
+            height: size,
+            borderColor: currentRing.stroke,
+            opacity: currentRing.opacity,
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
-function StatCard({ label, value, icon, tone = 'surface' }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  icon,
+  surface = '50',
+  patternPosition = 'bottom-right',
+  ringTone = 'light',
+}: StatCardProps) {
   return (
     <article
-      className={`theme-card-interactive ${getToneClass(
-        tone,
-      )} rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong`}
+      className="theme-card-interactive relative isolate min-h-[118px] overflow-hidden rounded-[24px] border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong"
+      style={surfaceStyles[surface]}
     >
-      <div className="flex items-start justify-between gap-4">
+      <Pattern position={patternPosition} ringTone={ringTone} />
+
+      <div className="relative z-10 flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-content-muted">{label}</p>
           <p className="mt-3 text-3xl font-semibold tracking-tight text-highlight">
@@ -92,19 +166,21 @@ function ActionCard({
   buttonLabel,
   icon,
   fullWidth = false,
-  tone = 'surface',
-  pattern = false,
+  surface = '50',
+  patternPosition = 'bottom-right-soft',
+  ringTone = 'light',
+  tall = false,
 }: ActionCardProps) {
   return (
     <article
-      className={`theme-card-interactive ${getToneClass(
-        tone,
-        pattern,
-      )} rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${
+      className={`theme-card-interactive relative isolate overflow-hidden rounded-[24px] border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${
         fullWidth ? 'md:col-span-2' : ''
-      }`}
+      } ${tall ? 'min-h-[140px]' : 'min-h-[136px]'}`}
+      style={surfaceStyles[surface]}
     >
-      <div className="flex items-center justify-between gap-6">
+      <Pattern position={patternPosition} ringTone={ringTone} />
+
+      <div className="relative z-10 flex h-full items-center justify-between gap-6">
         <div className="flex min-w-0 items-center gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
             {icon}
@@ -122,10 +198,9 @@ function ActionCard({
 
         <Link
           href={href}
-          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active"
+          className="inline-flex shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active"
         >
           {buttonLabel}
-          <ArrowUpRight size={15} strokeWidth={2} />
         </Link>
       </div>
     </article>
@@ -172,13 +247,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 text-content">
-      <header className="space-y-2">
+      <header>
         <h1 className="text-3xl font-semibold tracking-tight text-content-strong lg:text-4xl">
           Panel de Administrador
         </h1>
-        <p className="max-w-2xl text-content-muted">
-          Bienvenido al panel de administración de Innovatech Solutions
-        </p>
       </header>
 
       {error && (
@@ -193,21 +265,33 @@ export default function AdminDashboard() {
             label="Total de Proyectos"
             value={projects.length}
             icon={<FolderKanban size={21} strokeWidth={1.8} />}
+            surface="50"
+            patternPosition="top-left"
+            ringTone="light"
           />
           <StatCard
             label="Proyectos Activos"
             value={activeProjects}
             icon={<Activity size={21} strokeWidth={1.8} />}
+            surface="100"
+            patternPosition="bottom-right-soft"
+            ringTone="light"
           />
           <StatCard
             label="Proyectos Completados"
             value={completedProjects}
             icon={<CheckCircle2 size={21} strokeWidth={1.8} />}
+            surface="200"
+            patternPosition="top-right"
+            ringTone="mid"
           />
           <StatCard
             label="Total de Usuarios"
             value={users.length}
             icon={<Users size={21} strokeWidth={1.8} />}
+            surface="100"
+            patternPosition="bottom-right"
+            ringTone="light"
           />
         </section>
       )}
@@ -219,8 +303,9 @@ export default function AdminDashboard() {
           href="/admin/projects"
           buttonLabel="Ver proyectos"
           icon={<FolderKanban size={24} strokeWidth={1.8} />}
-          tone="muted"
-          pattern
+          surface="50"
+          patternPosition="bottom-right-soft"
+          ringTone="light"
         />
 
         <ActionCard
@@ -229,7 +314,9 @@ export default function AdminDashboard() {
           href="/admin/projects/create"
           buttonLabel="Crear"
           icon={<FolderPlus size={24} strokeWidth={1.8} />}
-          tone="surface"
+          surface="100"
+          patternPosition="top-right"
+          ringTone="light"
         />
 
         <ActionCard
@@ -238,7 +325,9 @@ export default function AdminDashboard() {
           href="/admin/tasks"
           buttonLabel="Ver tareas"
           icon={<ClipboardList size={24} strokeWidth={1.8} />}
-          tone="surface"
+          surface="50"
+          patternPosition="mid-left"
+          ringTone="light"
         />
 
         <ActionCard
@@ -247,8 +336,10 @@ export default function AdminDashboard() {
           href="/admin/users/create"
           buttonLabel="Registrar"
           icon={<UserPlus size={24} strokeWidth={1.8} />}
-          tone="strong"
-          pattern
+          surface="400"
+          patternPosition="wide-right"
+          ringTone="dark"
+          tall
         />
 
         <ActionCard
@@ -257,8 +348,9 @@ export default function AdminDashboard() {
           href="/admin/users"
           buttonLabel="Ver usuarios"
           icon={<Users size={24} strokeWidth={1.8} />}
-          tone="muted"
-          pattern
+          surface="200"
+          patternPosition="wide-right"
+          ringTone="mid"
           fullWidth
         />
       </section>
