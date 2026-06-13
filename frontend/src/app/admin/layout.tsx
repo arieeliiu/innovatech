@@ -39,7 +39,7 @@ export default function AdminLayout({
 
     return isActive
       ? 'block rounded-lg border-l-4 border-nav-active-border bg-nav-active px-3 py-2 text-sm font-semibold text-nav-active-foreground'
-      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-content transition hover:bg-nav-hover hover:text-content-strong';
+      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-content-muted transition hover:bg-nav-hover hover:text-content-strong';
   }
 
   useEffect(() => {
@@ -73,77 +73,85 @@ export default function AdminLayout({
           <ThemeLogo className="w-[190px]" />
         </Link>
 
-        <nav className="mt-8 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-content">
-            Panel de administración
-          </p>
+        <nav className="mt-8 space-y-5">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-content-strong">
+              Panel de administración
+            </p>
 
-          <Link href="/admin" className={getNavItemClass(/^\/admin$/)}>
-            Dashboard
-          </Link>
+            <Link href="/admin" className={getNavItemClass(/^\/admin$/)}>
+              Dashboard
+            </Link>
 
-          <Link
-            href="/admin/users/create"
-            className={getNavItemClass(/^\/admin\/users\/create$/)}
-          >
-            Registrar usuario
-          </Link>
+            <Link
+              href="/admin/users/create"
+              className={getNavItemClass(/^\/admin\/users\/create$/)}
+            >
+              Registrar usuario
+            </Link>
 
-          <Link
-            href="/admin/users"
-            className={getNavItemClass(/^\/admin\/users$/)}
-          >
-            Usuarios registrados
-          </Link>
+            <Link
+              href="/admin/users"
+              className={getNavItemClass(/^\/admin\/users$/)}
+            >
+              Usuarios registrados
+            </Link>
+          </div>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content">
-            Gestión de proyectos
-          </p>
+          <div className="space-y-2 border-t border-theme-border pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-content-strong">
+              Gestión de proyectos
+            </p>
 
-          <Link
-            href="/admin/projects"
-            className={getNavItemClass(
-              /^\/admin\/projects(?:\/[0-9a-fA-F-]{36})?$/,
-            )}
-          >
-            Proyectos
-          </Link>
+            <Link
+              href="/admin/projects"
+              className={getNavItemClass(
+                /^\/admin\/projects(?:\/[0-9a-fA-F-]{36})?$/,
+              )}
+            >
+              Proyectos
+            </Link>
 
-          <Link
-            href="/admin/projects/create"
-            className={getNavItemClass(/^\/admin\/projects\/create$/)}
-          >
-            Crear proyecto
-          </Link>
+            <Link
+              href="/admin/projects/create"
+              className={getNavItemClass(/^\/admin\/projects\/create$/)}
+            >
+              Crear proyecto
+            </Link>
 
-          <Link
-            href="/admin/tasks"
-            className={getNavItemClass(/^\/admin\/tasks$/)}
-          >
-            Tareas
-          </Link>
+            <Link
+              href="/admin/tasks"
+              className={getNavItemClass(/^\/admin\/tasks$/)}
+            >
+              Tareas
+            </Link>
+          </div>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content">
-            Gestión de recursos
-          </p>
+          <div className="space-y-2 border-t border-theme-border pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-content-strong">
+              Gestión de recursos
+            </p>
 
-          <Link
-            href="/admin/resources"
-            className={getNavItemClass(/^\/admin\/resources$/)}
-          >
-            Recursos
-          </Link>
+            <Link
+              href="/admin/resources"
+              className={getNavItemClass(/^\/admin\/resources$/)}
+            >
+              Recursos
+            </Link>
+          </div>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-content">
-            Monitoreo
-          </p>
+          <div className="space-y-2 border-t border-theme-border pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-content-strong">
+              Monitoreo
+            </p>
 
-          <Link
-            href="/admin/analytics"
-            className={getNavItemClass(/^\/admin\/analytics$/)}
-          >
-            Analítica
-          </Link>
+            <Link
+              href="/admin/analytics"
+              className={getNavItemClass(/^\/admin\/analytics$/)}
+            >
+              Analítica
+            </Link>
+          </div>
         </nav>
       </aside>
 
