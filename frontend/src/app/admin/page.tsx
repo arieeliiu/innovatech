@@ -31,15 +31,15 @@ type User = {
   role?: string;
 };
 
-type CardSurface = '50' | '100' | '200' | '400';
+type CardSurface = '200' | '300' | '400';
 type PatternPosition =
   | 'top-left'
   | 'top-right'
-  | 'bottom-right'
   | 'bottom-right-soft'
   | 'mid-left'
   | 'wide-right';
 type RingTone = 'light' | 'mid' | 'dark';
+type CardMode = 'decorative' | 'system';
 
 type ActionCardProps = {
   title: string;
@@ -48,33 +48,30 @@ type ActionCardProps = {
   buttonLabel: string;
   icon: ReactNode;
   fullWidth?: boolean;
+  mode?: CardMode;
   surface?: CardSurface;
   patternPosition?: PatternPosition;
   ringTone?: RingTone;
-  tall?: boolean;
 };
 
 type StatCardProps = {
   label: string;
   value: number;
   icon: ReactNode;
+  mode?: CardMode;
   surface?: CardSurface;
   patternPosition?: PatternPosition;
   ringTone?: RingTone;
 };
 
-const surfaceStyles: Record<CardSurface, CSSProperties> = {
-  '50': {
-    backgroundColor: '#F9FBFB',
-    borderColor: '#D3D8D9',
-  },
-  '100': {
-    backgroundColor: '#F4F5F5',
-    borderColor: '#D3D8D9',
-  },
+const decorativeSurfaceStyles: Record<CardSurface, CSSProperties> = {
   '200': {
     backgroundColor: '#E6E9EA',
     borderColor: '#D3D8D9',
+  },
+  '300': {
+    backgroundColor: '#D3D8D9',
+    borderColor: '#A0A9AB',
   },
   '400': {
     backgroundColor: '#A0A9AB',
@@ -91,7 +88,6 @@ const ringStyles: Record<RingTone, { stroke: string; opacity: number }> = {
 const patternPositions: Record<PatternPosition, { x: string; y: string; sizes: number[] }> = {
   'top-left': { x: '14%', y: '8%', sizes: [320, 200, 100] },
   'top-right': { x: '102%', y: '4%', sizes: [320, 200, 100] },
-  'bottom-right': { x: '96%', y: '102%', sizes: [320, 200, 100] },
   'bottom-right-soft': { x: '90%', y: '102%', sizes: [320, 200, 100] },
   'mid-left': { x: '30%', y: '52%', sizes: [320, 200, 100] },
   'wide-right': { x: '94%', y: '96%', sizes: [360, 230, 120] },
@@ -128,30 +124,75 @@ function Pattern({
   );
 }
 
+function getCardShell(mode: CardMode) {
+  if (mode === 'decorative') {
+    return 'text-[#060C0F]';
+  }
+
+  return 'border-theme-border bg-surface text-content';
+}
+
+function getCardStyle(mode: CardMode, surface: CardSurface) {
+  if (mode === 'decorative') {
+    return decorativeSurfaceStyles[surface];
+  }
+
+  return undefined;
+}
+
+function getMutedText(mode: CardMode) {
+  return mode === 'decorative' ? 'text-[#505C5E]' : 'text-content-muted';
+}
+
+function getStrongText(mode: CardMode) {
+  return mode === 'decorative' ? 'text-[#060C0F]' : 'text-content-strong';
+}
+
+function getValueText(mode: CardMode) {
+  return mode === 'decorative' ? 'text-[#060C0F]' : 'text-highlight';
+}
+
+function getIconShell(mode: CardMode) {
+  return mode === 'decorative'
+    ? 'border-[#D3D8D9] bg-[#F9FBFB] text-[#243032]'
+    : 'border-feature-icon-border bg-feature-icon-background text-feature-icon';
+}
+
+function getButtonClass(mode: CardMode) {
+  return mode === 'decorative'
+    ? 'bg-[#060C0F] text-[#F9FBFB] hover:bg-[#161F22] active:bg-[#243032]'
+    : 'bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active';
+}
+
 function StatCard({
   label,
   value,
   icon,
-  surface = '50',
-  patternPosition = 'bottom-right',
+  mode = 'system',
+  surface = '200',
+  patternPosition = 'bottom-right-soft',
   ringTone = 'light',
 }: StatCardProps) {
   return (
     <article
-      className="theme-card-interactive relative isolate min-h-[118px] overflow-hidden rounded-[24px] border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong"
-      style={surfaceStyles[surface]}
+      className={`theme-card-interactive relative isolate min-h-[118px] overflow-hidden rounded-[24px] border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${getCardShell(
+        mode,
+      )}`}
+      style={getCardStyle(mode, surface)}
     >
-      <Pattern position={patternPosition} ringTone={ringTone} />
+      {mode === 'decorative' && (
+        <Pattern position={patternPosition} ringTone={ringTone} />
+      )}
 
       <div className="relative z-10 flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-content-muted">{label}</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-highlight">
+          <p className={`text-sm font-medium ${getMutedText(mode)}`}>{label}</p>
+          <p className={`mt-3 text-3xl font-semibold tracking-tight ${getValueText(mode)}`}>
             {value}
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${getIconShell(mode)}`}>
           {icon}
         </div>
       </div>
@@ -166,31 +207,33 @@ function ActionCard({
   buttonLabel,
   icon,
   fullWidth = false,
-  surface = '50',
+  mode = 'system',
+  surface = '200',
   patternPosition = 'bottom-right-soft',
   ringTone = 'light',
-  tall = false,
 }: ActionCardProps) {
   return (
     <article
-      className={`theme-card-interactive relative isolate overflow-hidden rounded-[24px] border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${
-        fullWidth ? 'md:col-span-2' : ''
-      } ${tall ? 'min-h-[140px]' : 'min-h-[136px]'}`}
-      style={surfaceStyles[surface]}
+      className={`theme-card-interactive relative isolate min-h-[136px] overflow-hidden rounded-[24px] border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${getCardShell(
+        mode,
+      )} ${fullWidth ? 'md:col-span-2' : ''}`}
+      style={getCardStyle(mode, surface)}
     >
-      <Pattern position={patternPosition} ringTone={ringTone} />
+      {mode === 'decorative' && (
+        <Pattern position={patternPosition} ringTone={ringTone} />
+      )}
 
       <div className="relative z-10 flex h-full items-center justify-between gap-6">
         <div className="flex min-w-0 items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${getIconShell(mode)}`}>
             {icon}
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-content-strong">
+            <h2 className={`text-lg font-semibold tracking-tight ${getStrongText(mode)}`}>
               {title}
             </h2>
-            <p className="mt-1 text-sm leading-6 text-content-muted">
+            <p className={`mt-1 text-sm leading-6 ${getMutedText(mode)}`}>
               {description}
             </p>
           </div>
@@ -198,7 +241,9 @@ function ActionCard({
 
         <Link
           href={href}
-          className="inline-flex shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active"
+          className={`inline-flex shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${getButtonClass(
+            mode,
+          )}`}
         >
           {buttonLabel}
         </Link>
@@ -265,33 +310,34 @@ export default function AdminDashboard() {
             label="Total de Proyectos"
             value={projects.length}
             icon={<FolderKanban size={21} strokeWidth={1.8} />}
-            surface="50"
+            mode="decorative"
+            surface="200"
             patternPosition="top-left"
             ringTone="light"
           />
+
           <StatCard
             label="Proyectos Activos"
             value={activeProjects}
             icon={<Activity size={21} strokeWidth={1.8} />}
-            surface="100"
-            patternPosition="bottom-right-soft"
-            ringTone="light"
+            mode="system"
           />
+
           <StatCard
             label="Proyectos Completados"
             value={completedProjects}
             icon={<CheckCircle2 size={21} strokeWidth={1.8} />}
-            surface="200"
+            mode="decorative"
+            surface="400"
             patternPosition="top-right"
-            ringTone="mid"
+            ringTone="dark"
           />
+
           <StatCard
             label="Total de Usuarios"
             value={users.length}
             icon={<Users size={21} strokeWidth={1.8} />}
-            surface="100"
-            patternPosition="bottom-right"
-            ringTone="light"
+            mode="system"
           />
         </section>
       )}
@@ -303,7 +349,8 @@ export default function AdminDashboard() {
           href="/admin/projects"
           buttonLabel="Ver proyectos"
           icon={<FolderKanban size={24} strokeWidth={1.8} />}
-          surface="50"
+          mode="decorative"
+          surface="200"
           patternPosition="bottom-right-soft"
           ringTone="light"
         />
@@ -314,9 +361,7 @@ export default function AdminDashboard() {
           href="/admin/projects/create"
           buttonLabel="Crear"
           icon={<FolderPlus size={24} strokeWidth={1.8} />}
-          surface="100"
-          patternPosition="top-right"
-          ringTone="light"
+          mode="system"
         />
 
         <ActionCard
@@ -325,9 +370,10 @@ export default function AdminDashboard() {
           href="/admin/tasks"
           buttonLabel="Ver tareas"
           icon={<ClipboardList size={24} strokeWidth={1.8} />}
-          surface="50"
+          mode="decorative"
+          surface="300"
           patternPosition="mid-left"
-          ringTone="light"
+          ringTone="mid"
         />
 
         <ActionCard
@@ -336,10 +382,7 @@ export default function AdminDashboard() {
           href="/admin/users/create"
           buttonLabel="Registrar"
           icon={<UserPlus size={24} strokeWidth={1.8} />}
-          surface="400"
-          patternPosition="wide-right"
-          ringTone="dark"
-          tall
+          mode="system"
         />
 
         <ActionCard
@@ -348,6 +391,7 @@ export default function AdminDashboard() {
           href="/admin/users"
           buttonLabel="Ver usuarios"
           icon={<Users size={24} strokeWidth={1.8} />}
+          mode="decorative"
           surface="200"
           patternPosition="wide-right"
           ringTone="mid"
