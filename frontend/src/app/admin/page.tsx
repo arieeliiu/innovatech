@@ -231,10 +231,10 @@ function ActionCard({
           </div>
 
           <div className="min-w-0">
-            <h2 className={`text-lg font-semibold tracking-tight ${getStrongText(mode)}`}>
+            <h2 className={`font-heading text-xl font-medium leading-tight tracking-tight ${getStrongText(mode)}`}>
               {title}
             </h2>
-            <p className={`mt-1 text-sm leading-6 ${getMutedText(mode)}`}>
+            <p className={`mt-2 text-sm leading-6 ${getMutedText(mode)}`}>
               {description}
             </p>
           </div>
@@ -294,7 +294,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 text-content">
       <header>
-        <h1 className="font-heading text-3xl font-medium tracking-tight text-content-strong lg:text-4xl">
+        <h1 className="font-heading text-4xl font-medium leading-tight tracking-tight text-content-strong lg:text-5xl">
           Panel de Administrador
         </h1>
       </header>
