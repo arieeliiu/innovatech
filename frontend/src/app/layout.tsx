@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter, Newsreader } from "next/font/google";
+import { Geist_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
   subsets: ["latin"],
   display: "swap",
 });
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${newsreader.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sourceSans.variable} ${sourceSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}
