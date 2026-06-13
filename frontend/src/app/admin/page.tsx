@@ -30,6 +30,8 @@ type User = {
   role?: string;
 };
 
+type CardTone = 'surface' | 'muted' | 'solid' | 'strong';
+
 type ActionCardProps = {
   title: string;
   description: string;
@@ -37,16 +39,33 @@ type ActionCardProps = {
   buttonLabel: string;
   icon: ReactNode;
   fullWidth?: boolean;
+  tone?: CardTone;
+  pattern?: boolean;
 };
 
 type StatCardProps = {
   label: string;
   value: number;
+  tone?: CardTone;
 };
 
-function StatCard({ label, value }: StatCardProps) {
+function getToneClass(tone: CardTone, pattern = false) {
+  const base = pattern ? ' theme-card-pattern' : '';
+
+  if (tone === 'muted') return `theme-card-muted${base}`;
+  if (tone === 'solid') return `theme-card-solid${base}`;
+  if (tone === 'strong') return `theme-card-strong${base}`;
+
+  return `bg-surface${base}`;
+}
+
+function StatCard({ label, value, tone = 'surface' }: StatCardProps) {
   return (
-    <article className="theme-card-interactive rounded-[22px] border border-theme-border bg-surface px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong">
+    <article
+      className={`theme-card-interactive ${getToneClass(
+        tone,
+      )} rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong`}
+    >
       <p className="text-sm font-medium text-content-muted">{label}</p>
       <p className="mt-3 text-3xl font-semibold tracking-tight text-highlight">
         {value}
@@ -62,10 +81,15 @@ function ActionCard({
   buttonLabel,
   icon,
   fullWidth = false,
+  tone = 'surface',
+  pattern = false,
 }: ActionCardProps) {
   return (
     <article
-      className={`theme-action-card theme-card-interactive rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${
+      className={`theme-card-interactive ${getToneClass(
+        tone,
+        pattern,
+      )} rounded-[22px] border border-theme-border px-6 py-5 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${
         fullWidth ? 'md:col-span-2' : ''
       }`}
     >
@@ -168,6 +192,8 @@ export default function AdminDashboard() {
           href="/admin/projects"
           buttonLabel="Ver proyectos"
           icon={<FolderKanban size={24} strokeWidth={1.8} />}
+          tone="muted"
+          pattern
         />
 
         <ActionCard
@@ -176,6 +202,7 @@ export default function AdminDashboard() {
           href="/admin/projects/create"
           buttonLabel="Crear"
           icon={<FolderPlus size={24} strokeWidth={1.8} />}
+          tone="surface"
         />
 
         <ActionCard
@@ -184,6 +211,7 @@ export default function AdminDashboard() {
           href="/admin/tasks"
           buttonLabel="Ver tareas"
           icon={<ClipboardList size={24} strokeWidth={1.8} />}
+          tone="surface"
         />
 
         <ActionCard
@@ -192,6 +220,8 @@ export default function AdminDashboard() {
           href="/admin/users/create"
           buttonLabel="Registrar"
           icon={<UserPlus size={24} strokeWidth={1.8} />}
+          tone="strong"
+          pattern
         />
 
         <ActionCard
@@ -200,6 +230,8 @@ export default function AdminDashboard() {
           href="/admin/users"
           buttonLabel="Ver usuarios"
           icon={<Users size={24} strokeWidth={1.8} />}
+          tone="muted"
+          pattern
           fullWidth
         />
       </section>
