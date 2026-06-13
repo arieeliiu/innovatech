@@ -15,67 +15,61 @@
   --rs-900: #161F22;
   --rs-950: #060C0F;
 
-  /* Layout */
   --theme-app: var(--rs-50);
   --theme-sidebar: var(--rs-50);
   --theme-header: var(--rs-50);
   --theme-shell-background: var(--rs-50);
 
-  /* Surfaces */
   --theme-surface: #FFFFFF;
   --theme-surface-alt: var(--rs-100);
   --theme-surface-hover: var(--rs-100);
   --theme-action-card-background: #FFFFFF;
 
-  /* Borders */
+  --theme-card-muted-start: var(--rs-200);
+  --theme-card-muted-end: var(--rs-300);
+  --theme-card-solid: var(--rs-300);
+  --theme-card-strong: var(--rs-400);
+
   --theme-border: var(--rs-200);
   --theme-border-strong: var(--rs-300);
 
-  /* Text hierarchy */
   --theme-text-strong: var(--rs-950);
   --theme-text: var(--rs-900);
   --theme-text-muted: var(--rs-500);
   --theme-icon: var(--rs-600);
   --theme-highlight: var(--rs-950);
 
-  /* Feature icons */
   --theme-feature-icon-background: var(--rs-100);
   --theme-feature-icon-border: var(--rs-300);
   --theme-feature-icon-color: var(--rs-800);
 
-  /* Primary actions */
-  --theme-primary: var(--rs-800);
+  --theme-primary: var(--rs-950);
   --theme-primary-hover: var(--rs-900);
-  --theme-primary-active: var(--rs-950);
+  --theme-primary-active: var(--rs-800);
   --theme-primary-text: var(--rs-50);
 
-  /* Navigation */
   --theme-nav-active: var(--rs-200);
   --theme-nav-active-text: var(--rs-950);
   --theme-nav-border: var(--rs-950);
   --theme-nav-hover: var(--rs-100);
 
-  /* User badge */
   --theme-badge: var(--rs-200);
   --theme-badge-text: var(--rs-900);
   --theme-badge-border: var(--rs-300);
 
-  /* Profile control */
   --theme-profile-button: var(--rs-950);
   --theme-profile-button-hover: var(--rs-900);
   --theme-profile-button-text: var(--rs-100);
   --theme-profile-avatar: var(--rs-100);
   --theme-profile-avatar-text: var(--rs-950);
 
-  /* System states */
   --theme-danger: #9C3F3F;
   --theme-danger-hover: #843333;
   --theme-danger-surface: #FBEAEA;
   --theme-danger-text: #FFFFFF;
 
-  /* Elevation */
   --theme-card-shadow: 0 10px 28px rgb(6 12 15 / 0.045);
-  --theme-card-shadow-hover: 0 14px 34px rgb(6 12 15 / 0.08);
+  --theme-card-shadow-hover: 0 16px 38px rgb(6 12 15 / 0.09);
   --theme-floating-shadow: 0 18px 44px rgb(6 12 15 / 0.14);
 
   --background: var(--theme-app);
@@ -85,7 +79,6 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  /* Neutral dark values intentionally avoid the green cast of Rolling Stone. */
   --theme-app: #0D0D0F;
   --theme-sidebar: #0D0D0F;
   --theme-header: #0D0D0F;
@@ -95,6 +88,11 @@
   --theme-surface-alt: #1F2024;
   --theme-surface-hover: #24252A;
   --theme-action-card-background: #18181B;
+
+  --theme-card-muted-start: #E6E9EA;
+  --theme-card-muted-end: #D3D8D9;
+  --theme-card-solid: #18181B;
+  --theme-card-strong: #A0A9AB;
 
   --theme-border: #25262B;
   --theme-border-strong: #34363C;
@@ -145,57 +143,45 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
   --color-app: var(--theme-app);
   --color-sidebar: var(--theme-sidebar);
   --color-header: var(--theme-header);
-
   --color-surface: var(--theme-surface);
   --color-surface-alt: var(--theme-surface-alt);
   --color-surface-hover: var(--theme-surface-hover);
-
   --color-theme-border: var(--theme-border);
   --color-theme-border-strong: var(--theme-border-strong);
-
   --color-content-strong: var(--theme-text-strong);
   --color-content: var(--theme-text);
   --color-content-muted: var(--theme-text-muted);
   --color-icon: var(--theme-icon);
   --color-highlight: var(--theme-highlight);
-
   --color-feature-icon: var(--theme-feature-icon-color);
   --color-feature-icon-background: var(--theme-feature-icon-background);
   --color-feature-icon-border: var(--theme-feature-icon-border);
-
   --color-primary: var(--theme-primary);
   --color-primary-hover: var(--theme-primary-hover);
   --color-primary-active: var(--theme-primary-active);
   --color-primary-foreground: var(--theme-primary-text);
-
   --color-nav-active: var(--theme-nav-active);
   --color-nav-active-foreground: var(--theme-nav-active-text);
   --color-nav-active-border: var(--theme-nav-border);
   --color-nav-hover: var(--theme-nav-hover);
-
   --color-badge: var(--theme-badge);
   --color-badge-foreground: var(--theme-badge-text);
   --color-badge-border: var(--theme-badge-border);
-
   --color-profile-button: var(--theme-profile-button);
   --color-profile-button-hover: var(--theme-profile-button-hover);
   --color-profile-button-foreground: var(--theme-profile-button-text);
   --color-profile-avatar: var(--theme-profile-avatar);
   --color-profile-avatar-foreground: var(--theme-profile-avatar-text);
-
   --color-danger: var(--theme-danger);
   --color-danger-hover: var(--theme-danger-hover);
   --color-danger-surface: var(--theme-danger-surface);
   --color-danger-foreground: var(--theme-danger-text);
-
   --shadow-card: var(--theme-card-shadow);
   --shadow-floating: var(--theme-floating-shadow);
-
-  --font-sans: var(--font-google-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -211,7 +197,7 @@ body {
 body {
   background: var(--theme-app);
   color: var(--theme-text);
-  font-family: var(--font-google-sans), Arial, sans-serif;
+  font-family: var(--font-inter), Arial, sans-serif;
 }
 
 .theme-sidebar-surface,
@@ -221,6 +207,31 @@ body {
 
 .theme-action-card {
   background: var(--theme-action-card-background);
+}
+
+.theme-card-muted {
+  background: linear-gradient(
+    135deg,
+    var(--theme-card-muted-start) 0%,
+    var(--theme-card-muted-end) 100%
+  );
+  color: var(--rs-950);
+}
+
+.theme-card-solid {
+  background: var(--theme-card-solid);
+}
+
+.theme-card-strong {
+  background: var(--theme-card-strong);
+  color: var(--rs-950);
+}
+
+.theme-card-pattern {
+  background-image:
+    radial-gradient(circle at 84% 105%, transparent 0 48px, rgb(80 92 94 / 0.24) 49px 50px, transparent 51px),
+    radial-gradient(circle at 84% 105%, transparent 0 92px, rgb(80 92 94 / 0.18) 93px 94px, transparent 95px),
+    radial-gradient(circle at 84% 105%, transparent 0 138px, rgb(80 92 94 / 0.12) 139px 140px, transparent 141px);
 }
 
 .theme-card-interactive {
