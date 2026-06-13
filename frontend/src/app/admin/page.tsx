@@ -31,14 +31,14 @@ type User = {
   role?: string;
 };
 
-type CardSurface = '200' | '300' | '400';
+type CardSurface = 'soft' | 'mist';
 type PatternPosition =
   | 'top-left'
   | 'top-right'
   | 'bottom-right-soft'
   | 'mid-left'
   | 'wide-right';
-type RingTone = 'light' | 'mid' | 'dark';
+type RingTone = 'light' | 'mid';
 type CardMode = 'decorative' | 'system';
 
 type ActionCardProps = {
@@ -52,6 +52,7 @@ type ActionCardProps = {
   surface?: CardSurface;
   patternPosition?: PatternPosition;
   ringTone?: RingTone;
+  showPattern?: boolean;
 };
 
 type StatCardProps = {
@@ -62,27 +63,23 @@ type StatCardProps = {
   surface?: CardSurface;
   patternPosition?: PatternPosition;
   ringTone?: RingTone;
+  showPattern?: boolean;
 };
 
 const decorativeSurfaceStyles: Record<CardSurface, CSSProperties> = {
-  '200': {
+  soft: {
     backgroundColor: '#E6E9EA',
     borderColor: '#D3D8D9',
   },
-  '300': {
+  mist: {
     backgroundColor: '#D3D8D9',
-    borderColor: '#A0A9AB',
-  },
-  '400': {
-    backgroundColor: '#A0A9AB',
-    borderColor: '#6F787B',
+    borderColor: '#BAC2C4',
   },
 };
 
 const ringStyles: Record<RingTone, { stroke: string; opacity: number }> = {
-  light: { stroke: '#D3D8D9', opacity: 0.3 },
-  mid: { stroke: '#A0A9AB', opacity: 0.26 },
-  dark: { stroke: '#6F787B', opacity: 0.24 },
+  light: { stroke: '#A0A9AB', opacity: 0.42 },
+  mid: { stroke: '#6F787B', opacity: 0.34 },
 };
 
 const patternPositions: Record<PatternPosition, { x: string; y: string; sizes: number[] }> = {
@@ -108,13 +105,15 @@ function Pattern({
       {currentPosition.sizes.map((size) => (
         <span
           key={size}
-          className="absolute rounded-full border-2"
+          className="absolute rounded-full"
           style={{
             left: currentPosition.x,
             top: currentPosition.y,
             width: size,
             height: size,
             borderColor: currentRing.stroke,
+            borderStyle: 'solid',
+            borderWidth: 1,
             opacity: currentRing.opacity,
             transform: 'translate(-50%, -50%)',
           }}
@@ -154,7 +153,7 @@ function getValueText(mode: CardMode) {
 
 function getIconShell(mode: CardMode) {
   return mode === 'decorative'
-    ? 'border-[#D3D8D9] bg-[#F9FBFB] text-[#243032]'
+    ? 'border-[#BAC2C4] bg-[#F9FBFB] text-[#243032]'
     : 'border-feature-icon-border bg-feature-icon-background text-feature-icon';
 }
 
@@ -169,9 +168,10 @@ function StatCard({
   value,
   icon,
   mode = 'system',
-  surface = '200',
+  surface = 'soft',
   patternPosition = 'bottom-right-soft',
   ringTone = 'light',
+  showPattern = true,
 }: StatCardProps) {
   return (
     <article
@@ -180,7 +180,7 @@ function StatCard({
       )}`}
       style={getCardStyle(mode, surface)}
     >
-      {mode === 'decorative' && (
+      {mode === 'decorative' && showPattern && (
         <Pattern position={patternPosition} ringTone={ringTone} />
       )}
 
@@ -208,9 +208,10 @@ function ActionCard({
   icon,
   fullWidth = false,
   mode = 'system',
-  surface = '200',
+  surface = 'soft',
   patternPosition = 'bottom-right-soft',
   ringTone = 'light',
+  showPattern = true,
 }: ActionCardProps) {
   return (
     <article
@@ -219,7 +220,7 @@ function ActionCard({
       )} ${fullWidth ? 'md:col-span-2' : ''}`}
       style={getCardStyle(mode, surface)}
     >
-      {mode === 'decorative' && (
+      {mode === 'decorative' && showPattern && (
         <Pattern position={patternPosition} ringTone={ringTone} />
       )}
 
@@ -241,7 +242,7 @@ function ActionCard({
 
         <Link
           href={href}
-          className={`inline-flex shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${getButtonClass(
+          className={`inline-flex shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${getButtonClass(
             mode,
           )}`}
         >
@@ -293,7 +294,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 text-content">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight text-content-strong lg:text-4xl">
+        <h1 className="font-heading text-3xl font-medium tracking-tight text-content-strong lg:text-4xl">
           Panel de Administrador
         </h1>
       </header>
@@ -311,7 +312,7 @@ export default function AdminDashboard() {
             value={projects.length}
             icon={<FolderKanban size={21} strokeWidth={1.8} />}
             mode="decorative"
-            surface="200"
+            surface="soft"
             patternPosition="top-left"
             ringTone="light"
           />
@@ -328,9 +329,9 @@ export default function AdminDashboard() {
             value={completedProjects}
             icon={<CheckCircle2 size={21} strokeWidth={1.8} />}
             mode="decorative"
-            surface="400"
+            surface="mist"
             patternPosition="top-right"
-            ringTone="dark"
+            ringTone="mid"
           />
 
           <StatCard
@@ -350,7 +351,7 @@ export default function AdminDashboard() {
           buttonLabel="Ver proyectos"
           icon={<FolderKanban size={24} strokeWidth={1.8} />}
           mode="decorative"
-          surface="200"
+          surface="soft"
           patternPosition="bottom-right-soft"
           ringTone="light"
         />
@@ -371,7 +372,7 @@ export default function AdminDashboard() {
           buttonLabel="Ver tareas"
           icon={<ClipboardList size={24} strokeWidth={1.8} />}
           mode="decorative"
-          surface="300"
+          surface="mist"
           patternPosition="mid-left"
           ringTone="mid"
         />
@@ -392,9 +393,8 @@ export default function AdminDashboard() {
           buttonLabel="Ver usuarios"
           icon={<Users size={24} strokeWidth={1.8} />}
           mode="decorative"
-          surface="200"
-          patternPosition="wide-right"
-          ringTone="mid"
+          surface="soft"
+          showPattern={false}
           fullWidth
         />
       </section>
