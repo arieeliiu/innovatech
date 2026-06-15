@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { Geist_Mono, Noto_Serif, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
 const sourceSans = Source_Sans_3({
@@ -8,7 +8,7 @@ const sourceSans = Source_Sans_3({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
+const sourceSerif = Noto_Serif({
   variable: "--font-source-serif",
   subsets: ["latin"],
   display: "swap",
