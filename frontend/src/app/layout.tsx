@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { Geist_Mono, Noto_Serif, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
 const sourceSans = Source_Sans_3({
@@ -8,8 +8,8 @@ const sourceSans = Source_Sans_3({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-source-serif",
+const notoSerif = Noto_Serif({
+  variable: "--font-noto-serif",
   subsets: ["latin"],
   display: "swap",
 });
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sourceSans.variable} ${sourceSerif.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sourceSans.variable} ${notoSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}
