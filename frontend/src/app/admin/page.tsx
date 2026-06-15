@@ -2,6 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  CheckCircle2,
+  ClipboardList,
+  Folder,
+  FolderPlus,
+  Layers,
+  Users,
+} from 'lucide-react';
 import { getProjects, getUsers } from '../../lib/api';
 
 type Project = {
@@ -21,6 +32,65 @@ type User = {
   email?: string;
   role?: string;
 };
+
+type CardVariant = 'system' | 'soft' | 'mist';
+type RingTone = 'light' | 'mid';
+
+type PatternConfig = {
+  position: string;
+  tone: RingTone;
+};
+
+type StatCard = {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  variant: CardVariant;
+  pattern?: PatternConfig;
+};
+
+type ActionCard = {
+  title: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  variant: CardVariant;
+  pattern?: PatternConfig;
+  className?: string;
+};
+
+function getCardClass(variant: CardVariant) {
+  if (variant === 'system') {
+    return 'innovatech-system';
+  }
+
+  return `innovatech-decorative ${variant === 'soft' ? 'innovatech-soft' : 'innovatech-mist'}`;
+}
+
+function RingPattern({ pattern }: { pattern?: PatternConfig }) {
+  if (!pattern) return null;
+
+  const ringClass =
+    pattern.tone === 'mid'
+      ? 'innovatech-ring innovatech-ring-mid'
+      : 'innovatech-ring innovatech-ring-light';
+
+  return (
+    <div className={`innovatech-pattern ${pattern.position}`} aria-hidden="true">
+      <span className={ringClass} />
+      <span className={ringClass} />
+      <span className={ringClass} />
+    </div>
+  );
+}
+
+function IconBox({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <div className="innovatech-icon-box">
+      <Icon size={20} strokeWidth={1.8} />
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -55,151 +125,144 @@ export default function AdminDashboard() {
   const activeProjects = projects.filter((p) => (p.status || '').toUpperCase() !== 'DONE').length;
   const completedProjects = projects.filter((p) => (p.status || '').toUpperCase() === 'DONE').length;
 
+  const stats: StatCard[] = [
+    {
+      label: 'Total de Proyectos',
+      value: projects.length,
+      icon: Folder,
+      variant: 'soft',
+      pattern: { position: 'innovatech-top-left', tone: 'light' },
+    },
+    {
+      label: 'Proyectos Activos',
+      value: activeProjects,
+      icon: Activity,
+      variant: 'system',
+    },
+    {
+      label: 'Proyectos Completados',
+      value: completedProjects,
+      icon: CheckCircle2,
+      variant: 'mist',
+      pattern: { position: 'innovatech-top-right', tone: 'mid' },
+    },
+    {
+      label: 'Total de Usuarios',
+      value: users.length,
+      icon: Users,
+      variant: 'system',
+    },
+  ];
+
+  const actions: ActionCard[] = [
+    {
+      title: 'Gestión de Proyectos',
+      description: 'Ver y administrar todos los proyectos',
+      href: '/admin/projects',
+      icon: Folder,
+      variant: 'soft',
+      pattern: { position: 'innovatech-bottom-right-soft', tone: 'light' },
+    },
+    {
+      title: 'Crear Nuevo Proyecto',
+      description: 'Registrar un nuevo proyecto en el sistema',
+      href: '/admin/projects/create',
+      icon: FolderPlus,
+      variant: 'system',
+    },
+    {
+      title: 'Gestión de Tareas',
+      description: 'Ver y administrar todas las tareas',
+      href: '/admin/tasks',
+      icon: ClipboardList,
+      variant: 'system',
+    },
+    {
+      title: 'Gestión de Usuarios',
+      description: 'Registrar y administrar usuarios del sistema',
+      href: '/admin/users',
+      icon: Users,
+      variant: 'mist',
+      pattern: { position: 'innovatech-mid-left', tone: 'mid' },
+    },
+    {
+      title: 'Gestión de Recursos',
+      description: 'Ver y administrar los recursos disponibles',
+      href: '/admin/resources',
+      icon: Layers,
+      variant: 'soft',
+      pattern: { position: 'innovatech-resources-rings', tone: 'light' },
+      className: 'innovatech-resources-card',
+    },
+    {
+      title: 'Analítica',
+      description: 'Visualizar métricas y actividad del sistema',
+      href: '/admin/analytics',
+      icon: BarChart3,
+      variant: 'system',
+    },
+  ];
+
   return (
-    <div className="space-y-8 text-[#F5F7FA]">
+    <div className="mx-auto w-full max-w-[1160px] space-y-8 text-[var(--text)]">
       <div>
-        <h1 className="text-3xl font-bold text-[#F5F7FA]">
-          Panel de Administrador
-        </h1>
-        <p className="mt-2 text-[#AAB4C0]">
-          Bienvenido al panel de administración de Innovatech Solutions
-        </p>
+        <h1 className="innovatech-dashboard-title">Panel de administrador</h1>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-500">
           {error}
         </div>
       )}
 
-      {!isLoading && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Total de Proyectos</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
-              {projects.length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Proyectos Activos</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
-              {activeProjects}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Proyectos Completados</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
-              {completedProjects}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#2A3B55] bg-[#162233] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-[#AAB4C0]">Total de Usuarios</p>
-            <p className="mt-2 text-3xl font-bold text-[#52e0dc]">
-              {users.length}
-            </p>
-          </div>
+      {isLoading ? (
+        <div className="innovatech-card innovatech-system p-6 text-sm text-[var(--text-muted)]">
+          Cargando resumen del sistema...
         </div>
+      ) : (
+        <section className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-4">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+
+            return (
+              <article
+                key={stat.label}
+                className={`innovatech-card innovatech-stat-card ${getCardClass(stat.variant)}`}
+              >
+                <RingPattern pattern={stat.pattern} />
+                <div className="innovatech-card-content">
+                  <p className="innovatech-label">{stat.label}</p>
+                  <p className="innovatech-value">{stat.value}</p>
+                </div>
+                <div className="innovatech-icon-box">
+                  <Icon size={20} strokeWidth={1.8} />
+                </div>
+              </article>
+            );
+          })}
+        </section>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
-                Gestión de Proyectos
-              </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
-                Ver y administrar todos los proyectos
-              </p>
+      <section className="grid gap-[22px] lg:grid-cols-2">
+        {actions.map((action) => (
+          <article
+            key={action.title}
+            className={`innovatech-card innovatech-action-card ${getCardClass(action.variant)} ${action.className ?? ''}`}
+          >
+            <RingPattern pattern={action.pattern} />
+            <div className="innovatech-action-left">
+              <IconBox icon={action.icon} />
+              <div className="innovatech-card-content">
+                <h2 className="innovatech-title">{action.title}</h2>
+                <p className="innovatech-description">{action.description}</p>
+              </div>
             </div>
-            <Link
-              href="/admin/projects"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
-              Ver proyectos
+            <Link href={action.href} className="innovatech-button">
+              Acceder
             </Link>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
-                Crear Nuevo Proyecto
-              </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
-                Registrar un nuevo proyecto en el sistema
-              </p>
-            </div>
-            <Link
-              href="/admin/projects/create"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
-              Crear
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
-                Gestión de Tareas
-              </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
-                Ver y administrar todas las tareas
-              </p>
-            </div>
-            <Link
-              href="/admin/tasks"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
-              Ver tareas
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
-                Registrar Usuario
-              </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
-                Agregar nuevos usuarios al sistema
-              </p>
-            </div>
-            <Link
-              href="/admin/users/create"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
-              Registrar
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#171C22] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)] md:col-span-2">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-[#F5F7FA]">
-                Usuarios registrados
-              </h2>
-              <p className="mt-1 text-sm text-[#AAB4C0]">
-                Ver y eliminar usuarios existentes
-              </p>
-            </div>
-            <Link
-              href="/admin/users"
-              className="rounded-full bg-[#52e0dc] px-4 py-2 text-sm font-semibold text-[#05070A] transition hover:bg-[#43c3cf]"
-            >
-              Ver usuarios
-            </Link>
-          </div>
-        </div>
-      </div>
+          </article>
+        ))}
+      </section>
     </div>
   );
 }
