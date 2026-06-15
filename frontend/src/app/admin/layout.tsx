@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import AdminThemeToggle from '../../components/AdminThemeToggle';
 import ProfileTopbar from '../../components/ProfileTopbar';
 
 function getUserRoleFromToken() {
@@ -38,8 +37,8 @@ export default function AdminLayout({
     const isActive = matcher.test(pathname);
 
     return isActive
-      ? 'block rounded-lg border-l-4 border-[var(--accent)] bg-[var(--nav-active-bg)] px-3 py-2 text-sm font-semibold text-[var(--nav-active-text)] transition'
-      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-[var(--text)]';
+      ? 'block rounded-lg border-l-4 border-[#52E0DC] bg-[#52E0DC]/10 px-3 py-2 text-sm font-semibold text-[#F5F7FA]'
+      : 'block rounded-lg border-l-4 border-transparent px-3 py-2 text-sm font-medium text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]';
   }
 
   useEffect(() => {
@@ -56,7 +55,7 @@ export default function AdminLayout({
 
   if (isChecking) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--app-bg)] text-[var(--text-muted)]">
+      <main className="flex min-h-screen items-center justify-center bg-[#1F2E49] text-[#AAB4C0]">
         Validando permisos...
       </main>
     );
@@ -67,8 +66,8 @@ export default function AdminLayout({
   }
 
   return (
-    <main className="flex min-h-screen bg-[var(--app-bg)] text-[var(--text)] transition-colors">
-      <aside className="w-64 border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] p-6 transition-colors">
+    <main className="flex min-h-screen bg-[#1F2E49] text-[#F5F7FA]">
+      <aside className="w-64 border-r border-white/10 bg-[#171C22] p-6">
         <Link href="/admin" className="block">
           <img
             src="/innovatech-logo.png"
@@ -78,88 +77,89 @@ export default function AdminLayout({
         </Link>
 
         <nav className="mt-8 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Panel de administración
-          </p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Panel de administración
+        </p>
 
-          <Link href="/admin" className={getNavItemClass(/^\/admin$/)}>
-            Dashboard
-          </Link>
+        <Link
+          href="/admin"
+          className={getNavItemClass(/^\/admin$/)}
+        >
+          Dashboard
+        </Link>
 
-          <Link
-            href="/admin/users/create"
-            className={getNavItemClass(/^\/admin\/users\/create$/)}
-          >
-            Registrar usuario
-          </Link>
+        <Link
+          href="/admin/users/create"
+          className={getNavItemClass(/^\/admin\/users\/create$/)}
+        >
+          Registrar usuario
+        </Link>
 
-          <Link
-            href="/admin/users"
-            className={getNavItemClass(/^\/admin\/users$/)}
-          >
-            Usuarios registrados
-          </Link>
+        <Link
+          href="/admin/users"
+          className={getNavItemClass(/^\/admin\/users$/)}
+        >
+          Usuarios registrados
+        </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Gestión de proyectos
-          </p>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Gestión de proyectos
+        </p>
 
-          <Link
-            href="/admin/projects"
-            className={getNavItemClass(
-              /^\/admin\/projects(?:\/[0-9a-fA-F-]{36})?$/,
-            )}
-          >
-            Proyectos
-          </Link>
+        <Link
+          href="/admin/projects"
+          className={getNavItemClass(
+            /^\/admin\/projects(?:\/[0-9a-fA-F-]{36})?$/,
+          )}
+        >
+          Proyectos
+        </Link>
 
-          <Link
-            href="/admin/projects/create"
-            className={getNavItemClass(/^\/admin\/projects\/create$/)}
-          >
-            Crear proyecto
-          </Link>
+        <Link
+          href="/admin/projects/create"
+          className={getNavItemClass(/^\/admin\/projects\/create$/)}
+        >
+          Crear proyecto
+        </Link>
 
-          <Link
-            href="/admin/tasks"
-            className={getNavItemClass(/^\/admin\/tasks$/)}
-          >
-            Tareas
-          </Link>
+        <Link
+          href="/admin/tasks"
+          className={getNavItemClass(/^\/admin\/tasks$/)}
+        >
+          Tareas
+        </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Gestión de recursos
-          </p>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Gestión de recursos
+        </p>
 
-          <Link
-            href="/admin/resources"
-            className={getNavItemClass(/^\/admin\/resources$/)}
-          >
-            Recursos
-          </Link>
+        <Link
+          href="/admin/resources"
+          className={getNavItemClass(/^\/admin\/resources$/)}
+        >
+          Recursos
+        </Link>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Monitoreo
-          </p>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[#AAB4C0]">
+          Monitoreo
+        </p>
 
-          <Link
-            href="/admin/analytics"
-            className={getNavItemClass(/^\/admin\/analytics$/)}
-          >
-            Analítica
-          </Link>
-        </nav>
+        <Link
+          href="/admin/analytics"
+          className={getNavItemClass(/^\/admin\/analytics$/)}
+        >
+          Analítica
+        </Link>
+      </nav>
       </aside>
 
       <section className="flex min-h-screen flex-1 flex-col overflow-hidden">
         <ProfileTopbar />
 
-        <div className="flex-1 px-6 py-8 lg:px-10">
-          <div className="mx-auto w-full max-w-[1240px]">{children}</div>
+        <div className="flex-1 px-6 py-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1450px]">{children}</div>
         </div>
       </section>
-
-      <AdminThemeToggle />
     </main>
   );
 }
