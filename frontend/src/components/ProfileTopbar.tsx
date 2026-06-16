@@ -119,7 +119,7 @@ export default function ProfileTopbar() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm text-content">Sesión iniciada</p>
-          <p className="text-2xl font-semibold tracking-tight text-content-strong">
+          <p className="font-heading text-2xl font-semibold tracking-tight text-content-strong">
             {user?.name || user?.email || 'Usuario no identificado'}
           </p>
         </div>

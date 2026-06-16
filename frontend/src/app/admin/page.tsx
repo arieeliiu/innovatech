@@ -293,56 +293,54 @@ export default function AdminDashboard() {
   ).length;
 
   return (
-    <div className="mx-auto w-full max-w-[1240px] space-y-[34px] text-content">
-      <header>
-        <h1 className="font-heading text-[clamp(42px,3.2vw,58px)] font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
+    <div className="mx-auto w-full max-w-[1240px] space-y-[44px] text-content">
+      <header className="pt-4">
+        <h1 className="font-heading text-[clamp(30px,2.2vw,40px)] font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
           Panel de administrador
         </h1>
       </header>
 
       {error && (
-        <div className="rounded-2xl border border-danger/30 bg-danger-surface p-4 text-danger">
+        <div className="rounded-2xl border border-danger/30 bg-danger-surfac e p-4 text-danger">
           {error}
         </div>
       )}
 
-      {!isLoading && (
-        <section className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Total de Proyectos"
-            value={projects.length}
-            icon={<FolderKanban size={20} strokeWidth={1.8} />}
-            mode="decorative"
-            surface="soft"
-            patternPosition="top-left"
-            ringTone="light"
-          />
+      <section className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total de Proyectos"
+          value={isLoading ? 0 : projects.length}
+          icon={<FolderKanban size={20} strokeWidth={1.8} />}
+          mode="decorative"
+          surface="soft"
+          patternPosition="top-left"
+          ringTone="light"
+        />
 
-          <StatCard
-            label="Proyectos Activos"
-            value={activeProjects}
-            icon={<Activity size={20} strokeWidth={1.8} />}
-            mode="system"
-          />
+        <StatCard
+          label="Proyectos Activos"
+          value={isLoading ? 0 : activeProjects}
+          icon={<Activity size={20} strokeWidth={1.8} />}
+          mode="system"
+        />
 
-          <StatCard
-            label="Proyectos Completados"
-            value={completedProjects}
-            icon={<CheckCircle2 size={20} strokeWidth={1.8} />}
-            mode="decorative"
-            surface="mist"
-            patternPosition="top-right"
-            ringTone="mid"
-          />
+        <StatCard
+          label="Proyectos Completados"
+          value={isLoading ? 0 : completedProjects}
+          icon={<CheckCircle2 size={20} strokeWidth={1.8} />}
+          mode="decorative"
+          surface="mist"
+          patternPosition="top-right"
+          ringTone="mid"
+        />
 
-          <StatCard
-            label="Total de Usuarios"
-            value={users.length}
-            icon={<Users size={20} strokeWidth={1.8} />}
-            mode="system"
-          />
-        </section>
-      )}
+        <StatCard
+          label="Total de Usuarios"
+          value={isLoading ? 0 : users.length}
+          icon={<Users size={20} strokeWidth={1.8} />}
+          mode="system"
+        />
+      </section>
 
       <section className="grid gap-[22px] lg:grid-cols-2">
         <ActionCard
