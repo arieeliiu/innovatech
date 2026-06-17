@@ -84,13 +84,6 @@ export default function AdminLayout({
             </Link>
 
             <Link
-              href="/admin/users/create"
-              className={getNavItemClass(/^\/admin\/users\/create$/)}
-            >
-              Registrar usuario
-            </Link>
-
-            <Link
               href="/admin/users"
               className={getNavItemClass(/^\/admin\/users$/)}
             >
@@ -110,13 +103,6 @@ export default function AdminLayout({
               )}
             >
               Proyectos
-            </Link>
-
-            <Link
-              href="/admin/projects/create"
-              className={getNavItemClass(/^\/admin\/projects\/create$/)}
-            >
-              Crear proyecto
             </Link>
 
             <Link

@@ -22,6 +22,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Innovatech Solutions",
   description: "Plataforma de gestión de proyectos, usuarios y tareas",
+  icons: {
+    icon: [
+      {
+        url: "/fav-light.ico",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/fav-dark.ico",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    shortcut: "/fav-light.ico",
+  },
 };
 
 export default function RootLayout({

@@ -115,7 +115,7 @@ export default function ProfileTopbar() {
   const initial = (user?.name || user?.email || 'U').charAt(0).toUpperCase();
 
   return (
-    <header className="theme-header-surface border-b border-theme-border px-6 py-3">
+    <header className="theme-header-surface border-b border-theme-border px-6 pt-4 pb-4">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm text-content">Sesión iniciada</p>

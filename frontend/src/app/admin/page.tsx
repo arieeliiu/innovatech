@@ -293,8 +293,8 @@ export default function AdminDashboard() {
   ).length;
 
   return (
-    <div className="mx-auto w-full max-w-[1240px] space-y-[44px] text-content">
-      <header className="pt-4">
+    <div className="mx-auto w-full max-w-[1240px] space-y-[25px] text-content">
+      <header className="pt-3 pb-4">
         <h1 className="font-heading text-[clamp(30px,2.2vw,40px)] font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
           Panel de administrador
         </h1>
