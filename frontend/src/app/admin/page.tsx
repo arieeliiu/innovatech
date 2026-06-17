@@ -191,7 +191,7 @@ function StatCard({
         <p className={`text-[15px] font-medium leading-[1.3] ${getStrongText(mode)}`}>
           {label}
         </p>
-        <p className={`mt-4 font-heading text-[30px] font-bold leading-[0.95] tracking-[-0.04em] ${getValueText(mode)}`}>
+        <p className={`mt-4 font-heading text-[30px] font-bold leading-[0.95] ${getValueText(mode)}`}>
           {value}
         </p>
       </div>
@@ -232,7 +232,7 @@ function ActionCard({
           </div>
 
           <div className="min-w-0">
-            <h2 className={`font-heading text-[23px] font-semibold leading-[1.02] tracking-normal ${getStrongText(mode)}`}>
+            <h2 className={`font-heading text-[23px] font-semibold leading-[1.02] ${getStrongText(mode)}`}>
               {title}
             </h2>
             <p className={`mt-[10px] text-[15px] leading-[1.45] ${getMutedText(mode)}`}>
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
   return (
     <div className="mx-auto w-full max-w-[1240px] space-y-[25px] text-content">
       <header className="pt-3 pb-4">
-        <h1 className="font-heading text-[clamp(30px,2.2vw,40px)] font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
+        <h1 className="font-heading text-[clamp(30px,2.2vw,40px)] font-semibold leading-[0.96] text-content-strong">
           Panel de administrador
         </h1>
       </header>

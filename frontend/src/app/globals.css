@@ -203,6 +203,7 @@ body {
 
 .font-heading {
   font-family: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  letter-spacing: -0.001em;
 }
 
 .theme-sidebar-surface,

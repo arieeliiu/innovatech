@@ -75,7 +75,7 @@ export default function AdminLayout({
 
         <nav className="mt-8 space-y-5">
           <div className="space-y-2">
-            <p className="font-heading text-sm font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
+            <p className="font-heading text-sm font-semibold leading-[0.96] text-content-strong">
               Panel de administración
             </p>
 
@@ -92,7 +92,7 @@ export default function AdminLayout({
           </div>
 
           <div className="space-y-2 border-t border-theme-border pt-5">
-            <p className="font-heading text-sm font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
+            <p className="font-heading text-sm font-semibold leading-[0.96] text-content-strong">
               Gestión de proyectos
             </p>
 
@@ -114,7 +114,7 @@ export default function AdminLayout({
           </div>
 
           <div className="space-y-2 border-t border-theme-border pt-5">
-            <p className="font-heading text-sm font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
+            <p className="font-heading text-sm font-semibold leading-[0.96] text-content-strong">
               Gestión de recursos
             </p>
 
@@ -127,7 +127,7 @@ export default function AdminLayout({
           </div>
 
           <div className="space-y-2 border-t border-theme-border pt-5">
-            <p className="font-heading text-sm font-semibold leading-[0.96] tracking-[-0.005em] text-content-strong">
+            <p className="font-heading text-sm font-semibold leading-[0.96] text-content-strong">
               Monitoreo
             </p>
             <Link
