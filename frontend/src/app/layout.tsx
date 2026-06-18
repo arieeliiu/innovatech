@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Noto_Serif, Source_Sans_3 } from "next/font/google";
+import { Geist_Mono, IBM_Plex_Sans, Noto_Serif } from "next/font/google";
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
+const sourceSans = IBM_Plex_Sans({
   variable: "--font-source-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
