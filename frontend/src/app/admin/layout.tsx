@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { Moon, Sun } from 'lucide-react';
 import ProfileTopbar from '../../components/ProfileTopbar';
 import ThemeLogo from '../../components/ThemeLogo';
 
@@ -33,6 +34,11 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+
+    return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+  });
 
   function getNavItemClass(matcher: RegExp) {
     const isActive = matcher.test(pathname);
@@ -54,6 +60,15 @@ export default function AdminLayout({
     setIsChecking(false);
   }, [router]);
 
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  }
+
   if (isChecking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-app text-content-muted">
@@ -67,8 +82,8 @@ export default function AdminLayout({
   }
 
   return (
-    <main className="flex min-h-screen bg-app text-content">
-      <aside className="theme-sidebar-surface w-64 shrink-0 border-r border-theme-border p-6">
+    <main className="theme-admin-shell flex h-screen overflow-hidden bg-app text-content">
+      <aside className="theme-sidebar-surface relative h-screen w-64 shrink-0 border-r border-theme-border p-6">
         <Link href="/admin" className="block">
           <ThemeLogo className="w-[190px]" />
         </Link>
@@ -138,12 +153,22 @@ export default function AdminLayout({
             </Link>
           </div>
         </nav>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="absolute bottom-6 left-20 flex h-10 w-10 items-center justify-center rounded-full border border-theme-border-strong bg-surface text-content-strong shadow-floating transition hover:-translate-y-0.5 hover:bg-surface-hover"
+          aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </aside>
 
-      <section className="flex min-h-screen flex-1 flex-col overflow-hidden">
+      <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <ProfileTopbar />
 
-        <div className="flex-1 px-6 py-7 lg:px-10 lg:py-8">
+        <div className="flex-1 overflow-y-auto px-6 py-7 lg:px-10 lg:py-8">
           <div className="mx-auto w-full max-w-[1450px]">{children}</div>
         </div>
       </section>
