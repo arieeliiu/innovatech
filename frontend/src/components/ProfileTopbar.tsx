@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getUserRoleLabel } from '../lib/userRules';
+import { getDecodedToken } from '../lib/auth';
 
 type LoggedUser = {
   id?: string;
@@ -13,8 +14,9 @@ type LoggedUser = {
 
 function decodeToken(token: string): LoggedUser | null {
   try {
-    const payload = token.split('.')[1];
-    const decodedPayload = JSON.parse(atob(payload));
+    const decodedPayload = getDecodedToken(token);
+
+    if (!decodedPayload) return null;
 
     return {
       id: decodedPayload.id || decodedPayload.sub,
@@ -246,9 +248,7 @@ export default function ProfileTopbar() {
         </div>
       </div>
 
-      {notice && (
-        <p className="mt-2 text-sm text-content-muted">{notice}</p>
-      )}
+      {notice && <p className="mt-2 text-sm text-content-muted">{notice}</p>}
     </header>
   );
 }

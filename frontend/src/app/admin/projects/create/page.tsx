@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProject, getUsers } from '../../../../lib/api';
+import { PageTitle } from '../../../../components/ui/PageTitle';
 
 type User = {
   id: string;
@@ -61,7 +62,7 @@ export default function AdminCreateProjectPage() {
 
       const usersList = Array.isArray(data)
         ? data
-        : data.users ?? data.data ?? data.items ?? [];
+        : (data.users ?? data.data ?? data.items ?? []);
 
       setUsers(usersList);
     } catch {
@@ -101,66 +102,55 @@ export default function AdminCreateProjectPage() {
       router.push('/admin/projects');
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo crear el proyecto',
+        error instanceof Error ? error.message : 'No se pudo crear el proyecto',
       );
     } finally {
       setSaving(false);
     }
   }
 
-  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+  const labelClass = 'block text-sm font-medium text-content-strong';
 
   const inputClass =
-    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+    'mt-1 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none transition placeholder:text-content-muted/60 focus:border-theme-border-strong';
 
-  const dateInputClass = `${inputClass} calendar-accent`;
+  const dateInputClass = `${inputClass} calendar-themed`;
 
   return (
-    <section>
-      <h1 className="text-3xl font-bold text-[#F5F7FA]">Crear proyecto</h1>
-
-      <p className="mt-2 text-[#AAB4C0]">
-        Registra un nuevo proyecto en la plataforma.
-      </p>
-
+    <section className="mx-auto w-full max-w-[1240px]">
+      <PageTitle>Crear proyecto</PageTitle>
       <form
         onSubmit={handleSubmit}
-        className="mt-8 max-w-xl space-y-4 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
+        className="theme-card-interactive mt-8 max-w-xl space-y-4 rounded-[14px] border border-theme-border bg-surface p-6"
       >
         <div>
-          <label className={labelClass}>
-            Nombre
-          </label>
+          <label className={labelClass}>Nombre</label>
           <input
             className={inputClass}
             value={form.name}
-            onChange={(event) =>
-              setForm({ ...form, name: event.target.value })
-            }
+            onChange={(event) => setForm({ ...form, name: event.target.value })}
             required
           />
         </div>
 
         <div>
-          <label className={labelClass}>
-            Descripción
-          </label>
+          <label className={labelClass}>Descripción</label>
           <textarea
-            className={inputClass}
+            className={`${inputClass} h-32 resize-none`}
             value={form.description}
             onChange={(event) =>
               setForm({ ...form, description: event.target.value })
             }
+            maxLength={500}
             required
           />
+          <p className="mt-1 text-right text-xs text-content-muted">
+            {form.description.length}/500
+          </p>
         </div>
 
         <div>
-          <label className={labelClass}>
-            Fecha de inicio
-          </label>
+          <label className={labelClass}>Fecha de inicio</label>
           <input
             type="date"
             className={dateInputClass}
@@ -175,9 +165,7 @@ export default function AdminCreateProjectPage() {
         </div>
 
         <div>
-          <label className={labelClass}>
-            Fecha de término
-          </label>
+          <label className={labelClass}>Fecha de término</label>
           <input
             type="date"
             className={dateInputClass}
@@ -192,9 +180,7 @@ export default function AdminCreateProjectPage() {
         </div>
 
         <div>
-          <label className={labelClass}>
-            Responsable del proyecto
-          </label>
+          <label className={labelClass}>Responsable del proyecto</label>
 
           <select
             className={inputClass}
@@ -217,20 +203,20 @@ export default function AdminCreateProjectPage() {
           </select>
 
           {!loadingUsers && managers.length === 0 && (
-            <p className="mt-2 text-sm text-red-300">
+            <p className="mt-2 text-sm text-danger">
               No hay gestores disponibles para asignar como responsable.
             </p>
           )}
         </div>
 
         {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+          <p className="rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
             {error}
           </p>
         )}
 
         {message && (
-          <p className="rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">
+          <p className="rounded-lg border border-success/30 bg-success-surface p-3 text-sm text-success">
             {message}
           </p>
         )}
@@ -239,7 +225,7 @@ export default function AdminCreateProjectPage() {
           <button
             type="submit"
             disabled={saving || loadingUsers || managers.length === 0}
-            className="rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Creando...' : 'Crear proyecto'}
           </button>
@@ -247,21 +233,13 @@ export default function AdminCreateProjectPage() {
           <button
             type="button"
             onClick={() => router.push('/admin/projects')}
-            className="rounded-lg border border-white/10 bg-[#162233] px-4 py-2 font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]"
+            className="rounded-lg border border-theme-border bg-surface-alt px-4 py-2 font-medium text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
           >
             Cancelar
           </button>
         </div>
       </form>
 
-      <style jsx global>{`
-        .calendar-accent::-webkit-calendar-picker-indicator {
-          cursor: pointer;
-          opacity: 1;
-          filter: invert(78%) sepia(56%) saturate(559%) hue-rotate(129deg)
-            brightness(96%) contrast(94%);
-        }
-      `}</style>
     </section>
   );
 }

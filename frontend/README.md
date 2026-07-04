@@ -87,6 +87,7 @@ La conexión con el backend se realiza mediante la variable de entorno:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_AUTH_SERVICE_URL=http://localhost:3002
 ```
 
 Esta variable indica la URL base donde se encuentra ejecutándose el backend.
@@ -105,6 +106,7 @@ Ejemplo:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_AUTH_SERVICE_URL=http://localhost:3002
 ```
 
 En caso de desplegar el frontend en Vercel u otra plataforma, esta variable debe configurarse también en el panel de variables de entorno del servicio de despliegue.

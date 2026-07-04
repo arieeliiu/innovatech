@@ -17,9 +17,9 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
 import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
-import { AuthGuard } from '../../auth/guards/auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { AuthGuard } from '../../security/guards/auth.guard';
+import { RolesGuard } from '../../security/guards/roles.guard';
+import { Roles } from '../../security/decorators/roles.decorator';
 
 type AuthenticatedRequest = Request & {
   user: {

@@ -1,5 +1,9 @@
 # Backend - Innovatech Solutions
 
+> La autenticación y la administración de usuarios se trasladaron a
+> `services/auth-service`. Este servicio conserva únicamente la validación de
+> JWT y autorización necesarias para proteger las rutas de proyectos.
+
 Backend desarrollado en **NestJS** para el proyecto **Innovatech Solutions**. Su objetivo es actuar como la capa de servicios de la plataforma, exponiendo una API para que el frontend pueda autenticarse, gestionar usuarios, administrar proyectos y preparar la integración futura con herramientas externas de gestión, recursos y analítica.
 
 Este backend forma parte de una arquitectura pensada originalmente bajo un enfoque de **microservicios**, donde cada área funcional del sistema puede evolucionar de forma independiente. Para esta entrega se implementó de forma prioritaria el núcleo funcional asociado a autenticación, usuarios, proyectos y tareas, manteniendo una estructura modular que permite escalar hacia los demás servicios planificados.

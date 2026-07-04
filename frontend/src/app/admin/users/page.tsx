@@ -9,6 +9,8 @@ import {
   USER_PASSWORD_MIN_LENGTH,
   USER_ROLE_OPTIONS,
 } from '../../../lib/userRules';
+import { Card } from '../../../components/ui/Card';
+import { PageTitle } from '../../../components/ui/PageTitle';
 
 type User = {
   id: string;
@@ -179,30 +181,36 @@ export default function AdminUsersPage() {
     }
   }
 
-  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+  const labelClass = 'block text-sm font-medium text-content-strong';
 
   const inputClass =
-    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+    'mt-1 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none transition placeholder:text-content-muted/60 focus:border-theme-border-strong';
 
   const secondaryButtonClass =
-    'rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]';
+    'rounded-lg border border-theme-border bg-surface-alt px-4 py-2 text-sm font-medium text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover';
 
   return (
-    <section>
-      <h1 className="text-3xl font-bold text-[#F5F7FA]">Usuarios registrados</h1>
-      <p className="mt-2 text-[#AAB4C0]">Listado completo de cuentas registradas en la plataforma.</p>
+    <section className="mx-auto w-full max-w-[1240px]">
+      <PageTitle>Usuarios registrados</PageTitle>
+      <p className="mt-2 text-content-muted">
+        Listado completo de cuentas registradas en la plataforma.
+      </p>
 
       {error && (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-red-300">{error}</p>
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-danger">
+          {error}
+        </p>
       )}
 
       {message && (
-        <p className="mt-4 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-[#7DEBE8]">{message}</p>
+        <p className="mt-4 rounded-lg border border-success/30 bg-success-surface p-3 text-success">
+          {message}
+        </p>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-[#2A3B55] bg-[#172235] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+      <Card className="mt-6 overflow-x-auto">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-[#2A3B55] bg-[#162233] text-[#AAB4C0]">
+          <thead className="border-b border-theme-border bg-surface-alt text-content-muted">
             <tr>
               <th className="px-4 py-3 font-semibold">ID</th>
               <th className="px-4 py-3 font-semibold">Nombre</th>
@@ -215,7 +223,10 @@ export default function AdminUsersPage() {
           <tbody>
             {!loading && users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[#AAB4C0]">
+                <td
+                  colSpan={5}
+                  className="px-4 py-6 text-center text-content-muted"
+                >
                   No hay usuarios registrados.
                 </td>
               </tr>
@@ -223,7 +234,10 @@ export default function AdminUsersPage() {
 
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[#AAB4C0]">
+                <td
+                  colSpan={5}
+                  className="px-4 py-6 text-center text-content-muted"
+                >
                   Cargando usuarios...
                 </td>
               </tr>
@@ -234,18 +248,25 @@ export default function AdminUsersPage() {
                 const isCurrentUser = user.id === currentUserId;
 
                 return (
-                  <tr key={user.id} className="border-b border-[#2A3B55] transition hover:bg-[#1D2B42]">
-                    <td className="px-4 py-3 text-[#AAB4C0]">{user.id}</td>
-                    <td className="px-4 py-3 font-medium text-[#F5F7FA]">
+                  <tr
+                    key={user.id}
+                    className="border-b border-theme-border transition hover:bg-surface-hover"
+                  >
+                    <td className="px-4 py-3 text-content-muted">{user.id}</td>
+                    <td className="px-4 py-3 font-medium text-content-strong">
                       {user.name || 'Usuario sin nombre'}
                     </td>
-                    <td className="px-4 py-3 text-[#AAB4C0]">{user.email || 'Sin correo'}</td>
-                    <td className="px-4 py-3 text-[#AAB4C0]">{getUserRoleLabel(user.role)}</td>
+                    <td className="px-4 py-3 text-content-muted">
+                      {user.email || 'Sin correo'}
+                    </td>
+                    <td className="px-4 py-3 text-content-muted">
+                      {getUserRoleLabel(user.role)}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
                         onClick={() => openEditModal(user)}
-                        className="mr-2 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1.5 text-xs font-semibold text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22]"
+                        className="mr-2 rounded-lg border border-theme-border bg-surface-alt px-3 py-1.5 text-xs font-semibold text-content-strong transition hover:bg-surface-hover"
                       >
                         Editar
                       </button>
@@ -254,7 +275,7 @@ export default function AdminUsersPage() {
                         type="button"
                         onClick={() => openDeleteModal(user)}
                         disabled={isCurrentUser}
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-danger px-3 py-1.5 text-xs font-medium text-danger-foreground transition hover:bg-danger-hover disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isCurrentUser ? 'Tu cuenta' : 'Eliminar'}
                       </button>
@@ -264,19 +285,22 @@ export default function AdminUsersPage() {
               })}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
-            <h2 className="text-xl font-bold text-[#F5F7FA]">Eliminar usuario</h2>
+          <Card className="w-full max-w-md p-6 shadow-floating">
+            <h2 className="font-heading text-xl font-bold text-content-strong">
+              Eliminar usuario
+            </h2>
 
-            <p className="mt-3 text-sm text-[#AAB4C0]">
+            <p className="mt-3 text-sm text-content-muted">
               Para eliminar al usuario{' '}
-              <strong className="text-[#F5F7FA]">
+              <strong className="text-content-strong">
                 {selectedUser.name || selectedUser.email || selectedUser.id}
               </strong>
-              , escribe <strong className="text-[#F5F7FA]">eliminar</strong>.
+              , escribe{' '}
+              <strong className="text-content-strong">eliminar</strong>.
             </p>
 
             <input
@@ -287,7 +311,7 @@ export default function AdminUsersPage() {
             />
 
             {deleteError && (
-              <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+              <p className="mt-3 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
                 {deleteError}
               </p>
             )}
@@ -304,24 +328,28 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={handleDeleteUser}
-                disabled={deleting || confirmText.trim().toLowerCase() !== 'eliminar'}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={
+                  deleting || confirmText.trim().toLowerCase() !== 'eliminar'
+                }
+                className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-danger-foreground transition hover:bg-danger-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? 'Eliminando...' : 'Confirmar eliminación'}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
-            <h2 className="text-xl font-bold text-[#F5F7FA]">Editar usuario</h2>
+          <Card className="w-full max-w-md p-6 shadow-floating">
+            <h2 className="font-heading text-xl font-bold text-content-strong">
+              Editar usuario
+            </h2>
 
-            <p className="mt-2 text-sm text-[#AAB4C0]">
+            <p className="mt-2 text-sm text-content-muted">
               Actualiza los datos de{' '}
-              <strong className="text-[#F5F7FA]">
+              <strong className="text-content-strong">
                 {editingUser.name || editingUser.email || editingUser.id}
               </strong>
               .
@@ -329,9 +357,7 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleUpdateUser} className="mt-4 space-y-4">
               <div>
-                <label className={labelClass}>
-                  Nombre
-                </label>
+                <label className={labelClass}>Nombre</label>
                 <input
                   className={inputClass}
                   value={editForm.name}
@@ -343,9 +369,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className={labelClass}>
-                  Correo
-                </label>
+                <label className={labelClass}>Correo</label>
                 <input
                   type="email"
                   className={inputClass}
@@ -358,9 +382,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className={labelClass}>
-                  Rol
-                </label>
+                <label className={labelClass}>Rol</label>
                 <select
                   className={inputClass}
                   value={editForm.role}
@@ -394,7 +416,7 @@ export default function AdminUsersPage() {
               </div>
 
               {editError && (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                <p className="rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
                   {editError}
                 </p>
               )}
@@ -411,13 +433,13 @@ export default function AdminUsersPage() {
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="rounded-lg bg-[#52E0DC] px-4 py-2 text-sm font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingEdit ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
     </section>

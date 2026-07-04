@@ -1,4 +1,5 @@
 import type { ProjectMember, User } from '../../types';
+import { Card } from '../ui/Card';
 
 type ProjectMembersPanelProps = {
   members: ProjectMember[];
@@ -44,17 +45,14 @@ export function ProjectMembersPanel({
   );
 
   return (
-    <div
-      id="members-section"
-      className="mt-8 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
-    >
+    <Card id="members-section" className="mt-8 p-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#F5F7FA]">
+          <h2 className="font-heading text-2xl font-bold text-content-strong">
             Miembros del proyecto
           </h2>
 
-          <p className="mt-1 text-[#AAB4C0]">
+          <p className="mt-1 text-content-muted">
             {canManageMembers
               ? 'Gestiona los miembros del equipo del proyecto.'
               : 'Consulta los miembros asociados al proyecto.'}
@@ -65,7 +63,7 @@ export function ProjectMembersPanel({
           <button
             type="button"
             onClick={onToggleAddMemberForm}
-            className="rounded-lg border border-[#52E0DC]/40 bg-[#52E0DC]/10 px-4 py-2 font-semibold text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22]"
+            className="rounded-lg border border-theme-border-strong bg-surface-alt px-4 py-2 font-semibold text-content-strong transition hover:bg-surface-hover"
           >
             {showAddMemberForm ? 'Cancelar' : '+ Agregar miembro'}
           </button>
@@ -73,23 +71,23 @@ export function ProjectMembersPanel({
       </div>
 
       {memberError && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+        <div className="mb-4 rounded-lg border border-danger/30 bg-danger-surface p-4 text-sm text-danger">
           {memberError}
         </div>
       )}
 
       {showAddMemberForm && canManageMembers && (
-        <div className="mb-6 rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
+        <Card variant="subtle" className="mb-6 p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-[#F5F7FA]">
+              <label className="mb-2 block text-sm font-medium text-content-strong">
                 Usuario
               </label>
 
               <select
                 value={selectedMemberId}
                 onChange={(event) => onSelectedMemberChange(event.target.value)}
-                className="w-full rounded-lg border border-[#2A3B55] bg-[#162233] px-3 py-2 text-[#F5F7FA] outline-none transition focus:border-[#52E0DC]"
+                className="w-full rounded-lg border border-theme-border bg-surface px-3 py-2 text-content-strong outline-none transition focus:border-theme-border-strong"
               >
                 <option value="">
                   {availableUsers.length > 0
@@ -109,31 +107,32 @@ export function ProjectMembersPanel({
               type="button"
               onClick={onAddMember}
               disabled={loadingAddMember || availableUsers.length === 0}
-              className="w-full rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
             </button>
           </div>
-        </div>
+        </Card>
       )}
 
       <div className="space-y-2">
         {members.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-[#3A4A63] bg-[#1D2B42] p-4 text-[#AAB4C0]">
+          <p className="rounded-lg border border-dashed border-theme-border-strong bg-surface-alt p-4 text-content-muted">
             No hay miembros en este proyecto.
           </p>
         ) : (
           members.map((member) => (
-            <div
+            <Card
+              variant="subtle"
               key={member.id}
-              className="flex items-center justify-between rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4"
+              className="flex items-center justify-between p-4"
             >
               <div>
-                <p className="font-semibold text-[#F5F7FA]">
+                <p className="font-semibold text-content-strong">
                   {getUserName(member.user_id)}
                 </p>
 
-                <p className="text-sm text-[#AAB4C0]">
+                <p className="text-sm text-content-muted">
                   Rol: {member.project_role} · Unido:{' '}
                   {new Date(member.joined_at).toLocaleDateString()}
                 </p>
@@ -143,15 +142,15 @@ export function ProjectMembersPanel({
                 <button
                   type="button"
                   onClick={() => onRemoveMember(member.user_id)}
-                  className="text-sm font-semibold text-red-300 transition hover:text-red-200"
+                  className="text-sm font-semibold text-danger transition hover:text-danger-hover"
                 >
                   Remover
                 </button>
               )}
-            </div>
+            </Card>
           ))
         )}
       </div>
-    </div>
+    </Card>
   );
 }

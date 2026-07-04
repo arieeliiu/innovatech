@@ -2,13 +2,32 @@ import {
   canCreateProject,
   getPermissions,
   normalizeAppRole,
+  type AppRole,
 } from './permissions';
 
-export type LoggedRole = string | null;
+export type LoggedRole = AppRole;
+
+export function getStoredToken() {
+  if (typeof window === 'undefined') return null;
+
+  const token = localStorage.getItem('token');
+
+  if (!token || token === 'undefined' || token === 'null') {
+    return null;
+  }
+
+  return token;
+}
 
 export function getDecodedToken(token: string) {
   try {
-    return JSON.parse(atob(token.split('.')[1]));
+    const payload = token.split('.')[1];
+    const normalizedPayload = payload
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(payload.length / 4) * 4, '=');
+
+    return JSON.parse(atob(normalizedPayload));
   } catch {
     return null;
   }
@@ -39,13 +58,13 @@ export function getUserIdFromToken(token?: string | null) {
 export function getStoredRole() {
   if (typeof window === 'undefined') return null;
 
-  return getRoleFromToken(localStorage.getItem('token'));
+  return getRoleFromToken(getStoredToken());
 }
 
 export function getStoredUserId() {
   if (typeof window === 'undefined') return null;
 
-  return getUserIdFromToken(localStorage.getItem('token'));
+  return getUserIdFromToken(getStoredToken());
 }
 
 export function isAdminRole(role?: string | null) {
@@ -84,4 +103,21 @@ export function isAssociatedProjectRole(role?: string | null) {
     normalizedRole === 'desarrollo' ||
     normalizedRole === 'consultor'
   );
+}
+
+export function isTokenUsable(token?: string | null) {
+  if (!token || token.split('.').length !== 3) return false;
+
+  const payload = getDecodedToken(token);
+
+  if (!payload || typeof payload.exp !== 'number') return false;
+
+  return payload.exp * 1000 > Date.now();
+}
+
+export function clearStoredSession() {
+  if (typeof window === 'undefined') return;
+
+  localStorage.removeItem('token');
+  localStorage.removeItem('profilePhoto');
 }

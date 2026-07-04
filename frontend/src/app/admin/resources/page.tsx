@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  getResources,
-  type ResourceSummary,
-} from '../../../lib/api';
+import { getResources, type ResourceSummary } from '../../../lib/api';
+import { Card, MetricCard } from '../../../components/ui/Card';
+import { PageTitle } from '../../../components/ui/PageTitle';
 
 export default function ResourcesPage() {
   const [resources, setResources] = useState<ResourceSummary[]>([]);
@@ -39,65 +38,51 @@ export default function ResourcesPage() {
   }, []);
 
   if (loading) {
-    return <p className="text-[#AAB4C0]">Cargando recursos...</p>;
+    return (
+      <p className="mx-auto w-full max-w-[1240px] text-content-muted">
+        Cargando recursos...
+      </p>
+    );
   }
 
   return (
-    <section>
+    <section className="mx-auto w-full max-w-[1240px]">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#F5F7FA]">
-          Gestión de recursos
-        </h1>
-
-        <p className="mt-2 text-[#AAB4C0]">
-          Consulta la carga y disponibilidad de los profesionales.
-        </p>
+        <PageTitle>Gestión de recursos</PageTitle>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        <div className="mb-6 rounded-[14px] border border-danger/30 bg-danger-surface p-4 text-danger">
           {error}
         </div>
       )}
 
       <div className="mb-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#172235] p-5">
-          <p className="text-sm text-[#AAB4C0]">Profesionales</p>
-          <p className="mt-2 text-3xl font-bold">{resources.length}</p>
-        </div>
-
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#172235] p-5">
-          <p className="text-sm text-[#AAB4C0]">Disponibles</p>
-          <p className="mt-2 text-3xl font-bold text-[#52E0DC]">
-            {available}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[#2A3B55] bg-[#172235] p-5">
-          <p className="text-sm text-[#AAB4C0]">No disponibles</p>
-          <p className="mt-2 text-3xl font-bold text-red-300">
-            {unavailable}
-          </p>
-        </div>
+        <MetricCard label="Profesionales" value={resources.length} />
+        <MetricCard
+          label="Disponibles"
+          value={available}
+          valueClassName="text-success"
+        />
+        <MetricCard
+          label="No disponibles"
+          value={unavailable}
+          valueClassName="text-danger"
+        />
       </div>
 
       <div className="space-y-4">
         {resources.map((resource) => (
-          <article
-            key={resource.userId}
-            className="rounded-2xl border border-[#2A3B55] bg-[#172235] p-6"
-          >
+          <Card as="article" key={resource.userId} className="p-6">
             <div className="flex flex-col justify-between gap-4 md:flex-row">
               <div>
-                <h2 className="text-xl font-bold text-[#F5F7FA]">
+                <h2 className="font-heading text-xl font-bold text-content-strong">
                   {resource.name}
                 </h2>
 
-                <p className="text-sm text-[#AAB4C0]">
-                  {resource.email}
-                </p>
+                <p className="text-sm text-content-muted">{resource.email}</p>
 
-                <p className="mt-1 text-sm text-[#AAB4C0]">
+                <p className="mt-1 text-sm text-content-muted">
                   Rol: {resource.role}
                 </p>
               </div>
@@ -106,8 +91,8 @@ export default function ResourcesPage() {
                 <span
                   className={
                     resource.availabilityStatus === 'AVAILABLE'
-                      ? 'inline-flex rounded-full bg-[#52E0DC]/15 px-3 py-1 text-sm font-semibold text-[#52E0DC]'
-                      : 'inline-flex rounded-full bg-red-500/15 px-3 py-1 text-sm font-semibold text-red-300'
+                      ? 'inline-flex rounded-full bg-success-surface px-3 py-1 text-sm font-semibold text-success'
+                      : 'inline-flex rounded-full bg-danger-surface px-3 py-1 text-sm font-semibold text-danger'
                   }
                 >
                   {resource.availabilityStatus === 'AVAILABLE'
@@ -115,20 +100,20 @@ export default function ResourcesPage() {
                     : 'No disponible'}
                 </span>
 
-                <p className="mt-2 text-sm text-[#AAB4C0]">
-                  {resource.activeProjects}/{resource.maximumProjects}{' '}
-                  proyectos activos
+                <p className="mt-2 text-sm text-content-muted">
+                  {resource.activeProjects}/{resource.maximumProjects} proyectos
+                  activos
                 </p>
               </div>
             </div>
 
             <div className="mt-5">
-              <p className="mb-2 text-sm font-semibold text-[#F5F7FA]">
+              <p className="mb-2 text-sm font-semibold text-content-strong">
                 Proyectos activos
               </p>
 
               {resource.projects.length === 0 ? (
-                <p className="text-sm text-[#AAB4C0]">
+                <p className="text-sm text-content-muted">
                   Sin proyectos activos.
                 </p>
               ) : (
@@ -136,7 +121,7 @@ export default function ResourcesPage() {
                   {resource.projects.map((project) => (
                     <span
                       key={project.id}
-                      className="rounded-lg border border-[#2A3B55] bg-[#162233] px-3 py-2 text-sm text-[#F5F7FA]"
+                      className="rounded-lg border border-theme-border bg-surface-alt px-3 py-2 text-sm text-content"
                     >
                       {project.name ?? 'Proyecto sin nombre'}
                     </span>
@@ -144,7 +129,7 @@ export default function ResourcesPage() {
                 </div>
               )}
             </div>
-          </article>
+          </Card>
         ))}
       </div>
     </section>

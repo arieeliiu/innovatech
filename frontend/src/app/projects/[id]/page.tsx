@@ -81,10 +81,7 @@ export default function ProjectDetailPage() {
           (member: { user_id?: string }) => member.user_id === storedUserId,
         );
 
-      const isAllowed = canViewProjectDetail(
-        currentRole,
-        isAssociatedProject,
-      );
+      const isAllowed = canViewProjectDetail(currentRole, isAssociatedProject);
 
       if (!isAllowed) {
         setError('No tienes acceso a este proyecto');
@@ -101,7 +98,7 @@ export default function ProjectDetailPage() {
       setUsers(
         Array.isArray(usersData)
           ? usersData
-          : usersData.users ?? usersData.data ?? [],
+          : (usersData.users ?? usersData.data ?? []),
       );
     } catch {
       setError('No se pudo cargar el detalle del proyecto');
@@ -246,14 +243,16 @@ export default function ProjectDetailPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-        <section className="mx-auto max-w-6xl">
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>
+      <main>
+        <section className="mx-auto w-full max-w-[1240px]">
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+            {error}
+          </p>
 
           <button
             type="button"
             onClick={() => router.push('/projects')}
-            className="mt-4 rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
+            className="mt-4 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover"
           >
             Volver a proyectos
           </button>
@@ -264,9 +263,9 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-        <section className="mx-auto max-w-6xl">
-          <p className="text-[#AAB4C0]">Cargando proyecto...</p>
+      <main>
+        <section className="mx-auto w-full max-w-[1240px]">
+          <p className="text-content-muted">Cargando proyecto...</p>
         </section>
       </main>
     );
@@ -279,8 +278,7 @@ export default function ProjectDetailPage() {
   const permissions = getPermissions(role);
   const isProjectFinished = project.status === 'DONE';
 
-  const canManageMembers =
-    canManageProjectMembers(role) && !isProjectFinished;
+  const canManageMembers = canManageProjectMembers(role) && !isProjectFinished;
   const canViewMembers = canViewProjectMembers(role, isAssociatedProject);
   const canViewTasks = canViewTaskBoard(role, isAssociatedProject);
 
@@ -289,8 +287,8 @@ export default function ProjectDetailPage() {
     permissions.canFinalizeProject && !isProjectFinished;
 
   return (
-    <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-      <section className="mx-auto max-w-7xl">
+    <main>
+      <section className="mx-auto w-full max-w-[1240px]">
         <ProjectHeader
           project={project}
           responsibleName={getUserName(project.main_responsible_id)}
@@ -310,7 +308,9 @@ export default function ProjectDetailPage() {
             selectedMemberId={selectedMemberId}
             loadingAddMember={loadingAddMember}
             memberError={memberError}
-            onToggleAddMemberForm={() => setShowAddMemberForm(!showAddMemberForm)}
+            onToggleAddMemberForm={() =>
+              setShowAddMemberForm(!showAddMemberForm)
+            }
             onSelectedMemberChange={setSelectedMemberId}
             onAddMember={handleAddMember}
             onRemoveMember={handleRemoveMember}
@@ -324,7 +324,7 @@ export default function ProjectDetailPage() {
             description={
               <p>
                 Para eliminar este proyecto{' '}
-                <strong className="text-[#F5F7FA]">{project.name}</strong>.
+                <strong className="text-content-strong">{project.name}</strong>.
               </p>
             }
             confirmationLabel="eliminar"
@@ -347,8 +347,10 @@ export default function ProjectDetailPage() {
               <>
                 <p>
                   Al finalizar{' '}
-                  <strong className="text-[#F5F7FA]">{project.name}</strong>, se
-                  marcará como finalizado y quedará como historial.
+                  <strong className="text-content-strong">
+                    {project.name}
+                  </strong>
+                  , se marcará como finalizado y quedará como historial.
                 </p>
               </>
             }

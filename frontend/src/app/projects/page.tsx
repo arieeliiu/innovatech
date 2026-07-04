@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProjectCard } from '../../components/projects/ProjectCard';
+import { Card } from '../../components/ui/Card';
+import { PageTitle } from '../../components/ui/PageTitle';
 import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
 import { getStoredRole, getStoredUserId, isAdminRole } from '../../lib/auth';
 import { getPermissions } from '../../lib/permissions';
@@ -39,10 +41,7 @@ export default function ProjectsPage() {
 
       if (permissions.projectAccess === 'all') {
         setProjects(normalizedProjects);
-      } else if (
-        permissions.projectAccess === 'associated' &&
-        currentUserId
-      ) {
+      } else if (permissions.projectAccess === 'associated' && currentUserId) {
         const visibleProjects = await Promise.all(
           normalizedProjects.map(async (project) => {
             const membersData = await getProjectMembers(project.id);
@@ -102,22 +101,22 @@ export default function ProjectsPage() {
 
   const permissions = getPermissions(role);
   const canCreateProject = permissions.canCreateProject;
-  const activeProjects = projects.filter((project) => project.status !== 'DONE');
+  const activeProjects = projects.filter(
+    (project) => project.status !== 'DONE',
+  );
 
   const finishedProjects = projects.filter(
     (project) => project.status === 'DONE',
   );
 
   return (
-    <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-      <section className="mx-auto max-w-6xl">
+    <main>
+      <section className="mx-auto w-full max-w-[1240px]">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#F5F7FA]">
-              Gestión de proyectos
-            </h1>
+            <PageTitle>Gestión de proyectos</PageTitle>
 
-            <p className="mt-2 text-[#AAB4C0]">
+            <p className="mt-2 text-content-muted">
               Listado de proyectos registrados en Innovatech Solutions.
             </p>
           </div>
@@ -126,7 +125,7 @@ export default function ProjectsPage() {
             <button
               type="button"
               onClick={() => router.push('/projects/create')}
-              className="rounded-lg bg-[#162233] px-5 py-2 font-medium text-[#F5F7FA] transition hover:bg-[#24344F]"
+              className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition hover:bg-primary-hover"
             >
               Crear proyecto
             </button>
@@ -134,29 +133,29 @@ export default function ProjectsPage() {
         </div>
 
         {error && (
-          <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+          <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
             {error}
           </p>
         )}
 
         {isLoading && (
-          <p className="mt-8 text-[#F5F7FA]">Cargando proyectos...</p>
+          <p className="mt-8 text-content-muted">Cargando proyectos...</p>
         )}
 
         {!error && !isLoading && projects.length === 0 && (
-          <div className="mt-8 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+          <Card className="mt-8 p-6 text-content-muted">
             No hay proyectos disponibles para tu usuario.
-          </div>
+          </Card>
         )}
 
         {!error && !isLoading && activeProjects.length > 0 && (
           <section className="mt-8">
             <div>
-              <h2 className="text-2xl font-bold text-[#F5F7FA]">
+              <h2 className="font-heading text-2xl font-bold text-content-strong">
                 Proyectos activos
               </h2>
 
-              <p className="mt-1 text-[#AAB4C0]">
+              <p className="mt-1 text-content-muted">
                 Proyectos en curso o pendientes de ejecución.
               </p>
             </div>
@@ -172,7 +171,9 @@ export default function ProjectsPage() {
                     key={project.id}
                     project={project}
                     responsibleName={responsibleName}
-                    onViewDetail={() => router.push(getProjectRoute(project.id))}
+                    onViewDetail={() =>
+                      router.push(getProjectRoute(project.id))
+                    }
                   />
                 );
               })}
@@ -183,11 +184,11 @@ export default function ProjectsPage() {
         {!error && !isLoading && finishedProjects.length > 0 && (
           <section className="mt-10">
             <div>
-              <h2 className="text-2xl font-bold text-[#F5F7FA]">
+              <h2 className="font-heading text-2xl font-bold text-content-strong">
                 Proyectos finalizados
               </h2>
 
-              <p className="mt-1 text-[#AAB4C0]">
+              <p className="mt-1 text-content-muted">
                 Historial de proyectos cerrados.
               </p>
             </div>
@@ -203,7 +204,9 @@ export default function ProjectsPage() {
                     key={project.id}
                     project={project}
                     responsibleName={responsibleName}
-                    onViewDetail={() => router.push(getProjectRoute(project.id))}
+                    onViewDetail={() =>
+                      router.push(getProjectRoute(project.id))
+                    }
                   />
                 );
               })}

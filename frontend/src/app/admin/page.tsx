@@ -13,6 +13,13 @@ import {
   Users,
 } from 'lucide-react';
 import { getProjects, getUsers } from '../../lib/api';
+import {
+  Card,
+  CardCirclePattern,
+  type CardPatternPosition,
+  type CardRingTone,
+} from '../../components/ui/Card';
+import { PageTitle } from '../../components/ui/PageTitle';
 
 type Project = {
   id: string;
@@ -33,13 +40,6 @@ type User = {
 };
 
 type CardSurface = 'soft' | 'mist' | 'resources';
-type PatternPosition =
-  | 'top-left'
-  | 'top-right'
-  | 'bottom-right-soft'
-  | 'mid-left'
-  | 'resources-rings';
-type RingTone = 'light' | 'mid';
 type CardMode = 'decorative' | 'system';
 
 type ActionCardProps = {
@@ -49,8 +49,8 @@ type ActionCardProps = {
   icon: ReactNode;
   mode?: CardMode;
   surface?: CardSurface;
-  patternPosition?: PatternPosition;
-  ringTone?: RingTone;
+  patternPosition?: CardPatternPosition;
+  ringTone?: CardRingTone;
   showPattern?: boolean;
 };
 
@@ -60,8 +60,8 @@ type StatCardProps = {
   icon: ReactNode;
   mode?: CardMode;
   surface?: CardSurface;
-  patternPosition?: PatternPosition;
-  ringTone?: RingTone;
+  patternPosition?: CardPatternPosition;
+  ringTone?: CardRingTone;
   showPattern?: boolean;
 };
 
@@ -79,52 +79,6 @@ const decorativeSurfaceStyles: Record<CardSurface, CSSProperties> = {
     borderColor: '#E6E9EA',
   },
 };
-
-const ringStyles: Record<RingTone, { stroke: string; opacity: number }> = {
-  light: { stroke: '#A0A9AB', opacity: 0.42 },
-  mid: { stroke: '#6F787B', opacity: 0.34 },
-};
-
-const patternPositions: Record<PatternPosition, { x: string; y: string; sizes: number[] }> = {
-  'top-left': { x: '9%', y: '-10%', sizes: [320, 200, 100] },
-  'top-right': { x: '102%', y: '4%', sizes: [320, 200, 100] },
-  'bottom-right-soft': { x: '90%', y: '102%', sizes: [320, 200, 100] },
-  'mid-left': { x: '9%', y: '105%', sizes: [320, 200, 100] },
-  'resources-rings': { x: '40%', y: '-5%', sizes: [320, 200, 100] },
-};
-
-function Pattern({
-  position,
-  ringTone,
-}: {
-  position: PatternPosition;
-  ringTone: RingTone;
-}) {
-  const currentPosition = patternPositions[position];
-  const currentRing = ringStyles[ringTone];
-
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      {currentPosition.sizes.map((size) => (
-        <span
-          key={size}
-          className="absolute rounded-full"
-          style={{
-            left: currentPosition.x,
-            top: currentPosition.y,
-            width: size,
-            height: size,
-            borderColor: currentRing.stroke,
-            borderStyle: 'solid',
-            borderWidth: 1,
-            opacity: currentRing.opacity,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function getCardShell(mode: CardMode) {
   if (mode === 'decorative') {
@@ -177,29 +131,37 @@ function StatCard({
   showPattern = true,
 }: StatCardProps) {
   return (
-    <article
-      className={`theme-card-interactive relative isolate flex min-h-[120px] items-start justify-between gap-[18px] overflow-hidden rounded-[24px] border px-[26px] py-6 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${getCardShell(
+    <Card
+      as="article"
+      interactive
+      className={`relative isolate flex min-h-[120px] items-start justify-between gap-[18px] overflow-hidden px-[26px] py-6 ${getCardShell(
         mode,
       )}`}
       style={getCardStyle(mode, surface)}
     >
       {mode === 'decorative' && showPattern && (
-        <Pattern position={patternPosition} ringTone={ringTone} />
+        <CardCirclePattern position={patternPosition} ringTone={ringTone} />
       )}
 
       <div className="relative z-10 min-w-0">
-        <p className={`text-[15px] font-medium leading-[1.3] ${getStrongText(mode)}`}>
+        <p
+          className={`text-[15px] font-medium leading-[1.3] ${getStrongText(mode)}`}
+        >
           {label}
         </p>
-        <p className={`mt-4 font-heading text-[30px] font-bold leading-[0.95] ${getValueText(mode)}`}>
+        <p
+          className={`mt-4 font-heading text-[30px] font-bold leading-[0.95] ${getValueText(mode)}`}
+        >
           {value}
         </p>
       </div>
 
-      <div className={`relative z-10 flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[15px] border shadow-sm ${getIconShell(mode)}`}>
+      <div
+        className={`relative z-10 flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[15px] border shadow-sm ${getIconShell(mode)}`}
+      >
         {icon}
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -215,27 +177,35 @@ function ActionCard({
   showPattern = true,
 }: ActionCardProps) {
   return (
-    <article
-      className={`theme-card-interactive relative isolate min-h-[138px] overflow-hidden rounded-[24px] border px-7 py-7 transition duration-200 hover:-translate-y-0.5 hover:border-theme-border-strong ${getCardShell(
+    <Card
+      as="article"
+      interactive
+      className={`relative isolate min-h-[138px] overflow-hidden px-7 py-7 ${getCardShell(
         mode,
       )}`}
       style={getCardStyle(mode, surface)}
     >
       {mode === 'decorative' && showPattern && (
-        <Pattern position={patternPosition} ringTone={ringTone} />
+        <CardCirclePattern position={patternPosition} ringTone={ringTone} />
       )}
 
       <div className="relative z-10 flex h-full items-center justify-between gap-[26px]">
         <div className="flex min-w-0 items-center gap-[18px]">
-          <div className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border shadow-sm ${getIconShell(mode)}`}>
+          <div
+            className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border shadow-sm ${getIconShell(mode)}`}
+          >
             {icon}
           </div>
 
           <div className="min-w-0">
-            <h2 className={`font-heading text-[23px] font-semibold leading-[1.02] ${getStrongText(mode)}`}>
+            <h2
+              className={`font-heading text-[23px] font-semibold leading-[1.02] ${getStrongText(mode)}`}
+            >
               {title}
             </h2>
-            <p className={`mt-[10px] text-[15px] leading-[1.45] ${getMutedText(mode)}`}>
+            <p
+              className={`mt-[10px] text-[15px] leading-[1.45] ${getMutedText(mode)}`}
+            >
               {description}
             </p>
           </div>
@@ -250,7 +220,7 @@ function ActionCard({
           Acceder
         </Link>
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -295,13 +265,11 @@ export default function AdminDashboard() {
   return (
     <div className="mx-auto w-full max-w-[1240px] space-y-[25px] text-content">
       <header className="pt-3 pb-4">
-        <h1 className="font-heading text-[clamp(30px,2.2vw,40px)] font-semibold leading-[0.96] text-content-strong">
-          Panel de administrador
-        </h1>
+        <PageTitle>Panel de administrador</PageTitle>
       </header>
 
       {error && (
-        <div className="rounded-2xl border border-danger/30 bg-danger-surfac e p-4 text-danger">
+        <div className="rounded-[14px] border border-danger/30 bg-danger-surface p-4 text-danger">
           {error}
         </div>
       )}

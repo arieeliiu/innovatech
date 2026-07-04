@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createUser } from '../../../../lib/api';
+import { PageTitle } from '../../../../components/ui/PageTitle';
 import {
   hasValidPasswordLength,
   USER_PASSWORD_MIN_LENGTH,
@@ -66,36 +67,32 @@ export default function CreateUserPage() {
     }
   }
 
-  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+  const labelClass = 'block text-sm font-medium text-content-strong';
 
   const inputClass =
-    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+    'mt-1 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none transition placeholder:text-content-muted/60 focus:border-theme-border-strong';
 
   const passwordInputClass =
-    'w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 pr-11 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+    'w-full rounded-lg border border-theme-border bg-surface-alt p-2 pr-11 text-content-strong outline-none transition placeholder:text-content-muted/60 focus:border-theme-border-strong';
 
   const iconButtonClass =
-    'absolute right-3 top-1/2 -translate-y-1/2 text-[#AAB4C0] transition hover:text-[#F5F7FA]';
+    'absolute right-3 top-1/2 -translate-y-1/2 text-content-muted transition hover:text-content-strong';
 
   return (
-    <main className="min-h-screen bg-[#1F2E49] p-8">
-      <section className="mx-auto max-w-xl">
-        <h1 className="text-3xl font-bold text-[#F5F7FA]">
-          Registrar usuario
-        </h1>
+    <main>
+      <section className="mx-auto w-full max-w-[1240px]">
+        <PageTitle>Registrar usuario</PageTitle>
 
-        <p className="mt-2 text-[#AAB4C0]">
+        <p className="mt-2 text-content-muted">
           Crear una nueva cuenta para Innovatech Solutions.
         </p>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 space-y-4 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
+          className="theme-card-interactive mt-8 max-w-xl space-y-4 rounded-[14px] border border-theme-border bg-surface p-6"
         >
           <div>
-            <label className={labelClass}>
-              Nombre
-            </label>
+            <label className={labelClass}>Nombre</label>
 
             <input
               className={inputClass}
@@ -108,9 +105,7 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className={labelClass}>
-              Correo electrónico
-            </label>
+            <label className={labelClass}>Correo electrónico</label>
 
             <input
               type="email"
@@ -124,9 +119,7 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className={labelClass}>
-              Contraseña
-            </label>
+            <label className={labelClass}>Contraseña</label>
 
             <div className="relative mt-1">
               <input
@@ -189,9 +182,7 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className={labelClass}>
-              Confirmar contraseña
-            </label>
+            <label className={labelClass}>Confirmar contraseña</label>
 
             <div className="relative mt-1">
               <input
@@ -253,9 +244,7 @@ export default function CreateUserPage() {
           </div>
 
           <div>
-            <label className={labelClass}>
-              Rol
-            </label>
+            <label className={labelClass}>Rol</label>
 
             <select
               className={inputClass}
@@ -276,19 +265,19 @@ export default function CreateUserPage() {
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
-              className="rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
+              className="rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover"
             >
               Crear usuario
             </button>
           </div>
 
           {message && (
-            <p className="rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">
+            <p className="rounded-lg border border-success/30 bg-success-surface p-3 text-sm text-success">
               {message}
             </p>
           )}
           {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+            <p className="rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
               {error}
             </p>
           )}

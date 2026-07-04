@@ -1,4 +1,5 @@
 import { ProgressBar } from '../ui/ProgressBar';
+import { Card } from '../ui/Card';
 import type { Task, TaskStatus } from '../../types';
 
 type TaskColumn = {
@@ -25,11 +26,11 @@ export function ProjectTaskBoard({
     <>
       <div className="mt-8 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#F5F7FA]">
+          <h2 className="font-heading text-2xl font-bold text-content-strong">
             Tablero de tareas
           </h2>
 
-          <p className="mt-1 text-[#AAB4C0]">
+          <p className="mt-1 text-content-muted">
             Seguimiento de tareas asociadas al proyecto.
           </p>
         </div>
@@ -42,53 +43,56 @@ export function ProjectTaskBoard({
           );
 
           return (
-            <section
-              key={column.status}
-              className="min-h-96 rounded-2xl border border-[#2A3B55] bg-[#172235] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
-            >
+            <Card as="section" key={column.status} className="min-h-96 p-4">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-semibold text-[#F5F7FA]">
+                <h3 className="font-heading font-semibold text-content-strong">
                   {column.title}
                 </h3>
 
-                <span className="rounded-full border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1 text-xs font-semibold text-[#52E0DC]">
+                <span className="rounded-full border border-theme-border bg-surface-alt px-3 py-1 text-xs font-semibold text-content-strong">
                   {columnTasks.length}
                 </span>
               </div>
 
               <div className="space-y-3">
                 {columnTasks.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-[#3A4A63] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">
+                  <p className="rounded-lg border border-dashed border-theme-border-strong bg-surface-alt p-4 text-sm text-content-muted">
                     No hay tareas en esta columna.
                   </p>
                 )}
 
                 {columnTasks.map((task) => (
-                  <article
+                  <Card
+                    as="article"
+                    variant="subtle"
                     key={task.id}
-                    className="rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4"
+                    className="p-4"
                   >
-                    <h4 className="font-semibold text-[#F5F7FA]">
+                    <h4 className="font-semibold text-content-strong">
                       {task.title}
                     </h4>
 
-                    <p className="mt-2 text-sm text-[#AAB4C0]">
+                    <p className="mt-2 text-sm text-content-muted">
                       {task.description}
                     </p>
 
-                    <div className="mt-4 space-y-1 text-xs text-[#AAB4C0]">
+                    <div className="mt-4 space-y-1 text-xs text-content-muted">
                       <p>
-                        <strong className="text-[#F5F7FA]">Inicio:</strong>{' '}
+                        <strong className="text-content-strong">Inicio:</strong>{' '}
                         {task.start_date}
                       </p>
 
                       <p>
-                        <strong className="text-[#F5F7FA]">Término:</strong>{' '}
+                        <strong className="text-content-strong">
+                          Término:
+                        </strong>{' '}
                         {task.end_date}
                       </p>
 
                       <p>
-                        <strong className="text-[#F5F7FA]">Responsable:</strong>{' '}
+                        <strong className="text-content-strong">
+                          Responsable:
+                        </strong>{' '}
                         {getUserName(task.responsible_id)}
                       </p>
                     </div>
@@ -96,10 +100,10 @@ export function ProjectTaskBoard({
                     <div className="mt-4">
                       <ProgressBar value={task.progress} />
                     </div>
-                  </article>
+                  </Card>
                 ))}
               </div>
-            </section>
+            </Card>
           );
         })}
       </div>

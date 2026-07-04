@@ -49,12 +49,13 @@ export default function AdminProjectDetailPage() {
     try {
       setError('');
 
-      const [projectData, tasksData, usersData, membersData] = await Promise.all([
-        getProjectById(projectId),
-        getProjectTasks(projectId),
-        getUsers(),
-        getProjectMembers(projectId),
-      ]);
+      const [projectData, tasksData, usersData, membersData] =
+        await Promise.all([
+          getProjectById(projectId),
+          getProjectTasks(projectId),
+          getUsers(),
+          getProjectMembers(projectId),
+        ]);
 
       setProject(projectData.project);
       setTasks(tasksData.tasks ?? []);
@@ -63,7 +64,7 @@ export default function AdminProjectDetailPage() {
       setUsers(
         Array.isArray(usersData)
           ? usersData
-          : usersData.users ?? usersData.data ?? [],
+          : (usersData.users ?? usersData.data ?? []),
       );
     } catch {
       setError('No se pudo cargar el detalle del proyecto');
@@ -207,13 +208,15 @@ export default function AdminProjectDetailPage() {
 
   if (error) {
     return (
-      <section>
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>
+      <section className="mx-auto w-full max-w-[1240px]">
+        <p className="rounded-lg border border-danger/30 bg-danger-surface p-4 text-sm text-danger">
+          {error}
+        </p>
 
         <button
           type="button"
           onClick={() => router.push('/admin/projects')}
-          className="mt-4 rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover"
         >
           Volver a proyectos
         </button>
@@ -223,8 +226,8 @@ export default function AdminProjectDetailPage() {
 
   if (!project) {
     return (
-      <section>
-        <p className="text-[#AAB4C0]">Cargando proyecto...</p>
+      <section className="mx-auto w-full max-w-[1240px]">
+        <p className="text-content-muted">Cargando proyecto...</p>
       </section>
     );
   }
@@ -232,7 +235,7 @@ export default function AdminProjectDetailPage() {
   const isProjectFinished = project.status === 'DONE';
 
   return (
-    <section>
+    <section className="mx-auto w-full max-w-[1240px]">
       <ProjectHeader
         project={project}
         responsibleName={getUserName(project.main_responsible_id)}
@@ -266,8 +269,8 @@ export default function AdminProjectDetailPage() {
           description={
             <>
               Para eliminar este proyecto{' '}
-              <strong className="text-[#F5F7FA]">{project.name}</strong>,
-              escribe <strong className="text-[#F5F7FA]">eliminar</strong>.
+              <strong className="text-content-strong">{project.name}</strong>,
+              escribe <strong className="text-content-strong">eliminar</strong>.
             </>
           }
           confirmationLabel="eliminar"
@@ -289,8 +292,8 @@ export default function AdminProjectDetailPage() {
           description={
             <>
               Al finalizar este proyecto{' '}
-              <strong className="text-[#F5F7FA]">{project.name}</strong>, se
-              marcará como finalizado y quedará como historial.
+              <strong className="text-content-strong">{project.name}</strong>,
+              se marcará como finalizado y quedará como historial.
             </>
           }
           confirmationLabel="finalizar"

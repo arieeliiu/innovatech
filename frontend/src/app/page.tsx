@@ -1,46 +1,43 @@
-'use client';
+"use client";
 
-import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import LoginView from '../components/auth/LoginView';
-import { apiRequest } from '../lib/api';
-import { getRoleFromToken } from '../lib/auth';
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import LoginView from "../components/auth/LoginView";
+import { authenticate } from "../lib/api";
+import { getRoleFromToken } from "../lib/auth";
 
 export default function Home() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     try {
-      setMessage('');
+      setMessage("");
 
-      const data = await apiRequest('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await authenticate(email, password);
 
       if (!data.access_token) {
-        setMessage('Credenciales incorrectas');
+        setMessage("Credenciales incorrectas");
         return;
       }
 
-      localStorage.setItem('token', data.access_token);
+      localStorage.setItem("token", data.access_token);
 
       const role = getRoleFromToken(data.access_token);
 
-      if (role?.toLowerCase() === 'admin') {
-        router.push('/admin');
+      if (role?.toLowerCase() === "admin") {
+        router.push("/admin");
       } else {
-        router.push('/projects');
+        router.push("/projects");
       }
     } catch {
-      localStorage.removeItem('token');
-      setMessage('Credenciales incorrectas o error de conexión');
+      localStorage.removeItem("token");
+      setMessage("Credenciales incorrectas o error de conexión");
     }
   }
 

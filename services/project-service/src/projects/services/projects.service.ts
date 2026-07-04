@@ -11,7 +11,7 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
-import { normalizeRole } from '../../auth/utils/role.utils';
+import { normalizeRole } from '../../security/utils/role.utils';
 import { MailService } from '../../mail/mail.service';
 
 @Injectable()
