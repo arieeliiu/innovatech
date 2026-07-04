@@ -19,7 +19,7 @@ function getStatusBadgeClasses(status: string) {
     return 'border border-warning/30 bg-warning-surface text-warning';
   }
 
-  return 'border border-theme-border bg-surface-alt text-content-muted';
+  return 'border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/15 text-[var(--color-warning)]';
 }
 
 function getStatusLabel(status: string) {
