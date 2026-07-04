@@ -95,7 +95,7 @@ export function AppShell({ children, homeHref, navigation }: AppShellProps) {
 
       <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <ProfileTopbar />
-        <div className="flex-1 overflow-y-auto px-6 py-7 lg:px-10 lg:py-8">
+        <div className="flex-1 overflow-y-auto px-6 pb-7 pt-10 lg:px-10 lg:pb-8 lg:pt-11">
           <div className="mx-auto w-full max-w-[1450px]">{children}</div>
         </div>
       </section>
