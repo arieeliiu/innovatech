@@ -264,7 +264,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto w-full max-w-[1240px] space-y-[25px] text-content">
-      <header className="pt-3 pb-4">
+      <header className="pb-4">
         <PageTitle>Panel de administrador</PageTitle>
       </header>
 
