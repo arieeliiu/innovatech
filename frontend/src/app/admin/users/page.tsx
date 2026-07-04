@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { deleteUser, getUsers, updateUser } from '../../../lib/api';
 import { getStoredUserId } from '../../../lib/auth';
@@ -191,10 +192,16 @@ export default function AdminUsersPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1240px]">
-      <PageTitle>Usuarios registrados</PageTitle>
-      <p className="mt-2 text-content-muted">
-        Listado completo de cuentas registradas en la plataforma.
-      </p>
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <PageTitle>Usuarios registrados</PageTitle>
+
+        <Link
+          href="/admin/users/create"
+          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+        >
+          Registrar usuario
+        </Link>
+      </div>
 
       {error && (
         <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-danger">

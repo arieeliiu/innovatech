@@ -418,9 +418,6 @@ export default function AdminTasksPage() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <PageTitle>Tablero de tareas</PageTitle>
-          <p className="mt-2 text-content-muted">
-            Gestiona todas las tareas asociadas a cada proyecto.
-          </p>
         </div>
 
         <button
@@ -433,7 +430,7 @@ export default function AdminTasksPage() {
       </div>
 
       <div className="mt-6 max-w-xl">
-        <label className={labelClass}>Proyecto</label>
+        <label className={labelClass}>Proyecto seleccionado</label>
         <select
           className={inputClass}
           value={selectedProjectId}
@@ -446,16 +443,6 @@ export default function AdminTasksPage() {
           ))}
         </select>
       </div>
-
-      {selectedProject && (
-        <p className="mt-4 text-sm text-content-muted">
-          Proyecto seleccionado:{' '}
-          <span className="font-medium text-content-strong">
-            {selectedProject.name}
-          </span>
-        </p>
-      )}
-
       {error && (
         <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
           {error}

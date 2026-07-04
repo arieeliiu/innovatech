@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getResources, type ResourceSummary } from '../../../lib/api';
 import { Card, MetricCard } from '../../../components/ui/Card';
 import { PageTitle } from '../../../components/ui/PageTitle';
+import { getUserRoleLabel } from '../../../lib/userRules';
 
 export default function ResourcesPage() {
   const [resources, setResources] = useState<ResourceSummary[]>([]);
@@ -83,7 +84,7 @@ export default function ResourcesPage() {
                 <p className="text-sm text-content-muted">{resource.email}</p>
 
                 <p className="mt-1 text-sm text-content-muted">
-                  Rol: {resource.role}
+                  Rol: {getUserRoleLabel(resource.role)}
                 </p>
               </div>
 

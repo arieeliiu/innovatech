@@ -1,5 +1,6 @@
 import type { ProjectMember, User } from '../../types';
 import { Card } from '../ui/Card';
+import { getUserRoleLabel } from '../../lib/userRules';
 
 type ProjectMembersPanelProps = {
   members: ProjectMember[];
@@ -97,7 +98,7 @@ export function ProjectMembersPanel({
 
                 {availableUsers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name || user.email} ({user.role})
+                    {user.name || user.email} ({getUserRoleLabel(user.role)})
                   </option>
                 ))}
               </select>
@@ -133,7 +134,7 @@ export function ProjectMembersPanel({
                 </p>
 
                 <p className="text-sm text-content-muted">
-                  Rol: {member.project_role} · Unido:{' '}
+                  Rol: {getUserRoleLabel(member.project_role)} · Unido:{' '}
                   {new Date(member.joined_at).toLocaleDateString()}
                 </p>
               </div>

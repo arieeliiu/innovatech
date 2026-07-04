@@ -84,7 +84,7 @@ export default function CreateUserPage() {
         <PageTitle>Registrar usuario</PageTitle>
 
         <p className="mt-2 text-content-muted">
-          Crear una nueva cuenta para Innovatech Solutions.
+          Crear una cuenta para colaborador de Innovatech Solutions.
         </p>
 
         <form

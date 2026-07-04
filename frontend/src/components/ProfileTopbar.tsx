@@ -127,7 +127,7 @@ export default function ProfileTopbar() {
         </div>
 
         <div className="flex items-center gap-4" ref={menuRef}>
-          <div className="text-right">
+          <div className="flex flex-col items-end gap-1 text-right">
             <p className="text-sm font-medium text-content-strong">
               {user?.email || 'Sin correo'}
             </p>
