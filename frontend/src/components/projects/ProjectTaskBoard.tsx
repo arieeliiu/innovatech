@@ -1,6 +1,7 @@
 import { ProgressBar } from '../ui/ProgressBar';
 import { Card } from '../ui/Card';
 import type { Task, TaskStatus } from '../../types';
+import { formatDateShort } from '../../lib/date';
 
 type TaskColumn = {
   title: string;
@@ -43,8 +44,12 @@ export function ProjectTaskBoard({
           );
 
           return (
-            <Card as="section" key={column.status} className="min-h-96 p-4">
-              <div className="mb-4 flex items-center justify-between">
+            <Card
+              as="section"
+              key={column.status}
+              className="flex max-h-[650px] min-h-[420px] flex-col p-4"
+            >
+              <div className="mb-4 flex shrink-0 items-center justify-between">
                 <h3 className="font-heading font-semibold text-content-strong">
                   {column.title}
                 </h3>
@@ -54,7 +59,7 @@ export function ProjectTaskBoard({
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
                 {columnTasks.length === 0 && (
                   <p className="rounded-lg border border-dashed border-theme-border-strong bg-surface-alt p-4 text-sm text-content-muted">
                     No hay tareas en esta columna.
@@ -79,14 +84,14 @@ export function ProjectTaskBoard({
                     <div className="mt-4 space-y-1 text-xs text-content-muted">
                       <p>
                         <strong className="text-content-strong">Inicio:</strong>{' '}
-                        {task.start_date}
+                        {formatDateShort(task.start_date)}
                       </p>
 
                       <p>
                         <strong className="text-content-strong">
                           Término:
                         </strong>{' '}
-                        {task.end_date}
+                        {formatDateShort(task.end_date)}
                       </p>
 
                       <p>

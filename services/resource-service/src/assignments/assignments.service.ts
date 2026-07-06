@@ -141,6 +141,14 @@ export class AssignmentsService {
 
   private async getProfessionalUserById(userId: string): Promise<User> {
     const user = await this.getUserById(userId);
+
+    if (
+      user.app_metadata?.is_active === false ||
+      user.app_metadata?.deleted_at
+    ) {
+      throw new BadRequestException('El usuario está desactivado');
+    }
+
     const role = this.getUserRole(user);
 
     if (!role) {

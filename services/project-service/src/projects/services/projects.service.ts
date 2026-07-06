@@ -11,8 +11,11 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
-import { normalizeRole } from '../../security/utils/role.utils';
+import { isManager, normalizeRole } from '../../security/utils/role.utils';
+import { isUserActive } from '../../security/utils/user-status.utils';
 import { MailService } from '../../mail/mail.service';
+
+const TASK_CREATED_HISTORY_COMMENT = 'Tarea creada';
 
 @Injectable()
 export class ProjectsService {
@@ -98,6 +101,22 @@ export class ProjectsService {
     if (!data) {
       throw new ForbiddenException('No tienes acceso a este proyecto');
     }
+
+    const { data: project, error: projectError } = await this.supabase
+      .from('projects')
+      .select('status')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    if (project.status?.trim().toUpperCase() === 'DONE') {
+      throw new ForbiddenException(
+        'Los proyectos finalizados solo están disponibles para administradores y gestores',
+      );
+    }
   }
 
   private async ensureProjectExists(projectId: string) {
@@ -114,11 +133,52 @@ export class ProjectsService {
     return data;
   }
 
-  private async ensureUserExists(userId: string) {
+  private async calculateProjectProgress(projectId: string): Promise<number> {
+    const { data: tasks, error } = await this.supabase
+      .from('project_tasks')
+      .select('progress')
+      .eq('project_id', projectId);
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (!tasks || tasks.length === 0) {
+      return 0;
+    }
+
+    const totalProgress = tasks.reduce(
+      (total, task) => total + Number(task.progress ?? 0),
+      0,
+    );
+
+    return Math.round(totalProgress / tasks.length);
+  }
+
+  private async synchronizeProjectProgress(projectId: string) {
+    const progress = await this.calculateProjectProgress(projectId);
+    const { error } = await this.supabase
+      .from('projects')
+      .update({ progress, updated_at: new Date().toISOString() })
+      .eq('id', projectId)
+      .neq('status', 'DONE');
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return progress;
+  }
+
+  private async ensureUserExists(userId: string, requireActive = false) {
     const { data, error } = await this.supabase.auth.admin.getUserById(userId);
 
     if (error || !data.user) {
       throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (requireActive && !isUserActive(data.user)) {
+      throw new BadRequestException('El usuario está desactivado');
     }
 
     return data.user;
@@ -213,7 +273,7 @@ export class ProjectsService {
     const { name, description, startDate, endDate, managerId } =
       createProjectDto;
 
-    const manager = await this.ensureUserExists(managerId);
+    const manager = await this.ensureUserExists(managerId, true);
     this.ensureUserIsManager(manager);
 
     const { data, error } = await this.supabase
@@ -276,7 +336,15 @@ export class ProjectsService {
 
     return {
       success: true,
-      projects: data,
+      projects: await Promise.all(
+        (data ?? []).map(async (project) => ({
+          ...project,
+          progress:
+            project.status === 'DONE'
+              ? 100
+              : await this.calculateProjectProgress(project.id),
+        })),
+      ),
     };
   }
 
@@ -353,7 +421,13 @@ export class ProjectsService {
 
     return {
       success: true,
-      project: data,
+      project: {
+        ...data,
+        progress:
+          data.status === 'DONE'
+            ? 100
+            : await this.calculateProjectProgress(data.id),
+      },
     };
   }
 
@@ -432,6 +506,9 @@ export class ProjectsService {
   ) {
     const { title, description, responsibleId, startDate, endDate } =
       createTaskDto;
+    const effectiveResponsibleId = isManager(role)
+      ? responsibleId
+      : requestingUserId;
 
     await this.ensureProjectAccess(projectId, requestingUserId, role);
 
@@ -451,8 +528,8 @@ export class ProjectsService {
       );
     }
 
-    await this.ensureUserExists(responsibleId);
-    await this.ensureUserIsProjectMember(projectId, responsibleId);
+    await this.ensureUserExists(effectiveResponsibleId, true);
+    await this.ensureUserIsProjectMember(projectId, effectiveResponsibleId);
 
     const { data, error } = await this.supabase
       .from('project_tasks')
@@ -460,7 +537,7 @@ export class ProjectsService {
         project_id: projectId,
         title,
         description,
-        responsible_id: responsibleId,
+        responsible_id: effectiveResponsibleId,
         start_date: startDate,
         end_date: endDate || null,
         status: 'TODO',
@@ -473,10 +550,28 @@ export class ProjectsService {
       throw new InternalServerErrorException(error.message);
     }
 
+    const { error: creationHistoryError } = await this.supabase
+      .from('project_status_history')
+      .insert({
+        project_id: projectId,
+        task_id: data.id,
+        previous_status: 'TODO',
+        new_status: 'TODO',
+        changed_by: requestingUserId,
+        comment: TASK_CREATED_HISTORY_COMMENT,
+      });
+
+    if (creationHistoryError) {
+      await this.supabase.from('project_tasks').delete().eq('id', data.id);
+      throw new InternalServerErrorException(creationHistoryError.message);
+    }
+
+    await this.synchronizeProjectProgress(projectId);
+
     return {
       success: true,
       message: 'Tarea creada correctamente',
-      task: data,
+      task: { ...data, created_by: requestingUserId },
     };
   }
 
@@ -497,9 +592,34 @@ export class ProjectsService {
       throw new InternalServerErrorException(error.message);
     }
 
+    const taskIds = (data ?? []).map((task) => task.id);
+    const creatorsByTaskId = new Map<string, string>();
+
+    if (taskIds.length > 0) {
+      const { data: creationHistory, error: creationHistoryError } =
+        await this.supabase
+          .from('project_status_history')
+          .select('task_id, changed_by')
+          .in('task_id', taskIds)
+          .eq('comment', TASK_CREATED_HISTORY_COMMENT);
+
+      if (creationHistoryError) {
+        throw new InternalServerErrorException(creationHistoryError.message);
+      }
+
+      for (const entry of creationHistory ?? []) {
+        if (!creatorsByTaskId.has(entry.task_id)) {
+          creatorsByTaskId.set(entry.task_id, entry.changed_by);
+        }
+      }
+    }
+
     return {
       success: true,
-      tasks: data,
+      tasks: (data ?? []).map((task) => ({
+        ...task,
+        created_by: creatorsByTaskId.get(task.id) ?? null,
+      })),
     };
   }
 
@@ -512,6 +632,65 @@ export class ProjectsService {
     };
   }
 
+  async deleteTask(taskId: string, userId: string, role?: string | null) {
+    const task = await this.ensureTaskAccess(taskId, userId, role);
+    await this.ensureProjectIsNotFinished(task.project_id);
+
+    if (!isManager(role)) {
+      const { data: creationHistory, error: creationHistoryError } =
+        await this.supabase
+          .from('project_status_history')
+          .select('changed_by')
+          .eq('task_id', taskId)
+          .eq('comment', TASK_CREATED_HISTORY_COMMENT)
+          .maybeSingle();
+
+      if (creationHistoryError) {
+        throw new InternalServerErrorException(creationHistoryError.message);
+      }
+
+      if (!creationHistory || creationHistory.changed_by !== userId) {
+        throw new ForbiddenException(
+          'Solo puedes eliminar tareas creadas por tu usuario',
+        );
+      }
+    }
+
+    const { error: commentsError } = await this.supabase
+      .from('task_comments')
+      .delete()
+      .eq('task_id', taskId);
+
+    if (commentsError) {
+      throw new InternalServerErrorException(commentsError.message);
+    }
+
+    const { error: historyError } = await this.supabase
+      .from('project_status_history')
+      .delete()
+      .eq('task_id', taskId);
+
+    if (historyError) {
+      throw new InternalServerErrorException(historyError.message);
+    }
+
+    const { error: taskError } = await this.supabase
+      .from('project_tasks')
+      .delete()
+      .eq('id', taskId);
+
+    if (taskError) {
+      throw new InternalServerErrorException(taskError.message);
+    }
+
+    await this.synchronizeProjectProgress(task.project_id);
+
+    return {
+      success: true,
+      message: 'Tarea eliminada correctamente',
+    };
+  }
+
   async updateTaskStatus(
     taskId: string,
     updateTaskStatusDto: UpdateTaskStatusDto,
@@ -520,7 +699,7 @@ export class ProjectsService {
   ) {
     const { status, progress, comment } = updateTaskStatusDto;
 
-    await this.ensureUserExists(userId);
+    await this.ensureUserExists(userId, true);
 
     const existingTask = await this.ensureTaskAccess(taskId, userId, role);
     await this.ensureProjectIsNotFinished(existingTask.project_id);
@@ -587,6 +766,8 @@ export class ProjectsService {
     if (historyError) {
       throw new InternalServerErrorException(historyError.message);
     }
+
+    await this.synchronizeProjectProgress(existingTask.project_id);
 
     return {
       success: true,
@@ -676,7 +857,7 @@ export class ProjectsService {
     const { userId, projectRole } = addProjectMemberDto;
 
     const project = await this.ensureProjectIsNotFinished(projectId);
-    await this.ensureUserExists(userId);
+    await this.ensureUserExists(userId, true);
 
     const { data: existingMember, error: existingMemberError } =
       await this.supabase
@@ -691,13 +872,10 @@ export class ProjectsService {
     }
 
     if (existingMember) {
-      throw new BadRequestException(
-        'Este usuario ya pertenece al proyecto',
-      );
+      throw new BadRequestException('Este usuario ya pertenece al proyecto');
     }
 
-    const activeProjectCount =
-      await this.getActiveProjectCountForUser(userId);
+    const activeProjectCount = await this.getActiveProjectCountForUser(userId);
 
     if (activeProjectCount >= 3) {
       throw new BadRequestException(
@@ -720,37 +898,35 @@ export class ProjectsService {
         error.code === '23505' ||
         error.message.includes('project_members_project_id_user_id_key')
       ) {
-        throw new BadRequestException(
-          'Este usuario ya pertenece al proyecto',
-        );
+        throw new BadRequestException('Este usuario ya pertenece al proyecto');
       }
 
       throw new InternalServerErrorException(error.message);
     }
 
-  try {
-    const user = await this.ensureUserExists(userId);
+    try {
+      const user = await this.ensureUserExists(userId);
 
-    if (user.email) {
-      await this.mailService.sendMail({
-        to: user.email,
-        subject: `Has sido agregado al proyecto ${project.name}`,
-        text: `Hola, has sido agregado al proyecto "${project.name}" con el rol ${projectRole}. Ingresa a Innovatech para revisar los detalles.`,
-        html: `
+      if (user.email) {
+        await this.mailService.sendMail({
+          to: user.email,
+          subject: `Has sido agregado al proyecto ${project.name}`,
+          text: `Hola, has sido agregado al proyecto "${project.name}" con el rol ${projectRole}. Ingresa a Innovatech para revisar los detalles.`,
+          html: `
           <h2>Nueva asignación de proyecto</h2>
           <p>Hola ${user.user_metadata?.name ?? ''},</p>
           <p>Has sido agregado al proyecto <strong>${project.name}</strong>.</p>
           <p>Rol asignado: <strong>${projectRole}</strong></p>
           <p>Ingresa a Innovatech para revisar los detalles.</p>
         `,
-      });
+        });
+      }
+    } catch (mailError) {
+      console.error(
+        'El miembro fue agregado, pero no se pudo enviar el correo:',
+        mailError,
+      );
     }
-  } catch (mailError) {
-    console.error(
-      'El miembro fue agregado, pero no se pudo enviar el correo:',
-      mailError,
-    );
-  }
 
     return {
       success: true,

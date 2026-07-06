@@ -90,7 +90,7 @@ export class ProjectsController {
   }
 
   @Patch('tasks/:taskId/status')
-  @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER')
+  @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER', 'CONSULTANT')
   updateTaskStatus(
     @Param('taskId', ParseUUIDPipe) taskId: string,
     @Body() updateTaskStatusDto: UpdateTaskStatusDto,
@@ -99,6 +99,19 @@ export class ProjectsController {
     return this.projectsService.updateTaskStatus(
       taskId,
       updateTaskStatusDto,
+      request.user.id,
+      request.user.role,
+    );
+  }
+
+  @Delete('tasks/:taskId')
+  @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER')
+  deleteTask(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.deleteTask(
+      taskId,
       request.user.id,
       request.user.role,
     );

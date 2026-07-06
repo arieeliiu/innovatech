@@ -12,4 +12,6 @@ export type User = {
   email: string;
   role: UserRole | string;
   createdAt?: string;
+  active?: boolean;
+  deletedAt?: string | null;
 };

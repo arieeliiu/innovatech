@@ -36,6 +36,7 @@ type User = {
   id: string;
   name?: string;
   email?: string;
+  active?: boolean;
   role?: string;
 };
 
@@ -67,16 +68,16 @@ type StatCardProps = {
 
 const decorativeSurfaceStyles: Record<CardSurface, CSSProperties> = {
   soft: {
-    backgroundColor: '#E6E9EA',
-    borderColor: '#D3D8D9',
+    backgroundColor: 'var(--rs-200)',
+    borderColor: 'var(--rs-300)',
   },
   mist: {
-    backgroundColor: '#D3D8D9',
-    borderColor: '#D3D8D9',
+    backgroundColor: 'var(--rs-300)',
+    borderColor: 'var(--rs-300)',
   },
   resources: {
-    backgroundColor: '#F4F5F5',
-    borderColor: '#E6E9EA',
+    backgroundColor: 'var(--rs-100)',
+    borderColor: 'var(--rs-200)',
   },
 };
 
@@ -157,7 +158,7 @@ function StatCard({
       </div>
 
       <div
-        className={`relative z-10 flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[15px] border shadow-sm ${getIconShell(mode)}`}
+        className={`relative z-10 flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border shadow-sm ${getIconShell(mode)}`}
       >
         {icon}
       </div>
@@ -192,7 +193,7 @@ function ActionCard({
       <div className="relative z-10 flex h-full items-center justify-between gap-[26px]">
         <div className="flex min-w-0 items-center gap-[18px]">
           <div
-            className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border shadow-sm ${getIconShell(mode)}`}
+            className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full border shadow-sm ${getIconShell(mode)}`}
           >
             {icon}
           </div>
@@ -243,7 +244,11 @@ export default function AdminDashboard() {
         const loadedUsers = usersData.users ?? usersData.data ?? [];
 
         setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
-        setUsers(Array.isArray(loadedUsers) ? loadedUsers : []);
+        setUsers(
+          Array.isArray(loadedUsers)
+            ? loadedUsers.filter((user: User) => user.active !== false)
+            : [],
+        );
       } catch {
         setError('No se pudieron cargar los datos');
       } finally {
@@ -325,7 +330,7 @@ export default function AdminDashboard() {
         <ActionCard
           title="Crear Nuevo Proyecto"
           description="Registrar un nuevo proyecto en el sistema"
-          href="/admin/projects/create"
+          href="/admin/projects?create=1"
           icon={<FolderPlus size={20} strokeWidth={1.8} />}
           mode="system"
         />

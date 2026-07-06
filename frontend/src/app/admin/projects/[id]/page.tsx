@@ -8,14 +8,19 @@ import {
   getProjectById,
   getProjectTasks,
   getProjectMembers,
+  getResources,
   getUsers,
   addProjectMember,
   removeProjectMember,
 } from '../../../../lib/api';
+import type { ResourceSummary } from '../../../../lib/api';
 import { ProjectHeader } from '../../../../components/projects/ProjectHeader';
 import { ProjectMembersPanel } from '../../../../components/projects/ProjectMembersPanel';
 import { ProjectTaskBoard } from '../../../../components/projects/ProjectTaskBoard';
 import { ConfirmProjectActionModal } from '../../../../components/projects/ConfirmProjectActionModal';
+import { ConfirmDialog } from '../../../../components/ui/ConfirmDialog';
+import { FeedbackAlert } from '../../../../components/ui/FeedbackAlert';
+import { setFlashNotice } from '../../../../lib/flashNotice';
 import type { Project, ProjectMember, Task, User } from '../../../../types';
 
 export default function AdminProjectDetailPage() {
@@ -28,6 +33,7 @@ export default function AdminProjectDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [resources, setResources] = useState<ResourceSummary[]>([]);
   const [error, setError] = useState('');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -44,22 +50,27 @@ export default function AdminProjectDetailPage() {
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [loadingAddMember, setLoadingAddMember] = useState(false);
   const [memberError, setMemberError] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
 
   async function loadProjectDetail() {
     try {
       setError('');
 
-      const [projectData, tasksData, usersData, membersData] =
+      const [projectData, tasksData, usersData, membersData, resourcesData] =
         await Promise.all([
           getProjectById(projectId),
           getProjectTasks(projectId),
           getUsers(),
           getProjectMembers(projectId),
+          getResources(),
         ]);
 
       setProject(projectData.project);
       setTasks(tasksData.tasks ?? []);
       setMembers(membersData.members ?? []);
+      setResources(resourcesData.resources ?? []);
 
       setUsers(
         Array.isArray(usersData)
@@ -105,8 +116,12 @@ export default function AdminProjectDetailPage() {
       });
 
       // Reload members
-      const updatedMembers = await getProjectMembers(projectId);
+      const [updatedMembers, updatedResources] = await Promise.all([
+        getProjectMembers(projectId),
+        getResources(),
+      ]);
       setMembers(updatedMembers.members ?? []);
+      setResources(updatedResources.resources ?? []);
 
       // Reset form
       setSelectedMemberId('');
@@ -121,22 +136,33 @@ export default function AdminProjectDetailPage() {
   }
 
   async function handleRemoveMember(memberId: string) {
-    if (
-      !confirm('¿Estás seguro de que deseas remover este miembro del proyecto?')
-    ) {
-      return;
-    }
+    setMemberToRemove(memberId);
+  }
+
+  async function confirmRemoveMember() {
+    if (!memberToRemove) return;
 
     try {
-      await removeProjectMember(projectId, memberId);
+      setIsRemovingMember(true);
+      setMemberError('');
+      const memberName = getUserName(memberToRemove);
+      await removeProjectMember(projectId, memberToRemove);
 
       // Reload members
-      const updatedMembers = await getProjectMembers(projectId);
+      const [updatedMembers, updatedResources] = await Promise.all([
+        getProjectMembers(projectId),
+        getResources(),
+      ]);
       setMembers(updatedMembers.members ?? []);
+      setResources(updatedResources.resources ?? []);
+      setMemberToRemove(null);
+      setFeedbackMessage(`${memberName} fue removido del proyecto.`);
     } catch (err) {
       setMemberError(
         err instanceof Error ? err.message : 'Error al remover miembro',
       );
+    } finally {
+      setIsRemovingMember(false);
     }
   }
 
@@ -154,6 +180,7 @@ export default function AdminProjectDetailPage() {
 
       await deleteProject(project.id);
 
+      setFlashNotice(`El proyecto “${project.name}” fue eliminado correctamente.`);
       router.push('/admin/projects');
     } catch (err) {
       setDeleteError(
@@ -184,6 +211,7 @@ export default function AdminProjectDetailPage() {
 
       await finalizeProject(project.id);
 
+      setFlashNotice(`El proyecto “${project.name}” fue finalizado correctamente.`);
       router.push('/admin/projects');
     } catch (err) {
       setFinalizeError(
@@ -202,8 +230,10 @@ export default function AdminProjectDetailPage() {
 
   useEffect(() => {
     if (projectId) {
-      loadProjectDetail();
+      void Promise.resolve().then(loadProjectDetail);
     }
+    // La carga se reinicia al cambiar el identificador de la ruta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   if (error) {
@@ -236,6 +266,13 @@ export default function AdminProjectDetailPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1240px]">
+      {feedbackMessage && (
+        <FeedbackAlert
+          message={feedbackMessage}
+          onClose={() => setFeedbackMessage('')}
+        />
+      )}
+
       <ProjectHeader
         project={project}
         responsibleName={getUserName(project.main_responsible_id)}
@@ -246,9 +283,10 @@ export default function AdminProjectDetailPage() {
         onDelete={() => setShowDeleteModal(true)}
       />
 
-      <ProjectMembersPanel
-        members={members}
-        users={users}
+          <ProjectMembersPanel
+            members={members}
+            users={users}
+            resources={resources}
         canManageMembers={!isProjectFinished}
         showAddMemberForm={showAddMemberForm}
         selectedMemberId={selectedMemberId}
@@ -262,6 +300,18 @@ export default function AdminProjectDetailPage() {
       />
 
       <ProjectTaskBoard tasks={tasks} getUserName={getUserName} />
+
+      {memberToRemove && (
+        <ConfirmDialog
+          title="Remover miembro"
+          description={`¿Deseas remover a ${getUserName(memberToRemove)} de este proyecto? Podrás volver a asignarlo más adelante.`}
+          confirmLabel="Remover miembro"
+          loadingLabel="Removiendo..."
+          loading={isRemovingMember}
+          onCancel={() => setMemberToRemove(null)}
+          onConfirm={confirmRemoveMember}
+        />
+      )}
 
       {showDeleteModal && (
         <ConfirmProjectActionModal

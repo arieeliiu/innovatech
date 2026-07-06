@@ -6,11 +6,14 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
+import { ActiveUserGuard } from '../security/active-user.guard';
 
 @Controller('assignments')
+@UseGuards(ActiveUserGuard)
 export class AssignmentsController {
   constructor(
     private readonly assignmentsService: AssignmentsService,

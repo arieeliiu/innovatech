@@ -81,16 +81,18 @@ export function ProjectHeader({
 
       <Card className="p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-          <div>
-            <PageTitle>{project.name}</PageTitle>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
+            <PageTitle className="line-clamp-2 [overflow-wrap:anywhere]">
+              {project.name}
+            </PageTitle>
 
-            <p className="mt-2 max-w-3xl text-content-muted">
+            <p className="mt-2 max-w-3xl whitespace-pre-wrap text-content-muted">
               {project.description}
             </p>
           </div>
 
           <span
-            className={`w-fit rounded-full px-4 py-2 text-sm font-medium ${getStatusBadgeClasses(
+            className={`w-fit shrink-0 rounded-full px-4 py-2 text-sm font-medium ${getStatusBadgeClasses(
               project.status,
             )}`}
           >

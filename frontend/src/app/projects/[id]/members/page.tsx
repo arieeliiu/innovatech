@@ -1,12 +1,19 @@
 'use client';
 
-import { PageTitle } from '../../../../components/ui/PageTitle';
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
 export default function ProjectMembersPage() {
+  const params = useParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(`/projects/${params.id}#members-section`);
+  }, [params.id, router]);
+
   return (
     <section className="mx-auto w-full max-w-[1240px]">
-      <PageTitle>Miembros del proyecto</PageTitle>
-      <p className="mt-4 text-content-muted">Funcionalidad en desarrollo...</p>
+      <p className="text-content-muted">Abriendo miembros del proyecto...</p>
     </section>
   );
 }

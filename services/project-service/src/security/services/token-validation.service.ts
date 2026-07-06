@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { isUserActive } from '../utils/user-status.utils';
 
 @Injectable()
 export class TokenValidationService {
@@ -16,7 +17,7 @@ export class TokenValidationService {
   async validate(token: string) {
     const { data, error } = await this.supabase.auth.getUser(token);
 
-    if (error || !data.user) {
+    if (error || !data.user || !isUserActive(data.user)) {
       return null;
     }
 

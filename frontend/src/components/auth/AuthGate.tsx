@@ -25,28 +25,30 @@ export function AuthGate({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = getStoredToken();
+    void Promise.resolve().then(() => {
+      const token = getStoredToken();
 
-    if (!isTokenUsable(token)) {
-      clearStoredSession();
-      router.replace('/');
-      return;
-    }
+      if (!isTokenUsable(token)) {
+        clearStoredSession();
+        router.replace('/');
+        return;
+      }
 
-    const role = getRoleFromToken(token);
+      const role = getRoleFromToken(token);
 
-    if (!role) {
-      clearStoredSession();
-      router.replace('/');
-      return;
-    }
+      if (!role) {
+        clearStoredSession();
+        router.replace('/');
+        return;
+      }
 
-    if (allowedRoles && !allowedRoles.includes(role)) {
-      router.replace(unauthorizedRedirect);
-      return;
-    }
+      if (allowedRoles && !allowedRoles.includes(role)) {
+        router.replace(unauthorizedRedirect);
+        return;
+      }
 
-    setIsAuthorized(true);
+      setIsAuthorized(true);
+    });
   }, [allowedRoles, router, unauthorizedRedirect]);
 
   if (!isAuthorized) {

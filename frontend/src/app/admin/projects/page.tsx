@@ -5,9 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Check, Clock3 } from 'lucide-react';
 import { getProjects, getUsers } from '../../../lib/api';
 import { ProjectCard } from '../../../components/projects/ProjectCard';
+import { CreateProjectModal } from '../../../components/projects/CreateProjectModal';
 import { Card } from '../../../components/ui/Card';
-import { PageTitle } from '../../../components/ui/PageTitle';
+import { FeedbackAlert } from '../../../components/ui/FeedbackAlert';
+import {
+  PageTitle,
+  primaryPageActionButtonClassName,
+} from '../../../components/ui/PageTitle';
 import type { Project, User } from '../../../types';
+import { takeFlashNotice } from '../../../lib/flashNotice';
 
 const projectPatternPositions = [
   'top-left',
@@ -25,6 +31,8 @@ export default function AdminProjectsPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   async function loadData() {
     try {
@@ -61,7 +69,16 @@ export default function AdminProjectsPage() {
   }
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(() => {
+      setShowCreateModal(
+        new URLSearchParams(window.location.search).get('create') === '1',
+      );
+      return loadData();
+    });
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setFlashMessage(takeFlashNotice()));
   }, []);
   const activeProjects = projects.filter(
     (project) => project.status !== 'DONE',
@@ -75,12 +92,19 @@ export default function AdminProjectsPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1240px]">
+      {flashMessage && (
+        <FeedbackAlert
+          message={flashMessage}
+          onClose={() => setFlashMessage('')}
+        />
+      )}
+
       <header className="flex flex-col justify-between gap-4 pt-3 pb-4 md:flex-row md:items-center">
         <PageTitle>Gestión de proyectos</PageTitle>
 
         <div className="flex flex-wrap items-center gap-3">
           <div
-            className="inline-flex rounded-lg border border-theme-border bg-surface-alt p-1"
+            className="inline-flex rounded-full border border-theme-border bg-surface-alt p-1"
             role="group"
             aria-label="Filtrar proyectos"
           >
@@ -115,8 +139,8 @@ export default function AdminProjectsPage() {
 
           <button
             type="button"
-            onClick={() => router.push('/admin/projects/create')}
-            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground transition hover:bg-primary-hover"
+            onClick={() => setShowCreateModal(true)}
+            className={primaryPageActionButtonClassName}
           >
             Crear proyecto
           </button>
@@ -164,7 +188,13 @@ export default function AdminProjectsPage() {
                     key={project.id}
                     project={project}
                     responsibleName={responsibleName}
-                    variant={useMutedSurface ? 'decorativeSoft' : 'surface'}
+                    variant={
+                      useMutedSurface
+                        ? row % 2 === 0
+                          ? 'decorativeSoft'
+                          : 'decorativeStrong'
+                        : 'surface'
+                    }
                     patternPosition={patternPosition}
                     onViewDetail={() =>
                       router.push(`/admin/projects/${project.id}`)
@@ -175,6 +205,25 @@ export default function AdminProjectsPage() {
             </div>
           )}
         </section>
+      )}
+
+      {showCreateModal && (
+        <CreateProjectModal
+          users={users}
+          loadingUsers={isLoading}
+          onClose={() => {
+            setShowCreateModal(false);
+            if (
+              new URLSearchParams(window.location.search).get('create') === '1'
+            ) {
+              router.replace('/admin/projects');
+            }
+          }}
+          onCreated={async () => {
+            await loadData();
+            setFlashMessage('Proyecto creado correctamente');
+          }}
+        />
       )}
     </section>
   );

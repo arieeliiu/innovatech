@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createTask,
+  deleteTask,
   getProjectTasks,
   getProjectMembers,
   getProjects,
@@ -12,17 +13,25 @@ import {
   getTaskHistory,
 } from '../../../lib/api';
 import {
-  canManageTasks,
   getStoredRole,
   getStoredUserId,
-  isAdminRole,
+  isProjectManagerRole,
 } from '../../../lib/auth';
-import { formatDateShort } from '../../../lib/date';
+import {
+  canChangeTaskStatus,
+  canCreateTask,
+} from '../../../lib/permissions';
+import { formatDateShort, formatDateTimeShort } from '../../../lib/date';
 import {
   formatTaskStatusText,
   getTaskStatusLabel,
 } from '../../../lib/taskStatus';
-import { PageTitle } from '../../../components/ui/PageTitle';
+import {
+  PageTitle,
+  primaryPageActionButtonClassName,
+} from '../../../components/ui/PageTitle';
+import type { ProjectMember } from '../../../types';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 
 type Project = {
   id: string;
@@ -35,6 +44,7 @@ type User = {
   name?: string;
   email?: string;
   role?: string;
+  active?: boolean;
 };
 
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
@@ -53,6 +63,13 @@ type Task = {
   startDate?: string;
   end_date?: string;
   endDate?: string;
+  created_by?: string | null;
+};
+
+type TaskHistoryEntry = {
+  id: string;
+  created_at: string;
+  comment?: string;
 };
 
 const columns: { status: TaskStatus; title: string }[] = [
@@ -63,12 +80,18 @@ const columns: { status: TaskStatus; title: string }[] = [
 
 export default function ProjectTasksPage() {
   const [role, setRole] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const creatingTaskRef = useRef(false);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deletingTask, setDeletingTask] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -83,7 +106,7 @@ export default function ProjectTasksPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskHistory, setTaskHistory] = useState<any[]>([]);
+  const [taskHistory, setTaskHistory] = useState<TaskHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [savingProgress, setSavingProgress] = useState(false);
 
@@ -127,11 +150,7 @@ export default function ProjectTasksPage() {
         ? loadedProjects
         : [];
 
-      if (
-        isAdminRole(currentRole) ||
-        currentRole === 'gestor' ||
-        !currentUserId
-      ) {
+      if (isProjectManagerRole(currentRole)) {
         setProjects(normalizedProjects);
       } else {
         const visibleProjects = await Promise.all(
@@ -177,9 +196,32 @@ export default function ProjectTasksPage() {
       setError('');
       setMessage('');
 
-      const data = await getProjectTasks(projectId);
+      const [tasksData, membersData] = await Promise.all([
+        getProjectTasks(projectId),
+        getProjectMembers(projectId),
+      ]);
+      const loadedMembers = membersData.members ?? [];
+      const memberIds = new Set(
+        loadedMembers.map((member: ProjectMember) => member.user_id),
+      );
 
-      setTasks(data.tasks ?? []);
+      setTasks(tasksData.tasks ?? []);
+      setProjectMembers(loadedMembers);
+      setForm((current) => {
+        if (!isProjectManagerRole(role)) {
+          return {
+            ...current,
+            responsibleId:
+              currentUserId && memberIds.has(currentUserId)
+                ? currentUserId
+                : '',
+          };
+        }
+
+        return current.responsibleId && !memberIds.has(current.responsibleId)
+          ? { ...current, responsibleId: '' }
+          : current;
+      });
     } catch {
       setError('No se pudieron cargar las tareas del proyecto');
     } finally {
@@ -191,14 +233,19 @@ export default function ProjectTasksPage() {
     const currentRole = getStoredRole();
     const currentUserId = getStoredUserId();
 
-    setRole(currentRole);
-    loadInitialData(currentRole, currentUserId);
+    void Promise.resolve().then(() => {
+      setRole(currentRole);
+      setCurrentUserId(currentUserId);
+      return loadInitialData(currentRole, currentUserId);
+    });
   }, []);
 
   useEffect(() => {
     if (selectedProjectId) {
-      loadTasks(selectedProjectId);
+      void Promise.resolve().then(() => loadTasks(selectedProjectId));
     }
+    // La carga se reinicia al cambiar el proyecto seleccionado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProjectId]);
 
   const activeProjects = useMemo(
@@ -209,6 +256,21 @@ export default function ProjectTasksPage() {
   const selectedProject = useMemo(() => {
     return activeProjects.find((project) => project.id === selectedProjectId);
   }, [activeProjects, selectedProjectId]);
+  const canCreateTasksForProject = canCreateTask(role, Boolean(selectedProject));
+  const canChooseResponsible = isProjectManagerRole(role);
+
+  function canUpdateTask(task: Task) {
+    const responsibleId = task.responsible_id ?? task.responsibleId;
+    return canChangeTaskStatus(role, responsibleId === currentUserId);
+  }
+
+  const responsibleUsers = useMemo(() => {
+    const memberIds = new Set(projectMembers.map((member) => member.user_id));
+    return users.filter(
+      (user) => user.active !== false && memberIds.has(user.id),
+    );
+  }, [projectMembers, users]);
+  const currentUser = users.find((user) => user.id === currentUserId);
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -229,12 +291,16 @@ export default function ProjectTasksPage() {
   async function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (creatingTaskRef.current) return;
+
     if (!selectedProjectId) {
       setError('Debes seleccionar un proyecto');
       return;
     }
 
     try {
+      creatingTaskRef.current = true;
+      setCreatingTask(true);
       setError('');
       setMessage('');
 
@@ -242,7 +308,9 @@ export default function ProjectTasksPage() {
         projectId: selectedProjectId,
         title: form.title,
         description: form.description,
-        responsibleId: form.responsibleId,
+        responsibleId: canChooseResponsible
+          ? form.responsibleId
+          : (currentUserId ?? ''),
         startDate: form.startDate,
         endDate: form.endDate,
       });
@@ -250,7 +318,7 @@ export default function ProjectTasksPage() {
       setForm({
         title: '',
         description: '',
-        responsibleId: '',
+        responsibleId: canChooseResponsible ? '' : (currentUserId ?? ''),
         startDate: '',
         endDate: '',
       });
@@ -259,8 +327,42 @@ export default function ProjectTasksPage() {
       setMessage('Tarea creada correctamente');
 
       await loadTasks(selectedProjectId);
-    } catch {
-      setError('No se pudo crear la tarea');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'No se pudo crear la tarea',
+      );
+    } finally {
+      creatingTaskRef.current = false;
+      setCreatingTask(false);
+    }
+  }
+
+  function canDeleteTask(task: Task) {
+    return isProjectManagerRole(role) || task.created_by === currentUserId;
+  }
+
+  async function handleDeleteTask() {
+    if (!taskToDelete || deletingTask) return;
+
+    try {
+      setDeletingTask(true);
+      setError('');
+      const response = await deleteTask(taskToDelete.id);
+      setTasks((current) =>
+        current.filter((task) => task.id !== taskToDelete.id),
+      );
+      setTaskToDelete(null);
+      setMessage(response.message ?? 'Tarea eliminada correctamente');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'No se pudo eliminar la tarea',
+      );
+    } finally {
+      setDeletingTask(false);
     }
   }
 
@@ -349,6 +451,9 @@ export default function ProjectTasksPage() {
 
   const primaryButtonClass =
     'rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50';
+  const canUpdateSelectedTask = selectedTask
+    ? canUpdateTask(selectedTask)
+    : false;
 
   if (loading) {
     return (
@@ -376,48 +481,35 @@ export default function ProjectTasksPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1240px]">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <PageTitle>Tablero de tareas</PageTitle>
+      <PageTitle>Tablero de tareas</PageTitle>
 
-          <p className="mt-2 text-content-muted">
-            Gestiona las tareas asociadas a cada proyecto.
-          </p>
+      <div className="mt-6 flex w-full max-w-xl flex-col items-stretch gap-3 sm:flex-row sm:items-end lg:w-[calc((100%-2rem)/3)] lg:max-w-none">
+        <div className="min-w-0 w-full sm:flex-1">
+          <label className={`${labelClass} mb-2`}>Proyecto seleccionado</label>
+
+          <select
+            className={inputClass}
+            value={selectedProjectId}
+            onChange={(event) => setSelectedProjectId(event.target.value)}
+          >
+            {activeProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowCreateForm(true)}
-          className={primaryButtonClass}
-        >
-          + Nueva tarea
-        </button>
+        {canCreateTasksForProject && (
+          <button
+            type="button"
+            onClick={() => setShowCreateForm(true)}
+            className={`shrink-0 ${primaryPageActionButtonClassName}`}
+          >
+            + Nueva tarea
+          </button>
+        )}
       </div>
-
-      <div className="mt-6 max-w-xl">
-        <label className={labelClass}>Proyecto</label>
-
-        <select
-          className={inputClass}
-          value={selectedProjectId}
-          onChange={(event) => setSelectedProjectId(event.target.value)}
-        >
-          {activeProjects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedProject && (
-        <p className="mt-4 text-sm text-content-muted">
-          Proyecto seleccionado:{' '}
-          <span className="font-medium text-content-strong">
-            {selectedProject.name}
-          </span>
-        </p>
-      )}
 
       {error && (
         <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
@@ -431,7 +523,7 @@ export default function ProjectTasksPage() {
         </p>
       )}
 
-      {showCreateForm && (
+      {showCreateForm && canCreateTasksForProject && (
         <div className={`mt-6 ${panelClass}`}>
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="font-heading text-xl font-semibold text-content-strong">
@@ -484,22 +576,40 @@ export default function ProjectTasksPage() {
             <div>
               <label className={labelClass}>Responsable</label>
 
-              <select
-                className={inputClass}
-                value={form.responsibleId}
-                onChange={(event) =>
-                  setForm({ ...form, responsibleId: event.target.value })
-                }
-                required
-              >
-                <option value="">Selecciona un responsable</option>
+              {canChooseResponsible ? (
+                <select
+                  className={inputClass}
+                  value={form.responsibleId}
+                  onChange={(event) =>
+                    setForm({ ...form, responsibleId: event.target.value })
+                  }
+                  required
+                >
+                  <option value="">Selecciona un responsable</option>
 
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name || user.email || 'Usuario sin nombre'}
-                  </option>
-                ))}
-              </select>
+                  {responsibleUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name || user.email || 'Usuario sin nombre'}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className={`${inputClass} cursor-not-allowed opacity-80`}>
+                  {currentUser?.name ||
+                    currentUser?.email ||
+                    'Cuenta actual'}
+                </div>
+              )}
+              {canChooseResponsible && responsibleUsers.length === 0 && (
+                <p className="mt-1 text-xs text-danger">
+                  Este proyecto no tiene miembros disponibles para asignar.
+                </p>
+              )}
+              {!canChooseResponsible && (
+                <p className="mt-1 text-xs text-content-muted">
+                  La tarea se asignará automáticamente a tu cuenta.
+                </p>
+              )}
             </div>
 
             <div>
@@ -536,8 +646,12 @@ export default function ProjectTasksPage() {
             </div>
 
             <div className="flex items-end">
-              <button type="submit" className={primaryButtonClass}>
-                Crear tarea
+              <button
+                type="submit"
+                disabled={creatingTask}
+                className={primaryButtonClass}
+              >
+                {creatingTask ? 'Creando...' : 'Crear tarea'}
               </button>
             </div>
           </form>
@@ -578,9 +692,25 @@ export default function ProjectTasksPage() {
                   {columnTasks.map((task) => (
                     <article
                       key={task.id}
-                      className="cursor-pointer rounded-[14px] border border-theme-border bg-surface-alt p-4 transition hover:border-theme-border-strong hover:bg-surface-hover"
+                      onClick={() => openTaskModal(task)}
+                      className="relative cursor-pointer rounded-[14px] border border-theme-border bg-surface-alt p-4 transition hover:border-theme-border-strong hover:bg-surface-hover"
                     >
-                      <h3 className="font-semibold text-content-strong">
+                      {canDeleteTask(task) && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setTaskToDelete(task);
+                          }}
+                          className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full text-lg text-content-muted transition hover:bg-danger-surface hover:text-danger"
+                          aria-label={`Eliminar tarea ${task.title}`}
+                          title="Eliminar tarea"
+                        >
+                          ×
+                        </button>
+                      )}
+
+                      <h3 className="pr-8 font-semibold text-content-strong">
                         {task.title}
                       </h3>
 
@@ -607,22 +737,28 @@ export default function ProjectTasksPage() {
                           <strong className="text-content-strong">
                             Inicio:
                           </strong>{' '}
-                          {task.start_date ?? task.startDate}
+                          {formatDateShort(
+                            task.start_date ?? task.startDate,
+                          )}
                         </p>
 
                         <p>
                           <strong className="text-content-strong">
                             Término:
                           </strong>{' '}
-                          {task.end_date ?? task.endDate}
+                          {formatDateShort(task.end_date ?? task.endDate)}
                         </p>
                       </div>
 
+                      {canUpdateTask(task) && (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {task.status !== 'TODO' && (
                           <button
                             type="button"
-                            onClick={() => handleChangeStatus(task, 'TODO')}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleChangeStatus(task, 'TODO');
+                            }}
                             className="rounded-lg border border-theme-border bg-surface px-3 py-1 text-xs text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
                           >
                             Pasar a Por hacer
@@ -632,9 +768,10 @@ export default function ProjectTasksPage() {
                         {task.status !== 'IN_PROGRESS' && (
                           <button
                             type="button"
-                            onClick={() =>
-                              handleChangeStatus(task, 'IN_PROGRESS')
-                            }
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleChangeStatus(task, 'IN_PROGRESS');
+                            }}
                             className="rounded-lg border border-theme-border bg-surface px-3 py-1 text-xs text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
                           >
                             Pasar a En progreso
@@ -644,13 +781,17 @@ export default function ProjectTasksPage() {
                         {task.status !== 'DONE' && (
                           <button
                             type="button"
-                            onClick={() => handleChangeStatus(task, 'DONE')}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleChangeStatus(task, 'DONE');
+                            }}
                             className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover"
                           >
                             Finalizar
                           </button>
                         )}
                       </div>
+                      )}
                     </article>
                   ))}
                 </div>
@@ -659,6 +800,18 @@ export default function ProjectTasksPage() {
           );
         })}
       </div>
+      {taskToDelete && (
+        <ConfirmDialog
+          title="Eliminar tarea"
+          description={`¿Deseas eliminar “${taskToDelete.title}”? También se eliminarán sus comentarios y su historial.`}
+          confirmLabel="Eliminar tarea"
+          loadingLabel="Eliminando..."
+          loading={deletingTask}
+          onCancel={() => setTaskToDelete(null)}
+          onConfirm={handleDeleteTask}
+        />
+      )}
+
       {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm">
           <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl overflow-y-auto rounded-[14px] border border-theme-border bg-surface p-5 shadow-floating">
@@ -713,13 +866,15 @@ export default function ProjectTasksPage() {
                     max={100}
                     value={editProgress}
                     onChange={(e) => setEditProgress(Number(e.target.value))}
-                    className="w-24 rounded-lg border border-theme-border bg-surface-alt p-2 text-center text-sm text-content-strong outline-none focus:border-theme-border-strong"
+                    disabled={!canUpdateSelectedTask}
+                    className="w-24 rounded-lg border border-theme-border bg-surface-alt p-2 text-center text-sm text-content-strong outline-none focus:border-theme-border-strong disabled:cursor-not-allowed disabled:opacity-60"
                   />
                   <span className="text-sm text-content-muted">%</span>
                 </div>
               </div>
             </div>
 
+            {canUpdateSelectedTask && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-content-strong">
                 Comentarios
@@ -735,6 +890,7 @@ export default function ProjectTasksPage() {
                 {newComment.length}/500
               </p>
             </div>
+            )}
 
             {loadingHistory ? (
               <p className="mt-4 text-sm text-content-muted">
@@ -748,7 +904,7 @@ export default function ProjectTasksPage() {
                     className="rounded-lg border border-theme-border bg-surface-alt p-2"
                   >
                     <p className="text-xs text-content-muted">
-                      {new Date(h.created_at).toLocaleString()}
+                      {formatDateTimeShort(h.created_at)}
                     </p>
                     <p className="whitespace-pre-wrap break-words text-sm text-content-strong">
                       {formatTaskStatusText(h.comment)}
@@ -762,13 +918,15 @@ export default function ProjectTasksPage() {
               <button onClick={closeTaskModal} className={secondaryButtonClass}>
                 Cancelar
               </button>
-              <button
-                onClick={handleSaveProgress}
-                disabled={savingProgress}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {savingProgress ? 'Guardando...' : 'Guardar'}
-              </button>
+              {canUpdateSelectedTask && (
+                <button
+                  onClick={handleSaveProgress}
+                  disabled={savingProgress}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingProgress ? 'Guardando...' : 'Guardar'}
+                </button>
+              )}
             </div>
           </div>
         </div>

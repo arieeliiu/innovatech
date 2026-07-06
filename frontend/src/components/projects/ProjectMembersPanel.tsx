@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import type { ProjectMember, User } from '../../types';
+import type { ResourceSummary } from '../../lib/api';
 import { Card } from '../ui/Card';
 import { getUserRoleLabel } from '../../lib/userRules';
+import { formatDateShort } from '../../lib/date';
 
 type ProjectMembersPanelProps = {
   members: ProjectMember[];
   users: User[];
+  resources?: ResourceSummary[];
   canManageMembers: boolean;
   showAddMemberForm: boolean;
   selectedMemberId: string;
@@ -20,6 +24,7 @@ type ProjectMembersPanelProps = {
 export function ProjectMembersPanel({
   members,
   users,
+  resources = [],
   canManageMembers,
   showAddMemberForm,
   selectedMemberId,
@@ -31,6 +36,8 @@ export function ProjectMembersPanel({
   onRemoveMember,
   getUserName,
 }: ProjectMembersPanelProps) {
+  const [hideUnavailable, setHideUnavailable] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const assignableProjectRoles = new Set([
     'MANAGER',
     'DEVELOPER',
@@ -40,10 +47,33 @@ export function ProjectMembersPanel({
 
   const memberUserIds = new Set(members.map((member) => member.user_id));
 
-  const availableUsers = users.filter(
-    (user) =>
-      !memberUserIds.has(user.id) && assignableProjectRoles.has(user.role),
+  const resourceByUserId = new Map(
+    resources.map((resource) => [resource.userId, resource]),
   );
+
+  const candidateUsers = users.filter(
+    (user) =>
+      user.active !== false &&
+      !memberUserIds.has(user.id) &&
+      assignableProjectRoles.has(user.role),
+  );
+  const isUnavailable = (user: User) => {
+    const resource = resourceByUserId.get(user.id);
+    return resource ? !resource.canReceiveNewProjects : false;
+  };
+  const roleFilteredUsers = candidateUsers.filter(
+    (user) => roleFilter === 'ALL' || user.role === roleFilter,
+  );
+  const unavailableUsers = roleFilteredUsers.filter(isUnavailable);
+  const visibleUsers = roleFilteredUsers
+    .filter((user) => !hideUnavailable || !isUnavailable(user))
+    .sort((left, right) => {
+      const availabilityDifference =
+        Number(isUnavailable(left)) - Number(isUnavailable(right));
+      if (availabilityDifference !== 0) return availabilityDifference;
+      return (left.name || left.email).localeCompare(right.name || right.email, 'es');
+    });
+  const selectableUsersCount = roleFilteredUsers.length - unavailableUsers.length;
 
   return (
     <Card id="members-section" className="mt-8 p-6">
@@ -81,9 +111,55 @@ export function ProjectMembersPanel({
         <Card variant="subtle" className="mb-6 p-4">
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-content-strong">
-                Usuario
-              </label>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                <label className="block text-sm font-medium text-content-strong">
+                  Profesional
+                </label>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <label>
+                    <span className="sr-only">Filtrar profesionales por rol</span>
+                    <select
+                      value={roleFilter}
+                      onChange={(event) => {
+                        setRoleFilter(event.target.value);
+                        onSelectedMemberChange('');
+                      }}
+                      className="rounded-full border border-theme-border bg-surface px-3 py-1.5 text-xs text-content outline-none transition focus:border-theme-border-strong"
+                    >
+                      <option value="ALL">Todos los roles</option>
+                      {[...assignableProjectRoles].map((role) => (
+                        <option key={role} value={role}>
+                          {getUserRoleLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <button
+                    type="button"
+                    disabled={unavailableUsers.length === 0}
+                    onClick={() => {
+                      const nextValue = !hideUnavailable;
+                      setHideUnavailable(nextValue);
+                      if (
+                        nextValue &&
+                        roleFilteredUsers.some(
+                          (user) =>
+                            user.id === selectedMemberId &&
+                            isUnavailable(user),
+                        )
+                      ) {
+                        onSelectedMemberChange('');
+                      }
+                    }}
+                    className="border border-theme-border bg-surface px-3 py-1.5 text-xs text-content transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {hideUnavailable ? 'Mostrar' : 'Ocultar'} no disponibles (
+                    {unavailableUsers.length})
+                  </button>
+                </div>
+              </div>
 
               <select
                 value={selectedMemberId}
@@ -91,23 +167,36 @@ export function ProjectMembersPanel({
                 className="w-full rounded-lg border border-theme-border bg-surface px-3 py-2 text-content-strong outline-none transition focus:border-theme-border-strong"
               >
                 <option value="">
-                  {availableUsers.length > 0
-                    ? 'Selecciona un usuario'
-                    : 'No hay usuarios disponibles para agregar'}
+                  {selectableUsersCount > 0
+                    ? 'Selecciona un profesional'
+                    : 'No hay profesionales disponibles para agregar'}
                 </option>
 
-                {availableUsers.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name || user.email} ({getUserRoleLabel(user.role)})
-                  </option>
-                ))}
+                {visibleUsers.map((user) => {
+                  const unavailable = isUnavailable(user);
+
+                  return (
+                    <option key={user.id} value={user.id} disabled={unavailable}>
+                      {user.name || user.email} ({getUserRoleLabel(user.role)})
+                      {unavailable ? ' · No disponible' : ''}
+                    </option>
+                  );
+                })}
               </select>
+
+              <p className="mt-2 text-xs text-content-muted">
+                Los profesionales con 3 proyectos activos no pueden seleccionarse.
+              </p>
             </div>
 
             <button
               type="button"
               onClick={onAddMember}
-              disabled={loadingAddMember || availableUsers.length === 0}
+              disabled={
+                loadingAddMember ||
+                selectableUsersCount === 0 ||
+                !selectedMemberId
+              }
               className="w-full rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loadingAddMember ? 'Agregando...' : 'Agregar miembro'}
@@ -135,7 +224,7 @@ export function ProjectMembersPanel({
 
                 <p className="text-sm text-content-muted">
                   Rol: {getUserRoleLabel(member.project_role)} · Unido:{' '}
-                  {new Date(member.joined_at).toLocaleDateString()}
+                  {formatDateShort(member.joined_at)}
                 </p>
               </div>
 

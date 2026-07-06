@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createTask,
   createTaskComment,
+  deleteTask,
   getProjectMembers,
   getProjectTasks,
   getProjects,
@@ -13,12 +14,15 @@ import {
   getTaskHistory,
   getTaskComments,
 } from '../../../lib/api';
-import { formatDateShort } from '../../../lib/date';
+import { formatDateShort, formatDateTimeShort } from '../../../lib/date';
 import {
   formatTaskStatusText,
   getTaskStatusLabel,
 } from '../../../lib/taskStatus';
-import { PageTitle } from '../../../components/ui/PageTitle';
+import {
+  PageTitle,
+  primaryPageActionButtonClassName,
+} from '../../../components/ui/PageTitle';
 import type { ProjectMember } from '../../../types';
 
 type Project = {
@@ -27,7 +31,13 @@ type Project = {
   status?: string;
 };
 
-type User = { id: string; name?: string; email?: string; role?: string };
+type User = {
+  id: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  active?: boolean;
+};
 
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
 
@@ -47,6 +57,21 @@ type Task = {
   endDate?: string;
 };
 
+type TaskHistoryEntry = {
+  id: string;
+  created_at: string;
+  previous_status?: TaskStatus;
+  new_status?: TaskStatus;
+  comment?: string;
+};
+
+type TaskComment = {
+  id: string;
+  title: string;
+  description: string;
+  created_at: string;
+};
+
 const columns: { status: TaskStatus; title: string }[] = [
   { status: 'TODO', title: 'Por hacer' },
   { status: 'IN_PROGRESS', title: 'En progreso' },
@@ -61,6 +86,8 @@ export default function AdminTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const creatingTaskRef = useRef(false);
+  const [creatingTask, setCreatingTask] = useState(false);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -75,14 +102,17 @@ export default function AdminTasksPage() {
   const [message, setMessage] = useState('');
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskHistory, setTaskHistory] = useState<any[]>([]);
-  const [taskComments, setTaskComments] = useState<any[]>([]);
+  const [taskHistory, setTaskHistory] = useState<TaskHistoryEntry[]>([]);
+  const [taskComments, setTaskComments] = useState<TaskComment[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [savingProgress, setSavingProgress] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletingTask, setDeletingTask] = useState(false);
   const [editProgress, setEditProgress] = useState<number | ''>('');
   const [commentForm, setCommentForm] = useState({
     title: '',
@@ -186,11 +216,13 @@ export default function AdminTasksPage() {
   }
 
   useEffect(() => {
-    loadInitialData();
+    void Promise.resolve().then(loadInitialData);
   }, []);
 
   useEffect(() => {
-    if (selectedProjectId) loadTasks(selectedProjectId);
+    if (selectedProjectId) {
+      void Promise.resolve().then(() => loadTasks(selectedProjectId));
+    }
   }, [selectedProjectId]);
 
   const activeProjects = useMemo(
@@ -198,14 +230,11 @@ export default function AdminTasksPage() {
     [projects],
   );
 
-  const selectedProject = useMemo(
-    () => activeProjects.find((project) => project.id === selectedProjectId),
-    [activeProjects, selectedProjectId],
-  );
-
   const responsibleUsers = useMemo(() => {
     const memberIds = new Set(projectMembers.map((member) => member.user_id));
-    return users.filter((user) => memberIds.has(user.id));
+    return users.filter(
+      (user) => user.active !== false && memberIds.has(user.id),
+    );
   }, [projectMembers, users]);
 
   function getResponsibleName(task: Task) {
@@ -218,8 +247,11 @@ export default function AdminTasksPage() {
 
   async function handleCreateTask(e: React.FormEvent) {
     e.preventDefault();
+    if (creatingTaskRef.current) return;
     if (!selectedProjectId) return setError('Debes seleccionar un proyecto');
     try {
+      creatingTaskRef.current = true;
+      setCreatingTask(true);
       setError('');
       setMessage('');
       await createTask(selectedProjectId, {
@@ -244,6 +276,9 @@ export default function AdminTasksPage() {
       setError(
         error instanceof Error ? error.message : 'No se pudo crear la tarea',
       );
+    } finally {
+      creatingTaskRef.current = false;
+      setCreatingTask(false);
     }
   }
 
@@ -308,6 +343,47 @@ export default function AdminTasksPage() {
     setShowHistoryModal(false);
   }
 
+  function openDeleteTaskModal(
+    event: React.MouseEvent<HTMLButtonElement>,
+    task: Task,
+  ) {
+    event.stopPropagation();
+    setTaskToDelete(task);
+    setDeleteConfirmation('');
+  }
+
+  function closeDeleteTaskModal() {
+    if (deletingTask) return;
+    setTaskToDelete(null);
+    setDeleteConfirmation('');
+  }
+
+  async function handleDeleteTask(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!taskToDelete || deleteConfirmation.trim().toLowerCase() !== 'eliminar') {
+      return;
+    }
+
+    try {
+      setDeletingTask(true);
+      setError('');
+      const response = await deleteTask(taskToDelete.id);
+      setTasks((currentTasks) =>
+        currentTasks.filter((task) => task.id !== taskToDelete.id),
+      );
+      setMessage(response.message ?? 'Tarea eliminada correctamente');
+      setTaskToDelete(null);
+      setDeleteConfirmation('');
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'No se pudo eliminar la tarea',
+      );
+    } finally {
+      setDeletingTask(false);
+    }
+  }
+
   async function handleSaveProgress() {
     if (!selectedTask || !selectedProjectId) return;
     const progressValue = typeof editProgress === 'number' ? editProgress : 0;
@@ -320,7 +396,7 @@ export default function AdminTasksPage() {
 
     if ((selectedTask.progress ?? 0) === normalizedProgress) {
       setError('');
-      setMessage('No hay cambios para guardar');
+      closeTaskModal();
       return;
     }
 
@@ -415,33 +491,31 @@ export default function AdminTasksPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1240px]">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <PageTitle>Tablero de tareas</PageTitle>
+      <PageTitle>Tablero de tareas</PageTitle>
+
+      <div className="mt-6 flex w-full max-w-xl flex-col items-stretch gap-3 sm:flex-row sm:items-end lg:w-[calc((100%-2rem)/3)] lg:max-w-none">
+        <div className="min-w-0 w-full sm:flex-1">
+          <label className={`${labelClass} mb-2`}>Proyecto seleccionado</label>
+          <select
+            className={inputClass}
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+          >
+            {activeProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button
           type="button"
           onClick={() => setShowCreateForm(true)}
-          className={primaryButtonClass}
+          className={`shrink-0 ${primaryPageActionButtonClassName}`}
         >
           + Nueva tarea
         </button>
-      </div>
-
-      <div className="mt-6 max-w-xl">
-        <label className={labelClass}>Proyecto seleccionado</label>
-        <select
-          className={inputClass}
-          value={selectedProjectId}
-          onChange={(e) => setSelectedProjectId(e.target.value)}
-        >
-          {activeProjects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
       </div>
       {error && (
         <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
@@ -552,8 +626,12 @@ export default function AdminTasksPage() {
             </div>
 
             <div className="flex items-end">
-              <button type="submit" className={`w-full ${primaryButtonClass}`}>
-                Crear tarea
+              <button
+                type="submit"
+                disabled={creatingTask}
+                className={`w-full ${primaryButtonClass}`}
+              >
+                {creatingTask ? 'Creando...' : 'Crear tarea'}
               </button>
             </div>
           </form>
@@ -593,9 +671,19 @@ export default function AdminTasksPage() {
                     <article
                       key={task.id}
                       onClick={() => openTaskModal(task)}
-                      className="cursor-pointer rounded-[14px] border border-theme-border bg-surface-alt p-4 transition hover:border-theme-border-strong hover:bg-surface-hover"
+                      className="relative cursor-pointer rounded-[14px] border border-theme-border bg-surface-alt p-4 transition hover:border-theme-border-strong hover:bg-surface-hover"
                     >
-                      <h3 className="font-semibold text-content-strong">
+                      <button
+                        type="button"
+                        onClick={(event) => openDeleteTaskModal(event, task)}
+                        className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full text-lg text-content-muted transition hover:bg-danger-surface hover:text-danger"
+                        aria-label={`Eliminar tarea ${task.title}`}
+                        title="Eliminar tarea"
+                      >
+                        ×
+                      </button>
+
+                      <h3 className="pr-8 font-semibold text-content-strong">
                         {task.title}
                       </h3>
                       <p className="mt-2 line-clamp-2 break-words text-sm text-content-muted">
@@ -898,9 +986,7 @@ export default function AdminTasksPage() {
                             {comment.title}
                           </p>
                           <p className="shrink-0 text-xs text-content-muted">
-                            {new Date(comment.created_at).toLocaleString(
-                              'es-CL',
-                            )}
+                            {formatDateTimeShort(comment.created_at)}
                           </p>
                         </div>
                         <p className="mt-1 whitespace-pre-wrap break-words text-sm text-content-muted">
@@ -975,7 +1061,7 @@ export default function AdminTasksPage() {
                         className="rounded-lg border border-theme-border bg-surface-alt p-3"
                       >
                         <p className="text-xs text-content-muted">
-                          {new Date(h.created_at).toLocaleString('es-CL')}
+                          {formatDateTimeShort(h.created_at)}
                         </p>
                         <p className="mt-1 text-sm font-medium text-content-strong">
                           {getTaskStatusLabel(h.previous_status)} →{' '}
@@ -997,6 +1083,76 @@ export default function AdminTasksPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {taskToDelete && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          onClick={closeDeleteTaskModal}
+        >
+          <form
+            onSubmit={handleDeleteTask}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-md rounded-[14px] border border-theme-border bg-surface p-6 shadow-floating"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-heading text-xl font-semibold text-content-strong">
+                  Eliminar tarea
+                </h3>
+                <p className="mt-2 text-sm text-content-muted">
+                  Esta acción eliminará permanentemente{' '}
+                  <strong className="text-content-strong">
+                    {taskToDelete.title}
+                  </strong>
+                  , junto con sus comentarios e historial.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteTaskModal}
+                disabled={deletingTask}
+                className="text-lg text-content-muted transition hover:text-content-strong disabled:opacity-50"
+                aria-label="Cerrar confirmación"
+              >
+                ×
+              </button>
+            </div>
+
+            <label className="mt-5 block text-sm font-medium text-content-strong">
+              Escribe <strong>eliminar</strong> para confirmar
+            </label>
+            <input
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none focus:border-theme-border-strong"
+              placeholder="eliminar"
+              autoComplete="off"
+              autoFocus
+            />
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteTaskModal}
+                disabled={deletingTask}
+                className={secondaryButtonClass}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  deletingTask ||
+                  deleteConfirmation.trim().toLowerCase() !== 'eliminar'
+                }
+                className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-danger-foreground transition hover:bg-danger-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deletingTask ? 'Eliminando...' : 'Eliminar tarea'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </section>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes } from 'react';
+import { PasswordInput } from '../ui/PasswordInput';
 
 type AuthTextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -30,31 +30,19 @@ export function AuthTextField({ id, label, className = '', ...props }: AuthTextF
 }
 
 export function AuthPasswordField({ id, label, className = '', ...props }: AuthTextFieldProps) {
-  const [showPassword, setShowPassword] = useState(false);
-
   return (
     <div>
       <label htmlFor={id} className={labelClassName}>
         {label}
       </label>
 
-      <div className="relative mt-3">
-        <input
-          id={id}
-          className={`${fieldClassName} pr-12 ${className}`}
-          type={showPassword ? 'text' : 'password'}
-          {...props}
-        />
-
-        <button
-          type="button"
-          onClick={() => setShowPassword((current) => !current)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted transition hover:text-content-strong"
-          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-        >
-          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
-      </div>
+      <PasswordInput
+        id={id}
+        wrapperClassName="relative mt-3"
+        inputClassName={`${fieldClassName} pr-12 ${className}`}
+        toggleClassName="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted transition hover:text-content-strong"
+        {...props}
+      />
     </div>
   );
 }

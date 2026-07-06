@@ -1,6 +1,7 @@
 export const MAX_ACTIVE_PROJECTS = 3;
 
 export const PROFESSIONAL_ROLES = [
+  'MANAGER',
   'ARCHITECT',
   'DEVELOPER',
   'CONSULTANT',

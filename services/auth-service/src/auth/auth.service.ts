@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { isUserActive } from "./user-status";
 
 @Injectable()
 export class AuthService {
@@ -20,7 +21,7 @@ export class AuthService {
   async validateToken(token: string) {
     const { data, error } = await this.supabase.auth.getUser(token);
 
-    if (error || !data.user) return null;
+    if (error || !data.user || !isUserActive(data.user)) return null;
 
     return {
       id: data.user.id,
@@ -37,6 +38,10 @@ export class AuthService {
     });
 
     if (error) {
+      if (error.message.toLowerCase().includes("banned")) {
+        throw new UnauthorizedException("Cuenta desactivada");
+      }
+
       if (error.status === 400 || error.status === 401) {
         throw new UnauthorizedException("Credenciales inválidas");
       }
@@ -48,6 +53,10 @@ export class AuthService {
 
     if (!data.session || !data.user) {
       throw new UnauthorizedException("Credenciales inválidas");
+    }
+
+    if (!isUserActive(data.user)) {
+      throw new UnauthorizedException("Cuenta desactivada");
     }
 
     return {

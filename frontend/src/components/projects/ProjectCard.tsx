@@ -1,12 +1,16 @@
-import { ProgressBar } from '../ui/ProgressBar';
 import { Card, CardCirclePattern, type CardPatternPosition } from '../ui/Card';
 import type { Project } from '../../types';
+import { formatDateShort } from '../../lib/date';
 
 type ProjectCardProps = {
   project: Project;
   responsibleName: string;
   onViewDetail: () => void;
-  variant?: 'surface' | 'subtle' | 'decorativeSoft';
+  variant?:
+    | 'surface'
+    | 'subtle'
+    | 'decorativeSoft'
+    | 'decorativeStrong';
   patternPosition?: CardPatternPosition;
 };
 
@@ -19,15 +23,62 @@ function getStatusBadgeClasses(status: string) {
     return 'border border-warning/30 bg-warning-surface text-warning';
   }
 
-  return 'border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/15 text-[var(--color-warning)]';
+  return 'border border-info/30 bg-info-surface text-info';
 }
 
 function getStatusLabel(status: string) {
   if (status === 'DONE') return 'Finalizado';
   if (status === 'IN_PROGRESS') return 'En progreso';
-  if (status === 'TODO') return 'Pendiente';
+  if (status === 'TODO') return 'Activo';
 
   return status;
+}
+
+function CircularProgress({ value }: { value: number }) {
+  const progress = Math.min(Math.max(Math.round(value ?? 0), 0), 100);
+  const radius = 25;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div
+      className="relative h-[88px] w-[88px] shrink-0"
+      role="progressbar"
+      aria-label="Avance del proyecto"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={progress}
+    >
+      <svg
+        viewBox="0 0 64 64"
+        className="h-full w-full -rotate-90"
+        aria-hidden="true"
+      >
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          stroke="var(--theme-border-strong)"
+          strokeWidth="6"
+        />
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          stroke="var(--theme-primary)"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-content-strong">
+        {progress}%
+      </span>
+    </div>
+  );
 }
 
 export function ProjectCard({
@@ -37,7 +88,8 @@ export function ProjectCard({
   variant = 'surface',
   patternPosition = 'top-left',
 }: ProjectCardProps) {
-  const isDecorative = variant === 'decorativeSoft';
+  const isDecorative =
+    variant === 'decorativeSoft' || variant === 'decorativeStrong';
 
   return (
     <Card
@@ -52,12 +104,21 @@ export function ProjectCard({
 
       <div className="relative z-10">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="font-heading text-xl font-semibold text-content-strong">
-            {project.name}
-          </h2>
+          <div className="flex min-w-0 items-center gap-4 [overflow-wrap:anywhere]">
+            <CircularProgress value={project.progress} />
+
+            <div className="min-w-0">
+              <h2 className="line-clamp-2 font-heading text-[24px] font-semibold leading-tight text-content-strong [overflow-wrap:anywhere]">
+                {project.name}
+              </h2>
+              <p className="mt-1 text-sm font-medium text-content-muted">
+                Avance del proyecto
+              </p>
+            </div>
+          </div>
 
           <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClasses(
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium ${getStatusBadgeClasses(
               project.status,
             )}`}
           >
@@ -65,41 +126,49 @@ export function ProjectCard({
           </span>
         </div>
 
-        <p className="mt-2 text-sm text-content-muted">{project.description}</p>
-
-        <div className="mt-4">
-          <ProgressBar value={project.progress} />
-        </div>
+        <p className="mt-5 line-clamp-2 text-sm leading-relaxed text-content-muted [overflow-wrap:anywhere]">
+          {project.description}
+        </p>
 
         <div
-          className={`mt-4 rounded-lg p-4 text-sm text-content-muted ${
-            variant === 'decorativeSoft'
-              ? 'bg-surface-alt'
-              : variant === 'subtle'
-                ? 'bg-surface'
-                : 'bg-surface-alt'
+          className={`mt-4 grid grid-cols-3 gap-4 border-t pt-4 ${
+            variant === 'decorativeStrong'
+              ? 'border-theme-border-strong'
+              : 'border-theme-border'
           }`}
         >
-          <p>
-            <strong className="text-content-strong">Responsable:</strong>{' '}
-            {responsibleName}
-          </p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-content-muted">
+              Responsable
+            </p>
+            <p className="mt-1 truncate text-sm font-semibold text-content-strong">
+              {responsibleName}
+            </p>
+          </div>
 
-          <p className="mt-1">
-            <strong className="text-content-strong">Inicio:</strong>{' '}
-            {project.start_date}
-          </p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-content-muted">
+              Inicio
+            </p>
+            <p className="mt-1 text-sm font-semibold text-content-strong">
+              {formatDateShort(project.start_date)}
+            </p>
+          </div>
 
-          <p className="mt-1">
-            <strong className="text-content-strong">Término:</strong>{' '}
-            {project.end_date}
-          </p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-content-muted">
+              Término
+            </p>
+            <p className="mt-1 text-sm font-semibold text-content-strong">
+              {formatDateShort(project.end_date)}
+            </p>
+          </div>
         </div>
 
         <button
           type="button"
           onClick={onViewDetail}
-          className="mt-4 w-full rounded-lg bg-primary py-2 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+          className="mt-4 inline-flex min-h-[38px] w-full items-center justify-center rounded-full bg-primary px-[18px] text-sm font-medium tracking-[0.03em] text-primary-foreground transition hover:bg-primary-hover active:bg-primary-active"
         >
           Ver detalles
         </button>

@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserRoleLabel } from '../lib/userRules';
+import Image from 'next/image';
+import { changeOwnPassword } from '../lib/api';
+import { PasswordInput } from './ui/PasswordInput';
+import {
+  getUserRoleLabel,
+  hasValidPasswordLength,
+  USER_PASSWORD_MIN_LENGTH,
+} from '../lib/userRules';
 import { getDecodedToken } from '../lib/auth';
 
 type LoggedUser = {
@@ -35,23 +42,33 @@ export default function ProfileTopbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    void Promise.resolve().then(() => {
+      const token = localStorage.getItem('token');
 
-    if (!token || token === 'undefined' || token === 'null') {
-      setUser(null);
-      return;
-    }
+      if (!token || token === 'undefined' || token === 'null') {
+        setUser(null);
+        return;
+      }
 
-    setUser(decodeToken(token));
+      setUser(decodeToken(token));
 
-    const savedPhoto = localStorage.getItem('profilePhoto');
-    if (savedPhoto) {
-      setProfilePhoto(savedPhoto);
-    }
+      const savedPhoto = localStorage.getItem('profilePhoto');
+      if (savedPhoto) {
+        setProfilePhoto(savedPhoto);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -105,7 +122,41 @@ export default function ProfileTopbar() {
     localStorage.removeItem('profilePhoto');
     setProfilePhoto(null);
     setNotice('Foto de perfil eliminada');
-    setIsMenuOpen(false);
+  }
+
+  async function handlePasswordChange(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordError('');
+
+    if (!hasValidPasswordLength(newPassword)) {
+      setPasswordError(
+        `La contraseña debe tener al menos ${USER_PASSWORD_MIN_LENGTH} caracteres`,
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden');
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      await changeOwnPassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setIsProfileOpen(false);
+      setNotice('Contraseña actualizada correctamente');
+    } catch (error) {
+      setPasswordError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la contraseña',
+      );
+    } finally {
+      setSavingPassword(false);
+    }
   }
 
   function logout() {
@@ -152,9 +203,12 @@ export default function ProfileTopbar() {
               className="flex items-center gap-2 rounded-xl bg-profile-button px-2 py-1.5 text-profile-button-foreground transition hover:bg-profile-button-hover"
             >
               {profilePhoto ? (
-                <img
+                <Image
                   src={profilePhoto}
                   alt="Foto de perfil"
+                  width={40}
+                  height={40}
+                  unoptimized
                   className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
@@ -192,45 +246,16 @@ export default function ProfileTopbar() {
                   <button
                     type="button"
                     onClick={() => {
-                      setNotice('Perfil disponible pronto');
                       setIsMenuOpen(false);
+                      setPasswordError('');
+                      setShowPasswordForm(false);
+                      setShowPasswords(false);
+                      setIsProfileOpen(true);
                     }}
                     className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
                   >
-                    Perfil
+                    Mi perfil
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNotice('Configuraciones disponibles pronto');
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
-                  >
-                    Configuraciones
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNotice('Cambio de contraseña disponible pronto');
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
-                  >
-                    Cambiar contraseña
-                  </button>
-
-                  {profilePhoto && (
-                    <button
-                      type="button"
-                      onClick={removePhoto}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
-                    >
-                      Quitar foto
-                    </button>
-                  )}
                 </div>
 
                 <div className="border-t border-theme-border p-2">
@@ -249,6 +274,179 @@ export default function ProfileTopbar() {
       </div>
 
       {notice && <p className="mt-2 text-sm text-content-muted">{notice}</p>}
+
+      {isProfileOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[14px] border border-theme-border bg-surface p-6 text-content shadow-floating">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-content-muted">
+                  Cuenta corporativa
+                </p>
+                <h2 className="mt-1 font-heading text-2xl font-bold text-content-strong">
+                  Mi perfil
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(false)}
+                aria-label="Cerrar perfil"
+                className="h-9 w-9 border border-theme-border bg-surface-alt text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 flex items-center gap-4 rounded-[14px] border border-theme-border bg-surface-alt p-4">
+              {profilePhoto ? (
+                <Image
+                  src={profilePhoto}
+                  alt="Foto de perfil"
+                  width={56}
+                  height={56}
+                  unoptimized
+                  className="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-profile-button font-bold text-profile-button-foreground">
+                  {initial}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-content-strong">
+                  {user?.name || 'Usuario'}
+                </p>
+                <p className="truncate text-sm text-content-muted">
+                  {user?.email || 'Sin correo'}
+                </p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                  {getUserRoleLabel(user?.role)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
+              >
+                Cambiar foto
+              </button>
+              {profilePhoto && (
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
+                >
+                  Quitar foto
+                </button>
+              )}
+            </div>
+
+            <p className="mt-5 text-sm text-content-muted">
+              El nombre, correo y rol son administrados por la empresa.
+            </p>
+
+            {!showPasswordForm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordError('');
+                  setShowPasswordForm(true);
+                }}
+                className="mt-5 w-full bg-primary px-4 py-2.5 text-primary-foreground transition hover:bg-primary-hover"
+              >
+                Cambiar contraseña
+              </button>
+            ) : (
+              <form onSubmit={handlePasswordChange} className="mt-5 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-content-strong">
+                    Contraseña actual
+                  </label>
+                  <PasswordInput
+                    visible={showPasswords}
+                    onVisibleChange={setShowPasswords}
+                    wrapperClassName="relative mt-2"
+                    inputClassName="w-full rounded-lg border border-theme-border bg-surface-alt p-2.5 pr-12 text-content-strong outline-none focus:border-theme-border-strong"
+                    toggleClassName="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+                    visibilityLabel="contraseña actual"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    minLength={USER_PASSWORD_MIN_LENGTH}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-content-strong">
+                    Nueva contraseña
+                  </label>
+                  <PasswordInput
+                    visible={showPasswords}
+                    onVisibleChange={setShowPasswords}
+                    wrapperClassName="relative mt-2"
+                    inputClassName="w-full rounded-lg border border-theme-border bg-surface-alt p-2.5 pr-12 text-content-strong outline-none focus:border-theme-border-strong"
+                    toggleClassName="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+                    visibilityLabel="nueva contraseña"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    minLength={USER_PASSWORD_MIN_LENGTH}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-content-strong">
+                    Confirmar contraseña
+                  </label>
+                  <PasswordInput
+                    visible={showPasswords}
+                    onVisibleChange={setShowPasswords}
+                    wrapperClassName="relative mt-2"
+                    inputClassName="w-full rounded-lg border border-theme-border bg-surface-alt p-2.5 pr-12 text-content-strong outline-none focus:border-theme-border-strong"
+                    toggleClassName="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+                    visibilityLabel="confirmación de contraseña"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    minLength={USER_PASSWORD_MIN_LENGTH}
+                  />
+                </div>
+
+                {passwordError && (
+                  <p className="rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
+                    {passwordError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordError('');
+                      setShowPasswords(false);
+                    }}
+                    className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="bg-primary px-4 py-2 text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingPassword ? 'Guardando...' : 'Guardar contraseña'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

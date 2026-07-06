@@ -2,22 +2,40 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Check, Clock3 } from 'lucide-react';
 import { ProjectCard } from '../../components/projects/ProjectCard';
+import { CreateProjectModal } from '../../components/projects/CreateProjectModal';
 import { Card } from '../../components/ui/Card';
-import { PageTitle } from '../../components/ui/PageTitle';
+import { FeedbackAlert } from '../../components/ui/FeedbackAlert';
+import {
+  PageTitle,
+  primaryPageActionButtonClassName,
+} from '../../components/ui/PageTitle';
 import { getProjectMembers, getProjects, getUsers } from '../../lib/api';
 import { getStoredRole, getStoredUserId, isAdminRole } from '../../lib/auth';
 import { getPermissions } from '../../lib/permissions';
 import type { Project, User } from '../../types';
+import { takeFlashNotice } from '../../lib/flashNotice';
+
+const projectPatternPositions = [
+  'top-left',
+  'bottom-right-soft',
+  'resources-rings',
+] as const;
 
 export default function ProjectsPage() {
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
+  const [projectView, setProjectView] = useState<'active' | 'finished'>(
+    'active',
+  );
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   async function loadProjects(
     currentRole: string | null,
@@ -42,8 +60,12 @@ export default function ProjectsPage() {
       if (permissions.projectAccess === 'all') {
         setProjects(normalizedProjects);
       } else if (permissions.projectAccess === 'associated' && currentUserId) {
+        const activeAssociatedProjects = normalizedProjects.filter(
+          (project) =>
+            permissions.canViewFinishedProjects || project.status !== 'DONE',
+        );
         const visibleProjects = await Promise.all(
-          normalizedProjects.map(async (project) => {
+          activeAssociatedProjects.map(async (project) => {
             const membersData = await getProjectMembers(project.id);
             const members = membersData.members ?? [];
 
@@ -95,12 +117,19 @@ export default function ProjectsPage() {
     const currentRole = getStoredRole();
     const currentUserId = getStoredUserId();
 
-    setRole(currentRole);
-    loadProjects(currentRole, currentUserId);
+    void Promise.resolve().then(() => {
+      setRole(currentRole);
+      return loadProjects(currentRole, currentUserId);
+    });
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setFlashMessage(takeFlashNotice()));
   }, []);
 
   const permissions = getPermissions(role);
   const canCreateProject = permissions.canCreateProject;
+  const canViewFinishedProjects = permissions.canViewFinishedProjects;
   const activeProjects = projects.filter(
     (project) => project.status !== 'DONE',
   );
@@ -108,31 +137,71 @@ export default function ProjectsPage() {
   const finishedProjects = projects.filter(
     (project) => project.status === 'DONE',
   );
+  const visibleProjects =
+    projectView === 'active' ? activeProjects : finishedProjects;
 
   return (
-    <main>
-      <section className="mx-auto w-full max-w-[1240px]">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <PageTitle>Gestión de proyectos</PageTitle>
+    <section className="mx-auto w-full max-w-[1240px]">
+      {flashMessage && (
+        <FeedbackAlert
+          message={flashMessage}
+          onClose={() => setFlashMessage('')}
+        />
+      )}
 
-            <p className="mt-2 text-content-muted">
-              Listado de proyectos registrados en Innovatech Solutions.
-            </p>
-          </div>
+      <header className="flex flex-col justify-between gap-4 pt-3 pb-4 md:flex-row md:items-center">
+        <PageTitle>Gestión de proyectos</PageTitle>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {canViewFinishedProjects && (
+            <div
+              className="inline-flex rounded-full border border-theme-border bg-surface-alt p-1"
+              role="group"
+              aria-label="Filtrar proyectos"
+            >
+            <button
+              type="button"
+              onClick={() => setProjectView('active')}
+              aria-pressed={projectView === 'active'}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold transition ${
+                projectView === 'active'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-content-muted hover:bg-surface-hover hover:text-content-strong'
+              }`}
+            >
+              <Clock3 size={14} />
+              Activos
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProjectView('finished')}
+              aria-pressed={projectView === 'finished'}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold transition ${
+                projectView === 'finished'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-content-muted hover:bg-surface-hover hover:text-content-strong'
+              }`}
+            >
+              <Check size={14} />
+              Finalizados
+            </button>
+            </div>
+          )}
 
           {canCreateProject && (
             <button
               type="button"
-              onClick={() => router.push('/projects/create')}
-              className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition hover:bg-primary-hover"
+              onClick={() => setShowCreateModal(true)}
+              className={primaryPageActionButtonClassName}
             >
               Crear proyecto
             </button>
           )}
         </div>
+      </header>
 
-        {error && (
+      {error && (
           <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
             {error}
           </p>
@@ -148,29 +217,39 @@ export default function ProjectsPage() {
           </Card>
         )}
 
-        {!error && !isLoading && activeProjects.length > 0 && (
-          <section className="mt-8">
-            <div>
-              <h2 className="font-heading text-2xl font-bold text-content-strong">
-                Proyectos activos
-              </h2>
-
-              <p className="mt-1 text-content-muted">
-                Proyectos en curso o pendientes de ejecución.
-              </p>
-            </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {activeProjects.map((project) => {
+      {!error && !isLoading && projects.length > 0 && (
+        <section className="mt-6">
+          {visibleProjects.length === 0 ? (
+            <Card className="p-6 text-content-muted">
+              No hay proyectos en esta categoría.
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {visibleProjects.map((project, index) => {
                 const responsibleName = getResponsibleName(
                   project.main_responsible_id,
                 );
+                const row = Math.floor(index / 2);
+                const column = index % 2;
+                const useDecorativeSurface = (row + column) % 2 === 0;
+                const patternPosition =
+                  projectPatternPositions[
+                    Math.floor(index / 2) % projectPatternPositions.length
+                  ];
 
                 return (
                   <ProjectCard
                     key={project.id}
                     project={project}
                     responsibleName={responsibleName}
+                    variant={
+                      useDecorativeSurface
+                        ? row % 2 === 0
+                          ? 'decorativeSoft'
+                          : 'decorativeStrong'
+                        : 'surface'
+                    }
+                    patternPosition={patternPosition}
                     onViewDetail={() =>
                       router.push(getProjectRoute(project.id))
                     }
@@ -178,42 +257,21 @@ export default function ProjectsPage() {
                 );
               })}
             </div>
-          </section>
-        )}
+          )}
+        </section>
+      )}
 
-        {!error && !isLoading && finishedProjects.length > 0 && (
-          <section className="mt-10">
-            <div>
-              <h2 className="font-heading text-2xl font-bold text-content-strong">
-                Proyectos finalizados
-              </h2>
-
-              <p className="mt-1 text-content-muted">
-                Historial de proyectos cerrados.
-              </p>
-            </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {finishedProjects.map((project) => {
-                const responsibleName = getResponsibleName(
-                  project.main_responsible_id,
-                );
-
-                return (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    responsibleName={responsibleName}
-                    onViewDetail={() =>
-                      router.push(getProjectRoute(project.id))
-                    }
-                  />
-                );
-              })}
-            </div>
-          </section>
-        )}
-      </section>
-    </main>
+      {showCreateModal && canCreateProject && (
+        <CreateProjectModal
+          users={users}
+          loadingUsers={isLoading}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={async () => {
+            await loadProjects(role, getStoredUserId());
+            setFlashMessage('Proyecto creado correctamente');
+          }}
+        />
+      )}
+    </section>
   );
 }

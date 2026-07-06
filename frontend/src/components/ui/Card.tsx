@@ -5,6 +5,13 @@ export type CardPatternPosition =
   | 'top-right'
   | 'bottom-right-soft'
   | 'mid-left'
+  | 'analytics-projects-total'
+  | 'analytics-projects-completed'
+  | 'analytics-resources-total'
+  | 'analytics-resources-available'
+  | 'analytics-resources-unavailable'
+  | 'analytics-tasks-total'
+  | 'analytics-tasks-in-progress'
   | 'resources-rings';
 export type CardRingTone = 'light' | 'mid';
 
@@ -21,6 +28,41 @@ const patternPositions: Record<
   'top-right': { x: '102%', y: '4%', sizes: [320, 200, 100] },
   'bottom-right-soft': { x: '100%', y: '50%', sizes: [320, 200, 100] },
   'mid-left': { x: '9%', y: '105%', sizes: [320, 200, 100] },
+  'analytics-projects-total': {
+    x: '-3%',
+    y: '-5%',
+    sizes: [320, 200, 100],
+  },
+  'analytics-projects-completed': {
+    x: '105%',
+    y: '110%',
+    sizes: [320, 200, 100],
+  },
+  'analytics-resources-total': {
+    x: '10%',
+    y: '50%',
+    sizes: [320, 200, 100],
+  },
+  'analytics-resources-available': {
+    x: '100%',
+    y: '50%',
+    sizes: [320, 200, 100],
+  },
+  'analytics-resources-unavailable': {
+    x: '10%',
+    y: '50%',
+    sizes: [320, 200, 100],
+  },
+  'analytics-tasks-total': {
+    x: '5%',
+    y: '10%',
+    sizes: [320, 200, 100],
+  },
+  'analytics-tasks-in-progress': {
+    x: '90%',
+    y: '105%',
+    sizes: [320, 200, 100],
+  },
   'resources-rings': { x: '40%', y: '-5%', sizes: [320, 200, 100] },
 };
 
@@ -58,7 +100,11 @@ export function CardCirclePattern({
 }
 
 type CardElement = 'article' | 'div' | 'section';
-type CardVariant = 'surface' | 'subtle' | 'decorativeSoft';
+type CardVariant =
+  | 'surface'
+  | 'subtle'
+  | 'decorativeSoft'
+  | 'decorativeStrong';
 
 type CardProps = HTMLAttributes<HTMLElement> & {
   as?: CardElement;
@@ -71,6 +117,8 @@ const variantClasses: Record<CardVariant, string> = {
   subtle: 'border-theme-border bg-surface-alt text-content',
   decorativeSoft:
     'theme-card-decorative-soft border-theme-border bg-surface text-content',
+  decorativeStrong:
+    'theme-card-decorative-strong border-theme-border bg-surface text-content',
 };
 
 export function Card({
@@ -96,6 +144,10 @@ type MetricCardProps = {
   label: string;
   value: ReactNode;
   detail?: ReactNode;
+  icon?: ReactNode;
+  variant?: CardVariant;
+  patternPosition?: CardPatternPosition;
+  ringTone?: CardRingTone;
   valueClassName?: string;
   className?: string;
 };
@@ -104,16 +156,45 @@ export function MetricCard({
   label,
   value,
   detail,
+  icon,
+  variant = 'surface',
+  patternPosition,
+  ringTone = 'light',
   valueClassName = 'text-content-strong',
   className = '',
 }: MetricCardProps) {
   return (
-    <Card as="article" className={`p-5 ${className}`}>
-      <p className="text-sm text-content-muted">{label}</p>
-      <p className={`mt-2 font-heading text-3xl font-bold ${valueClassName}`}>
-        {value}
-      </p>
-      {detail && <p className="mt-2 text-sm text-content-muted">{detail}</p>}
+    <Card
+      as="article"
+      variant={variant}
+      interactive
+      className={`relative isolate min-h-[120px] overflow-hidden px-[26px] py-6 ${className}`}
+    >
+      {patternPosition && (
+        <CardCirclePattern position={patternPosition} ringTone={ringTone} />
+      )}
+
+      <div className="relative z-10 flex items-start justify-between gap-[18px]">
+        <div>
+          <p className="text-[15px] font-medium leading-[1.3] text-content-strong">
+            {label}
+          </p>
+          <p
+            className={`mt-4 font-heading text-[30px] font-bold leading-[0.95] ${valueClassName}`}
+          >
+            {value}
+          </p>
+          {detail && (
+            <p className="mt-2 text-sm text-content-muted">{detail}</p>
+          )}
+        </div>
+
+        {icon && (
+          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
+            {icon}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

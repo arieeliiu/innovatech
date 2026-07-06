@@ -38,4 +38,12 @@ export function canCreateTasks(role?: string | null) {
   );
 }
 
-export const canChangeTaskStatus = canCreateTasks;
+export function canChangeTaskStatus(role?: string | null) {
+  return [
+    'ADMIN',
+    'MANAGER',
+    'ARCHITECT',
+    'DEVELOPER',
+    'CONSULTANT',
+  ].includes(normalizeRole(role));
+}

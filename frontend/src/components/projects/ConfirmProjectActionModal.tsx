@@ -48,7 +48,7 @@ export function ConfirmProjectActionModal({
           {title}
         </h2>
 
-        <div className="mt-3 text-sm leading-6 text-content-muted">
+        <div className="mt-3 max-h-24 min-w-0 overflow-y-auto pr-1 text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">
           {description}
         </div>
 
