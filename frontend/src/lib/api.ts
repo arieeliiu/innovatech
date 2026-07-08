@@ -13,6 +13,15 @@ function getApiUrl() {
   return API_URL;
 }
 
+function buildServiceApiUrl(baseUrl: string, endpoint: string) {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+  const apiBaseUrl = normalizedBaseUrl.endsWith('/api')
+    ? normalizedBaseUrl
+    : `${normalizedBaseUrl}/api`;
+
+  return `${apiBaseUrl}${endpoint}`;
+}
+
 function getToken() {
   if (typeof window === 'undefined') return null;
 
