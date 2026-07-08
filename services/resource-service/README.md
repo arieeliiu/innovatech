@@ -1,42 +1,76 @@
-# Resource Service
+# Resource Service - Innovatech Solutions
 
-Microservicio NestJS independiente para gestionar recursos humanos, sincronizar asignaciones con proyectos y calcular disponibilidad automáticamente según proyectos activos.
+Servicio NestJS para recursos y asignaciones. Calcula disponibilidad de profesionales, consulta asignaciones activas y cruza datos entre la tabla de recursos y los miembros de proyecto.
 
-## Resumen
+## Rol dentro del sistema
 
-- Puerto: `3003`
-- Prefijo global: `/api`
-- Esquema dueño del dominio: `resource_service`
-- `resource_assignments` pertenece al Resource Service
-- `public.projects` y `public.project_members` pertenecen al Project Service
-- La sincronización directa con `project_members` es una solución MVP pendiente de reemplazo por HTTP o eventos
-- Disponibilidad automática: `0`, `1` o `2` proyectos activos = `AVAILABLE`; `3` = `UNAVAILABLE`
-- Límite: `3` proyectos activos por profesional
+Este servicio cubre la gestión operativa de recursos humanos. Su foco es mostrar disponibilidad, consultar asignaciones y mantener una visión consistente del uso de profesionales por proyecto.
 
-## Endpoints
+## Tecnologías usadas
 
-- `GET /api/resources`
-- `GET /api/resources/project/:projectId`
-- `GET /api/resources/:userId`
-- `POST /api/assignments`
-- `PATCH /api/assignments/:assignmentId/deactivate`
-- `GET /api/assignments/user/:userId`
+- NestJS 11
+- TypeScript
+- Supabase
+- Jest
 
-## Variables de entorno
+## Estructura principal
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `PORT` opcional, por defecto `3003`
+```txt
+services/resource-service/
+├── src/
+│   ├── resources/
+│   ├── assignments/
+│   ├── common/
+│   ├── supabase/
+│   ├── app.module.ts
+│   └── main.ts
+├── test/
+├── package.json
+└── README.md
+```
 
-## Comandos
+## Funcionalidades principales
+
+- Consulta de recursos generales.
+- Consulta de recursos por proyecto o por usuario.
+- Creación y desactivación de asignaciones.
+- Cálculo de disponibilidad según proyectos activos.
+- Lectura de miembros de proyecto para consolidar la vista operativa.
+
+## Comandos de instalación, ejecución y pruebas
 
 ```bash
 npm install
 npm run start:dev
+npm run start
 npm run build
 npm run test
+npm run test:e2e
+npm run test:cov
+npm run lint
 ```
 
-## Pendiente de seguridad
+## Variables de entorno necesarias
 
-En producción debe validarse el JWT del sistema y restringir operaciones según rol. La Service Role Key no debe exponerse al cliente.
+```env
+PORT=3003
+FRONTEND_URL=http://localhost:3000
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=valor_de_servicio
+```
+
+## Limitaciones actuales
+
+- La sincronización con `public.project_members` todavía es directa y corresponde a un enfoque MVP.
+- No se localizaron pruebas automatizadas en este servicio.
+- No hay validación completa de autenticación/autorización expuesta en los endpoints actuales.
+
+## Mejoras futuras
+
+- Sustituir la sincronización directa por integración HTTP o por eventos.
+- Añadir autenticación y control por rol en todos los endpoints.
+- Incorporar pruebas automáticas.
+
+## Nota técnica
+
+El servicio ya aplica una regla operativa clara: hasta tres proyectos activos mantienen al profesional como disponible. Esa lógica debe conservarse como referencia para la defensa del examen.
