@@ -326,7 +326,7 @@ export async function getResources(): Promise<{
   }
 
   const token = getToken();
-  const response = await fetch(`${RESOURCE_SERVICE_URL}/resources`, {
+  const response = await fetch(buildServiceApiUrl(RESOURCE_SERVICE_URL, '/resources'), {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -371,11 +371,14 @@ export async function getAnalyticsOverview(): Promise<AnalyticsOverview> {
   }
 
   const token = getToken();
-  const response = await fetch(`${ANALYTICS_SERVICE_URL}/analytics/overview`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  const response = await fetch(
+    buildServiceApiUrl(ANALYTICS_SERVICE_URL, '/analytics/overview'),
+    {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     },
-  });
+  );
   handleExpiredSession(response, token);
 
   const data = await response.json();
