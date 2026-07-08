@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserRoleLabel } from '../lib/userRules';
+import Image from 'next/image';
+import { changeOwnPassword } from '../lib/api';
+import { PasswordInput } from './ui/PasswordInput';
+import {
+  getUserRoleLabel,
+  hasValidPasswordLength,
+  USER_PASSWORD_MIN_LENGTH,
+} from '../lib/userRules';
+import { getDecodedToken } from '../lib/auth';
 
 type LoggedUser = {
   id?: string;
@@ -13,8 +21,9 @@ type LoggedUser = {
 
 function decodeToken(token: string): LoggedUser | null {
   try {
-    const payload = token.split('.')[1];
-    const decodedPayload = JSON.parse(atob(payload));
+    const decodedPayload = getDecodedToken(token);
+
+    if (!decodedPayload) return null;
 
     return {
       id: decodedPayload.id || decodedPayload.sub,
@@ -33,23 +42,33 @@ export default function ProfileTopbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    void Promise.resolve().then(() => {
+      const token = localStorage.getItem('token');
 
-    if (!token || token === 'undefined' || token === 'null') {
-      setUser(null);
-      return;
-    }
+      if (!token || token === 'undefined' || token === 'null') {
+        setUser(null);
+        return;
+      }
 
-    setUser(decodeToken(token));
+      setUser(decodeToken(token));
 
-    const savedPhoto = localStorage.getItem('profilePhoto');
-    if (savedPhoto) {
-      setProfilePhoto(savedPhoto);
-    }
+      const savedPhoto = localStorage.getItem('profilePhoto');
+      if (savedPhoto) {
+        setProfilePhoto(savedPhoto);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -103,7 +122,41 @@ export default function ProfileTopbar() {
     localStorage.removeItem('profilePhoto');
     setProfilePhoto(null);
     setNotice('Foto de perfil eliminada');
-    setIsMenuOpen(false);
+  }
+
+  async function handlePasswordChange(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordError('');
+
+    if (!hasValidPasswordLength(newPassword)) {
+      setPasswordError(
+        `La contraseña debe tener al menos ${USER_PASSWORD_MIN_LENGTH} caracteres`,
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden');
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      await changeOwnPassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setIsProfileOpen(false);
+      setNotice('Contraseña actualizada correctamente');
+    } catch (error) {
+      setPasswordError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la contraseña',
+      );
+    } finally {
+      setSavingPassword(false);
+    }
   }
 
   function logout() {
@@ -115,22 +168,22 @@ export default function ProfileTopbar() {
   const initial = (user?.name || user?.email || 'U').charAt(0).toUpperCase();
 
   return (
-    <header className="border-b border-white/10 bg-[#162233] px-6 py-3 shadow-sm backdrop-blur">
+    <header className="theme-header-surface border-b border-theme-border px-6 pt-4 pb-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-[#AAB4C0]">Sesión iniciada</p>
-          <p className="text-2xl font-semibold tracking-tight text-[#F5F7FA]">
+          <p className="text-sm text-content">Sesión iniciada</p>
+          <p className="font-heading text-2xl font-semibold tracking-tight text-content-strong">
             {user?.name || user?.email || 'Usuario no identificado'}
           </p>
         </div>
 
         <div className="flex items-center gap-4" ref={menuRef}>
-          <div className="text-right">
-            <p className="text-sm font-medium text-[#F5F7FA]">
+          <div className="flex flex-col items-end gap-1 text-right">
+            <p className="text-sm font-medium text-content-strong">
               {user?.email || 'Sin correo'}
             </p>
 
-            <span className="inline-flex rounded-full border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#52E0DC]">
+            <span className="inline-flex rounded-full border border-badge-border bg-badge px-3 py-1 text-xs font-semibold uppercase tracking-wide text-badge-foreground">
               {getUserRoleLabel(user?.role)}
             </span>
           </div>
@@ -147,16 +200,19 @@ export default function ProfileTopbar() {
             <button
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-xl border border-white/20 bg-[#162233] px-2 py-1 shadow-sm transition hover:border-white/30"
+              className="flex items-center gap-2 rounded-xl bg-profile-button px-2 py-1.5 text-profile-button-foreground transition hover:bg-profile-button-hover"
             >
               {profilePhoto ? (
-                <img
+                <Image
                   src={profilePhoto}
                   alt="Foto de perfil"
+                  width={40}
+                  height={40}
+                  unoptimized
                   className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#52E0DC] text-sm font-bold text-[#171C22]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-profile-avatar text-sm font-bold text-profile-avatar-foreground">
                   {initial}
                 </div>
               )}
@@ -165,7 +221,7 @@ export default function ProfileTopbar() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="h-4 w-4 text-[#AAB4C0]"
+                className="h-4 w-4"
               >
                 <path
                   fillRule="evenodd"
@@ -176,12 +232,12 @@ export default function ProfileTopbar() {
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[#2A3B55] bg-[#171C22] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-                <div className="border-b border-[#2A3B55] px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-[#AAB4C0]">
+              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-theme-border bg-surface shadow-floating">
+                <div className="border-b border-theme-border px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-content-muted">
                     Mi cuenta
                   </p>
-                  <p className="text-sm font-semibold text-[#F5F7FA]">
+                  <p className="text-sm font-semibold text-content-strong">
                     {user?.name || user?.email || 'Usuario'}
                   </p>
                 </div>
@@ -190,52 +246,23 @@ export default function ProfileTopbar() {
                   <button
                     type="button"
                     onClick={() => {
-                      setNotice('Perfil disponible pronto');
                       setIsMenuOpen(false);
+                      setPasswordError('');
+                      setShowPasswordForm(false);
+                      setShowPasswords(false);
+                      setIsProfileOpen(true);
                     }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-content transition hover:bg-surface-hover hover:text-content-strong"
                   >
-                    Perfil
+                    Mi perfil
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNotice('Configuraciones disponibles pronto');
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
-                  >
-                    Configuraciones
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNotice('Cambio de contraseña disponible pronto');
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] transition hover:bg-[#162233] hover:text-[#F5F7FA]"
-                  >
-                    Cambiar contraseña
-                  </button>
-
-                  {profilePhoto && (
-                    <button
-                      type="button"
-                      onClick={removePhoto}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#AAB4C0] hover:bg-[#162233]"
-                    >
-                      Quitar foto
-                    </button>
-                  )}
                 </div>
 
-                <div className="border-t border-[#2A3B55] p-2">
+                <div className="border-t border-theme-border p-2">
                   <button
                     type="button"
                     onClick={logout}
-                    className="w-full rounded-lg bg-red-600 px-3 py-2 text-left text-sm font-medium text-white hover:bg-red-700"
+                    className="w-full rounded-lg bg-danger px-3 py-2 text-left text-sm font-medium text-danger-foreground transition hover:bg-danger-hover"
                   >
                     Cerrar sesión
                   </button>
@@ -246,8 +273,179 @@ export default function ProfileTopbar() {
         </div>
       </div>
 
-      {notice && (
-        <p className="mt-2 text-sm text-[#AAB4C0]">{notice}</p>
+      {notice && <p className="mt-2 text-sm text-content-muted">{notice}</p>}
+
+      {isProfileOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[14px] border border-theme-border bg-surface p-6 text-content shadow-floating">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-content-muted">
+                  Cuenta corporativa
+                </p>
+                <h2 className="mt-1 font-heading text-2xl font-bold text-content-strong">
+                  Mi perfil
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(false)}
+                aria-label="Cerrar perfil"
+                className="h-9 w-9 border border-theme-border bg-surface-alt text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 flex items-center gap-4 rounded-[14px] border border-theme-border bg-surface-alt p-4">
+              {profilePhoto ? (
+                <Image
+                  src={profilePhoto}
+                  alt="Foto de perfil"
+                  width={56}
+                  height={56}
+                  unoptimized
+                  className="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-profile-button font-bold text-profile-button-foreground">
+                  {initial}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-content-strong">
+                  {user?.name || 'Usuario'}
+                </p>
+                <p className="truncate text-sm text-content-muted">
+                  {user?.email || 'Sin correo'}
+                </p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                  {getUserRoleLabel(user?.role)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
+              >
+                Cambiar foto
+              </button>
+              {profilePhoto && (
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
+                >
+                  Quitar foto
+                </button>
+              )}
+            </div>
+
+            <p className="mt-5 text-sm text-content-muted">
+              El nombre, correo y rol son administrados por la empresa.
+            </p>
+
+            {!showPasswordForm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordError('');
+                  setShowPasswordForm(true);
+                }}
+                className="mt-5 w-full bg-primary px-4 py-2.5 text-primary-foreground transition hover:bg-primary-hover"
+              >
+                Cambiar contraseña
+              </button>
+            ) : (
+              <form onSubmit={handlePasswordChange} className="mt-5 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-content-strong">
+                    Contraseña actual
+                  </label>
+                  <PasswordInput
+                    visible={showPasswords}
+                    onVisibleChange={setShowPasswords}
+                    wrapperClassName="relative mt-2"
+                    inputClassName="w-full rounded-lg border border-theme-border bg-surface-alt p-2.5 pr-12 text-content-strong outline-none focus:border-theme-border-strong"
+                    toggleClassName="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+                    visibilityLabel="contraseña actual"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    minLength={USER_PASSWORD_MIN_LENGTH}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-content-strong">
+                    Nueva contraseña
+                  </label>
+                  <PasswordInput
+                    visible={showPasswords}
+                    onVisibleChange={setShowPasswords}
+                    wrapperClassName="relative mt-2"
+                    inputClassName="w-full rounded-lg border border-theme-border bg-surface-alt p-2.5 pr-12 text-content-strong outline-none focus:border-theme-border-strong"
+                    toggleClassName="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+                    visibilityLabel="nueva contraseña"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    minLength={USER_PASSWORD_MIN_LENGTH}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-content-strong">
+                    Confirmar contraseña
+                  </label>
+                  <PasswordInput
+                    visible={showPasswords}
+                    onVisibleChange={setShowPasswords}
+                    wrapperClassName="relative mt-2"
+                    inputClassName="w-full rounded-lg border border-theme-border bg-surface-alt p-2.5 pr-12 text-content-strong outline-none focus:border-theme-border-strong"
+                    toggleClassName="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-content-muted transition hover:bg-surface-hover hover:text-content-strong"
+                    visibilityLabel="confirmación de contraseña"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    minLength={USER_PASSWORD_MIN_LENGTH}
+                  />
+                </div>
+
+                {passwordError && (
+                  <p className="rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
+                    {passwordError}
+                  </p>
+                )}
+
+                <div className="flex justify-end gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setPasswordError('');
+                      setShowPasswords(false);
+                    }}
+                    className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="bg-primary px-4 py-2 text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingPassword ? 'Guardando...' : 'Guardar contraseña'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </header>
   );

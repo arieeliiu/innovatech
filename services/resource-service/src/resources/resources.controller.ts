@@ -1,7 +1,9 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
+import { ActiveUserGuard } from '../security/active-user.guard';
 
 @Controller('resources')
+@UseGuards(ActiveUserGuard)
 export class ResourcesController {
   constructor(private readonly resourcesService: ResourcesService) {}
 

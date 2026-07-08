@@ -137,6 +137,13 @@ export class ResourcesService {
       const users = data.users ?? [];
 
       for (const user of users) {
+        if (
+          user.app_metadata?.is_active === false ||
+          user.app_metadata?.deleted_at
+        ) {
+          continue;
+        }
+
         const role = this.getUserRole(user);
 
         if (!role) {

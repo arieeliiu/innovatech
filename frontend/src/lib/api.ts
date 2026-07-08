@@ -1,10 +1,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
-const RESOURCE_SERVICE_URL =
-  process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL;
+const RESOURCE_SERVICE_URL = process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL;
 
-const ANALYTICS_SERVICE_URL =
-  process.env.NEXT_PUBLIC_ANALYTICS_SERVICE_URL;
+const ANALYTICS_SERVICE_URL = process.env.NEXT_PUBLIC_ANALYTICS_SERVICE_URL;
 
 function getApiUrl() {
   if (!API_URL) {
@@ -35,6 +34,34 @@ function getToken() {
   return token;
 }
 
+function handleExpiredSession(response: Response, token: string | null) {
+  if (response.status !== 401 || !token || typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.removeItem('token');
+  localStorage.removeItem('profilePhoto');
+  window.location.replace('/');
+}
+
+function getApiErrorMessage(data: unknown, fallback: string) {
+  if (!data || typeof data !== 'object') return fallback;
+
+  const payload = data as { message?: unknown; error?: unknown };
+  const candidate = payload.message ?? payload.error;
+
+  if (
+    typeof candidate === 'string' &&
+    candidate.trim() &&
+    candidate.trim() !== '{}'
+  ) {
+    return candidate;
+  }
+  if (Array.isArray(candidate)) return candidate.join(', ');
+
+  return fallback;
+}
+
 async function request(endpoint: string, options: RequestInit = {}) {
   const token = getToken();
   const apiUrl = getApiUrl();
@@ -48,20 +75,52 @@ async function request(endpoint: string, options: RequestInit = {}) {
     },
   });
 
+  handleExpiredSession(response, token);
+
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Error en la solicitud');
+    throw new Error(getApiErrorMessage(data, 'Error en la solicitud'));
   }
 
   return data;
 }
 
-export async function apiRequest(
-  endpoint: string,
-  options: RequestInit = {},
-) {
+async function authRequest(endpoint: string, options: RequestInit = {}) {
+  if (!AUTH_SERVICE_URL) {
+    throw new Error('Falta configurar NEXT_PUBLIC_AUTH_SERVICE_URL');
+  }
+
+  const token = getToken();
+  const response = await fetch(`${AUTH_SERVICE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  handleExpiredSession(response, token);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      getApiErrorMessage(data, 'Error en el servicio de autenticación'),
+    );
+  }
+
+  return data;
+}
+
+export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   return request(endpoint, options);
+}
+
+export async function authenticate(email: string, password: string) {
+  return authRequest('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
 }
 
 export async function getProjects() {
@@ -108,6 +167,12 @@ export async function createTask(
 
 export async function getTaskById(taskId: string) {
   return request(`/projects/tasks/${taskId}`);
+}
+
+export async function deleteTask(taskId: string) {
+  return request(`/projects/tasks/${taskId}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function updateTaskStatus(
@@ -166,7 +231,7 @@ export async function removeProjectMember(projectId: string, userId: string) {
 }
 
 export async function getUsers() {
-  return request('/users');
+  return authRequest('/users');
 }
 
 export async function deleteProject(projectId: string) {
@@ -191,14 +256,14 @@ export async function createUser(user: {
   password: string;
   role: string;
 }) {
-  return request('/users', {
+  return authRequest('/users', {
     method: 'POST',
     body: JSON.stringify(user),
   });
 }
 
 export async function deleteUser(userId: string) {
-  return request(`/users/${userId}`, {
+  return authRequest(`/users/${userId}`, {
     method: 'DELETE',
   });
 }
@@ -212,9 +277,19 @@ export async function updateUser(
     password?: string;
   },
 ) {
-  return request(`/users/${userId}`, {
+  return authRequest(`/users/${userId}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
+  });
+}
+
+export async function changeOwnPassword(
+  currentPassword: string,
+  password: string,
+) {
+  return authRequest('/users/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, password }),
   });
 }
 
@@ -231,7 +306,7 @@ export type ResourceSummary = {
   userId: string;
   name: string;
   email: string | null;
-  role: 'ARCHITECT' | 'DEVELOPER' | 'CONSULTANT';
+  role: 'MANAGER' | 'ARCHITECT' | 'DEVELOPER' | 'CONSULTANT';
   activeProjects: number;
   maximumProjects: number;
   availabilityStatus: 'AVAILABLE' | 'UNAVAILABLE';
@@ -247,20 +322,22 @@ export async function getResources(): Promise<{
   resources: ResourceSummary[];
 }> {
   if (!RESOURCE_SERVICE_URL) {
-    throw new Error(
-      'Falta configurar NEXT_PUBLIC_RESOURCE_SERVICE_URL',
-    );
+    throw new Error('Falta configurar NEXT_PUBLIC_RESOURCE_SERVICE_URL');
   }
 
-  const response = await fetch(
-    buildServiceApiUrl(RESOURCE_SERVICE_URL, '/resources'),
-  );
+  const token = getToken();
+  const response = await fetch(`${RESOURCE_SERVICE_URL}/resources`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  handleExpiredSession(response, token);
 
   const data = await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data.message || 'No se pudieron cargar los recursos',
+      getApiErrorMessage(data, 'No se pudieron cargar los recursos'),
     );
   }
 
@@ -290,20 +367,22 @@ export type AnalyticsOverview = {
 
 export async function getAnalyticsOverview(): Promise<AnalyticsOverview> {
   if (!ANALYTICS_SERVICE_URL) {
-    throw new Error(
-      'Falta configurar NEXT_PUBLIC_ANALYTICS_SERVICE_URL',
-    );
+    throw new Error('Falta configurar NEXT_PUBLIC_ANALYTICS_SERVICE_URL');
   }
 
-  const response = await fetch(
-    buildServiceApiUrl(ANALYTICS_SERVICE_URL, '/analytics/overview'),
-  );
+  const token = getToken();
+  const response = await fetch(`${ANALYTICS_SERVICE_URL}/analytics/overview`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  handleExpiredSession(response, token);
 
   const data = await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data.message || 'No se pudo cargar la analítica',
+      getApiErrorMessage(data, 'No se pudo cargar la analítica'),
     );
   }
 

@@ -7,7 +7,7 @@ export type AppRole =
   | null;
 
 type ProjectAccessScope = 'all' | 'associated' | 'none';
-type TaskStatusScope = 'all' | 'own_created' | 'none';
+type TaskStatusScope = 'all' | 'own_assigned' | 'none';
 type MembersScope = 'manage' | 'readonly' | 'none';
 
 export type RolePermissions = {
@@ -17,6 +17,7 @@ export type RolePermissions = {
   canCreateProject: boolean;
   canDeleteProject: boolean;
   canFinalizeProject: boolean;
+  canViewFinishedProjects: boolean;
 
   projectDetailAccess: ProjectAccessScope;
   taskBoardAccess: ProjectAccessScope;
@@ -77,6 +78,7 @@ const permissionsByRole: Record<Exclude<AppRole, null>, RolePermissions> = {
     canCreateProject: true,
     canDeleteProject: true,
     canFinalizeProject: true,
+    canViewFinishedProjects: true,
 
     projectDetailAccess: 'all',
     taskBoardAccess: 'all',
@@ -94,6 +96,7 @@ const permissionsByRole: Record<Exclude<AppRole, null>, RolePermissions> = {
     canCreateProject: true,
     canDeleteProject: true,
     canFinalizeProject: true,
+    canViewFinishedProjects: true,
 
     projectDetailAccess: 'all',
     taskBoardAccess: 'all',
@@ -111,12 +114,13 @@ const permissionsByRole: Record<Exclude<AppRole, null>, RolePermissions> = {
     canCreateProject: false,
     canDeleteProject: false,
     canFinalizeProject: false,
+    canViewFinishedProjects: false,
 
     projectDetailAccess: 'associated',
     taskBoardAccess: 'associated',
 
     createTaskAccess: 'associated',
-    changeTaskStatusAccess: 'own_created',
+    changeTaskStatusAccess: 'own_assigned',
 
     projectMembersAccess: 'readonly',
   },
@@ -128,12 +132,13 @@ const permissionsByRole: Record<Exclude<AppRole, null>, RolePermissions> = {
     canCreateProject: false,
     canDeleteProject: false,
     canFinalizeProject: false,
+    canViewFinishedProjects: false,
 
     projectDetailAccess: 'associated',
     taskBoardAccess: 'associated',
 
     createTaskAccess: 'associated',
-    changeTaskStatusAccess: 'own_created',
+    changeTaskStatusAccess: 'own_assigned',
 
     projectMembersAccess: 'readonly',
   },
@@ -145,12 +150,13 @@ const permissionsByRole: Record<Exclude<AppRole, null>, RolePermissions> = {
     canCreateProject: false,
     canDeleteProject: false,
     canFinalizeProject: false,
+    canViewFinishedProjects: false,
 
     projectDetailAccess: 'associated',
     taskBoardAccess: 'associated',
 
     createTaskAccess: 'none',
-    changeTaskStatusAccess: 'none',
+    changeTaskStatusAccess: 'own_assigned',
 
     projectMembersAccess: 'readonly',
   },
@@ -163,6 +169,7 @@ const emptyPermissions: RolePermissions = {
   canCreateProject: false,
   canDeleteProject: false,
   canFinalizeProject: false,
+  canViewFinishedProjects: false,
 
   projectDetailAccess: 'none',
   taskBoardAccess: 'none',
@@ -250,12 +257,12 @@ export function canCreateTask(
 
 export function canChangeTaskStatus(
   role?: string | null,
-  isTaskCreatedByCurrentUser = false,
+  isTaskAssignedToCurrentUser = false,
 ) {
   const scope = getPermissions(role).changeTaskStatusAccess;
 
   if (scope === 'all') return true;
-  if (scope === 'own_created') return isTaskCreatedByCurrentUser;
+  if (scope === 'own_assigned') return isTaskAssignedToCurrentUser;
 
   return false;
 }
@@ -277,4 +284,8 @@ export function canManageProjectMembers(role?: string | null) {
 
 export function canRegisterUsers(role?: string | null) {
   return getPermissions(role).canRegisterUsers;
+}
+
+export function canViewFinishedProjects(role?: string | null) {
+  return getPermissions(role).canViewFinishedProjects;
 }

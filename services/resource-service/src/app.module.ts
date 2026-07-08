@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { ResourcesModule } from './resources/resources.module';
+import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ResourcesModule } from './resources/resources.module';
       isGlobal: true,
     }),
     SupabaseModule,
+    SecurityModule,
     AssignmentsModule,
     ResourcesModule,
   ],

@@ -17,9 +17,9 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskStatusDto } from '../dto/update-task-status.dto';
 import { AddProjectMemberDto } from '../dto/add-project-member.dto';
 import { CreateTaskCommentDto } from '../dto/create-task-comment.dto';
-import { AuthGuard } from '../../auth/guards/auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { AuthGuard } from '../../security/guards/auth.guard';
+import { RolesGuard } from '../../security/guards/roles.guard';
+import { Roles } from '../../security/decorators/roles.decorator';
 
 type AuthenticatedRequest = Request & {
   user: {
@@ -90,7 +90,7 @@ export class ProjectsController {
   }
 
   @Patch('tasks/:taskId/status')
-  @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER')
+  @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER', 'CONSULTANT')
   updateTaskStatus(
     @Param('taskId', ParseUUIDPipe) taskId: string,
     @Body() updateTaskStatusDto: UpdateTaskStatusDto,
@@ -99,6 +99,19 @@ export class ProjectsController {
     return this.projectsService.updateTaskStatus(
       taskId,
       updateTaskStatusDto,
+      request.user.id,
+      request.user.role,
+    );
+  }
+
+  @Delete('tasks/:taskId')
+  @Roles('ADMIN', 'MANAGER', 'ARCHITECT', 'DEVELOPER')
+  deleteTask(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.deleteTask(
+      taskId,
       request.user.id,
       request.user.role,
     );

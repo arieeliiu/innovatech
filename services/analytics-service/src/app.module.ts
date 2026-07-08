@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -9,6 +10,7 @@ import { SupabaseModule } from './supabase/supabase.module';
       isGlobal: true,
     }),
     SupabaseModule,
+    SecurityModule,
     AnalyticsModule,
   ],
 })

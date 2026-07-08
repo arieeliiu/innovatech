@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createTask,
   createTaskComment,
+  deleteTask,
+  getProjectMembers,
   getProjectTasks,
   getProjects,
   getUsers,
@@ -12,7 +14,16 @@ import {
   getTaskHistory,
   getTaskComments,
 } from '../../../lib/api';
-import { formatDateShort } from '../../../lib/date';
+import { formatDateShort, formatDateTimeShort } from '../../../lib/date';
+import {
+  formatTaskStatusText,
+  getTaskStatusLabel,
+} from '../../../lib/taskStatus';
+import {
+  PageTitle,
+  primaryPageActionButtonClassName,
+} from '../../../components/ui/PageTitle';
+import type { ProjectMember } from '../../../types';
 
 type Project = {
   id: string;
@@ -20,7 +31,13 @@ type Project = {
   status?: string;
 };
 
-type User = { id: string; name?: string; email?: string; role?: string };
+type User = {
+  id: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  active?: boolean;
+};
 
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
 
@@ -40,6 +57,21 @@ type Task = {
   endDate?: string;
 };
 
+type TaskHistoryEntry = {
+  id: string;
+  created_at: string;
+  previous_status?: TaskStatus;
+  new_status?: TaskStatus;
+  comment?: string;
+};
+
+type TaskComment = {
+  id: string;
+  title: string;
+  description: string;
+  created_at: string;
+};
+
 const columns: { status: TaskStatus; title: string }[] = [
   { status: 'TODO', title: 'Por hacer' },
   { status: 'IN_PROGRESS', title: 'En progreso' },
@@ -49,11 +81,20 @@ const columns: { status: TaskStatus; title: string }[] = [
 export default function AdminTasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', responsibleId: '', startDate: '', endDate: '' });
+  const creatingTaskRef = useRef(false);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    responsibleId: '',
+    startDate: '',
+    endDate: '',
+  });
 
   const [loading, setLoading] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -61,14 +102,22 @@ export default function AdminTasksPage() {
   const [message, setMessage] = useState('');
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskHistory, setTaskHistory] = useState<any[]>([]);
-  const [taskComments, setTaskComments] = useState<any[]>([]);
+  const [taskHistory, setTaskHistory] = useState<TaskHistoryEntry[]>([]);
+  const [taskComments, setTaskComments] = useState<TaskComment[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [savingProgress, setSavingProgress] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletingTask, setDeletingTask] = useState(false);
   const [editProgress, setEditProgress] = useState<number | ''>('');
-  const [commentForm, setCommentForm] = useState({ title: '', description: '' });
+  const [commentForm, setCommentForm] = useState({
+    title: '',
+    description: '',
+  });
 
   function upsertTaskInState(updatedTask: Task) {
     setTasks((currentTasks) =>
@@ -84,13 +133,32 @@ export default function AdminTasksPage() {
     );
   }
 
+  function openDatePicker(event: React.MouseEvent<HTMLInputElement>) {
+    const input = event.currentTarget as HTMLInputElement & {
+      showPicker?: () => void;
+    };
+
+    try {
+      input.showPicker?.();
+    } catch {
+      // Algunos navegadores bloquean showPicker fuera de una interacción.
+    }
+  }
+
+  function preventDateTextSelection(event: React.MouseEvent<HTMLInputElement>) {
+    event.preventDefault();
+  }
+
   async function loadInitialData() {
     try {
       setLoading(true);
       setError('');
       setMessage('');
 
-      const [projectsData, usersData] = await Promise.all([getProjects(), getUsers()]);
+      const [projectsData, usersData] = await Promise.all([
+        getProjects(),
+        getUsers(),
+      ]);
 
       const loadedProjects = projectsData.projects ?? [];
       const loadedUsers = usersData.users ?? usersData.data ?? usersData ?? [];
@@ -120,32 +188,54 @@ export default function AdminTasksPage() {
       setError('');
       setMessage('');
 
-      const data = await getProjectTasks(projectId);
-      setTasks(data.tasks ?? []);
-    } catch {
-      setError('No se pudieron cargar las tareas del proyecto');
+      const [tasksData, membersData] = await Promise.all([
+        getProjectTasks(projectId),
+        getProjectMembers(projectId),
+      ]);
+      const loadedMembers = membersData.members ?? [];
+      const memberIds = new Set(
+        loadedMembers.map((member: ProjectMember) => member.user_id),
+      );
+
+      setTasks(tasksData.tasks ?? []);
+      setProjectMembers(loadedMembers);
+      setForm((current) =>
+        current.responsibleId && !memberIds.has(current.responsibleId)
+          ? { ...current, responsibleId: '' }
+          : current,
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron cargar las tareas del proyecto',
+      );
     } finally {
       setLoadingTasks(false);
     }
   }
 
   useEffect(() => {
-    loadInitialData();
+    void Promise.resolve().then(loadInitialData);
   }, []);
 
   useEffect(() => {
-    if (selectedProjectId) loadTasks(selectedProjectId);
+    if (selectedProjectId) {
+      void Promise.resolve().then(() => loadTasks(selectedProjectId));
+    }
   }, [selectedProjectId]);
 
   const activeProjects = useMemo(
-      () => projects.filter((project) => project.status !== 'DONE'),
-      [projects],
-    );
+    () => projects.filter((project) => project.status !== 'DONE'),
+    [projects],
+  );
 
-    const selectedProject = useMemo(
-      () => activeProjects.find((project) => project.id === selectedProjectId),
-      [activeProjects, selectedProjectId],
+  const responsibleUsers = useMemo(() => {
+    const memberIds = new Set(projectMembers.map((member) => member.user_id));
+    return users.filter(
+      (user) => user.active !== false && memberIds.has(user.id),
     );
+  }, [projectMembers, users]);
 
   function getResponsibleName(task: Task) {
     const responsibleId = task.responsible_id ?? task.responsibleId;
@@ -157,29 +247,63 @@ export default function AdminTasksPage() {
 
   async function handleCreateTask(e: React.FormEvent) {
     e.preventDefault();
+    if (creatingTaskRef.current) return;
     if (!selectedProjectId) return setError('Debes seleccionar un proyecto');
     try {
-      setError(''); setMessage('');
-      await createTask(selectedProjectId, { projectId: selectedProjectId, title: form.title, description: form.description, responsibleId: form.responsibleId, startDate: form.startDate, endDate: form.endDate || undefined });
-      setForm({ title: '', description: '', responsibleId: '', startDate: '', endDate: '' });
-      setShowCreateForm(false); setMessage('Tarea creada correctamente');
+      creatingTaskRef.current = true;
+      setCreatingTask(true);
+      setError('');
+      setMessage('');
+      await createTask(selectedProjectId, {
+        projectId: selectedProjectId,
+        title: form.title,
+        description: form.description,
+        responsibleId: form.responsibleId,
+        startDate: form.startDate,
+        endDate: form.endDate || undefined,
+      });
+      setForm({
+        title: '',
+        description: '',
+        responsibleId: '',
+        startDate: '',
+        endDate: '',
+      });
+      setShowCreateForm(false);
+      setMessage('Tarea creada correctamente');
       await loadTasks(selectedProjectId);
-    } catch {
-      setError('No se pudo crear la tarea');
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'No se pudo crear la tarea',
+      );
+    } finally {
+      creatingTaskRef.current = false;
+      setCreatingTask(false);
     }
   }
 
   async function handleChangeStatus(task: Task, newStatus: TaskStatus) {
     if (!selectedProjectId) return;
     try {
-      setError(''); setMessage('');
+      setError('');
+      setMessage('');
       const currentProgress = task.progress ?? 0;
       const newProgress = newStatus === 'DONE' ? 100 : currentProgress;
-      const response = await updateTaskStatus(task.id, { status: newStatus, progress: newProgress, comment: `Cambio de estado a ${newStatus}` });
-      upsertTaskInState(response.task ?? { ...task, status: newStatus, progress: newProgress });
+      const response = await updateTaskStatus(task.id, {
+        status: newStatus,
+        progress: newProgress,
+        comment: `Cambio de estado a ${getTaskStatusLabel(newStatus)}`,
+      });
+      upsertTaskInState(
+        response.task ?? { ...task, status: newStatus, progress: newProgress },
+      );
       setMessage('Estado actualizado correctamente');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo actualizar el estado de la tarea');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo actualizar el estado de la tarea',
+      );
     }
   }
 
@@ -187,6 +311,8 @@ export default function AdminTasksPage() {
     setSelectedTask(task);
     setEditProgress(task.progress ?? 0);
     setCommentForm({ title: '', description: '' });
+    setShowCommentForm(false);
+    setShowHistoryModal(false);
     setLoadingHistory(true);
     setLoadingComments(true);
     try {
@@ -213,6 +339,49 @@ export default function AdminTasksPage() {
     setTaskComments([]);
     setEditProgress('');
     setCommentForm({ title: '', description: '' });
+    setShowCommentForm(false);
+    setShowHistoryModal(false);
+  }
+
+  function openDeleteTaskModal(
+    event: React.MouseEvent<HTMLButtonElement>,
+    task: Task,
+  ) {
+    event.stopPropagation();
+    setTaskToDelete(task);
+    setDeleteConfirmation('');
+  }
+
+  function closeDeleteTaskModal() {
+    if (deletingTask) return;
+    setTaskToDelete(null);
+    setDeleteConfirmation('');
+  }
+
+  async function handleDeleteTask(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!taskToDelete || deleteConfirmation.trim().toLowerCase() !== 'eliminar') {
+      return;
+    }
+
+    try {
+      setDeletingTask(true);
+      setError('');
+      const response = await deleteTask(taskToDelete.id);
+      setTasks((currentTasks) =>
+        currentTasks.filter((task) => task.id !== taskToDelete.id),
+      );
+      setMessage(response.message ?? 'Tarea eliminada correctamente');
+      setTaskToDelete(null);
+      setDeleteConfirmation('');
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'No se pudo eliminar la tarea',
+      );
+    } finally {
+      setDeletingTask(false);
+    }
   }
 
   async function handleSaveProgress() {
@@ -227,7 +396,7 @@ export default function AdminTasksPage() {
 
     if ((selectedTask.progress ?? 0) === normalizedProgress) {
       setError('');
-      setMessage('No hay cambios para guardar');
+      closeTaskModal();
       return;
     }
 
@@ -239,11 +408,17 @@ export default function AdminTasksPage() {
         progress: normalizedProgress,
         comment: `Actualizó avance a ${progressValue}%`,
       });
-      upsertTaskInState(response.task ?? { ...selectedTask, progress: normalizedProgress });
+      upsertTaskInState(
+        response.task ?? { ...selectedTask, progress: normalizedProgress },
+      );
       setMessage(response.message ?? 'Cambios guardados correctamente');
       closeTaskModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron guardar los cambios');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron guardar los cambios',
+      );
     } finally {
       setSavingProgress(false);
     }
@@ -265,6 +440,7 @@ export default function AdminTasksPage() {
       setError('');
       await createTaskComment(selectedTask.id, { title, description });
       setCommentForm({ title: '', description: '' });
+      setShowCommentForm(false);
       setMessage('Comentario agregado correctamente');
       const commentsResp = await getTaskComments(selectedTask.id);
       setTaskComments(commentsResp.comments ?? []);
@@ -275,135 +451,300 @@ export default function AdminTasksPage() {
     }
   }
 
-  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+  const labelClass = 'block text-sm font-medium text-content-strong';
 
   const inputClass =
-    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+    'mt-1 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none transition placeholder:text-content-muted/60 focus:border-theme-border-strong';
+
+  const dateInputClass = `${inputClass} calendar-themed cursor-pointer`;
 
   const panelClass =
-    'rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]';
+    'theme-card-interactive rounded-[14px] border border-theme-border bg-surface p-6';
 
   const secondaryButtonClass =
-    'rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]';
+    'rounded-lg border border-theme-border bg-surface-alt px-4 py-2 text-sm font-medium text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover';
 
   const primaryButtonClass =
-    'rounded-lg bg-[#52E0DC] px-5 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50';
+    'rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50';
 
   if (loading) {
     return (
-      <section>
-        <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
-        <div className="mt-6 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">Cargando proyectos...</div>
+      <section className="mx-auto w-full max-w-[1240px]">
+        <PageTitle>Tablero de tareas</PageTitle>
+        <div className="theme-card-interactive mt-6 rounded-[14px] border border-theme-border bg-surface p-6 text-content-muted">
+          Cargando proyectos...
+        </div>
       </section>
     );
   }
 
   if (activeProjects.length === 0) {
     return (
-      <section>
-        <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
-        <div className="mt-6 rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 text-[#AAB4C0] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">No hay proyectos activos disponibles para gestionar tareas.</div>
+      <section className="mx-auto w-full max-w-[1240px]">
+        <PageTitle>Tablero de tareas</PageTitle>
+        <div className="theme-card-interactive mt-6 rounded-[14px] border border-theme-border bg-surface p-6 text-content-muted">
+          No hay proyectos activos disponibles para gestionar tareas.
+        </div>
       </section>
     );
   }
 
   return (
-    <section>
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-[#F5F7FA]">Tablero de tareas</h1>
-          <p className="mt-2 text-[#AAB4C0]">Gestiona todas las tareas asociadas a cada proyecto.</p>
+    <section className="mx-auto w-full max-w-[1240px]">
+      <PageTitle>Tablero de tareas</PageTitle>
+
+      <div className="mt-6 flex w-full max-w-xl flex-col items-stretch gap-3 sm:flex-row sm:items-end lg:w-[calc((100%-2rem)/3)] lg:max-w-none">
+        <div className="min-w-0 w-full sm:flex-1">
+          <label className={`${labelClass} mb-2`}>Proyecto seleccionado</label>
+          <select
+            className={inputClass}
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+          >
+            {activeProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <button type="button" onClick={() => setShowCreateForm(true)} className={primaryButtonClass}>+ Nueva tarea</button>
+        <button
+          type="button"
+          onClick={() => setShowCreateForm(true)}
+          className={`shrink-0 ${primaryPageActionButtonClassName}`}
+        >
+          + Nueva tarea
+        </button>
       </div>
-
-      <div className="mt-6 max-w-xl">
-        <label className={labelClass}>Proyecto</label>
-        <select className={inputClass} value={selectedProjectId} onChange={(e)=>setSelectedProjectId(e.target.value)}>
-          {activeProjects.map((project)=>(<option key={project.id} value={project.id}>{project.name}</option>))}
-        </select>
-      </div>
-
-      {selectedProject && (
-        <p className="mt-4 text-sm text-[#AAB4C0]">Proyecto seleccionado:{' '}<span className="font-medium text-[#F5F7FA]">{selectedProject.name}</span></p>
+      {error && (
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
+          {error}
+        </p>
       )}
-
-      {error && <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
-      {message && <p className="mt-4 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-sm text-[#7DEBE8]">{message}</p>}
+      {message && (
+        <p className="mt-4 rounded-lg border border-success/30 bg-success-surface p-3 text-sm text-success">
+          {message}
+        </p>
+      )}
 
       {showCreateForm && (
         <div className={`mt-6 ${panelClass}`}>
           <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold text-[#F5F7FA]">Crear nueva tarea</h2>
-            <button type="button" onClick={()=>setShowCreateForm(false)} className={secondaryButtonClass}>Cerrar</button>
+            <h2 className="font-heading text-xl font-semibold text-content-strong">
+              Crear nueva tarea
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              className={secondaryButtonClass}
+            >
+              Cerrar
+            </button>
           </div>
 
-          <form onSubmit={handleCreateTask} className="grid gap-4 md:grid-cols-2">
+          <form
+            onSubmit={handleCreateTask}
+            className="grid gap-4 md:grid-cols-2"
+          >
             <div className="md:col-span-2">
               <label className={labelClass}>Título</label>
-              <input className={inputClass} value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} required />
+              <input
+                className={inputClass}
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+              />
             </div>
 
             <div className="md:col-span-2">
               <label className={labelClass}>Descripción</label>
-              <textarea className={inputClass} value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} required />
+              <textarea
+                className={`${inputClass} h-28 resize-none`}
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                maxLength={500}
+                required
+              />
+              <p className="mt-1 text-right text-xs text-content-muted">
+                {form.description.length}/500
+              </p>
             </div>
 
             <div>
               <label className={labelClass}>Responsable</label>
-              <select className={inputClass} value={form.responsibleId} onChange={(e)=>setForm({...form,responsibleId:e.target.value})} required>
+              <select
+                className={inputClass}
+                value={form.responsibleId}
+                onChange={(e) =>
+                  setForm({ ...form, responsibleId: e.target.value })
+                }
+                required
+              >
                 <option value="">Selecciona un responsable</option>
-                {users.map((user)=>(<option key={user.id} value={user.id}>{user.name||user.email||'Usuario sin nombre'}</option>))}
+                {responsibleUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email || 'Usuario sin nombre'}
+                  </option>
+                ))}
               </select>
+              {responsibleUsers.length === 0 && (
+                <p className="mt-1 text-xs text-danger">
+                  Este proyecto no tiene miembros disponibles para asignar.
+                </p>
+              )}
             </div>
 
             <div>
               <label className={labelClass}>Fecha de inicio</label>
-              <input type="date" className={inputClass} value={form.startDate} onChange={(e)=>setForm({...form,startDate:e.target.value})} required />
+              <input
+                type="date"
+                className={dateInputClass}
+                value={form.startDate}
+                onChange={(e) =>
+                  setForm({ ...form, startDate: e.target.value })
+                }
+                onMouseDown={preventDateTextSelection}
+                onClick={openDatePicker}
+                required
+              />
             </div>
 
             <div>
               <label className={labelClass}>Fecha de término</label>
-              <input type="date" className={inputClass} value={form.endDate} onChange={(e)=>setForm({...form,endDate:e.target.value})} />
+              <input
+                type="date"
+                className={dateInputClass}
+                value={form.endDate}
+                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                min={form.startDate || undefined}
+                onMouseDown={preventDateTextSelection}
+                onClick={openDatePicker}
+              />
             </div>
 
             <div className="flex items-end">
-              <button type="submit" className={`w-full ${primaryButtonClass}`}>Crear tarea</button>
+              <button
+                type="submit"
+                disabled={creatingTask}
+                className={`w-full ${primaryButtonClass}`}
+              >
+                {creatingTask ? 'Creando...' : 'Crear tarea'}
+              </button>
             </div>
           </form>
         </div>
       )}
 
       <div className="mt-8 grid gap-4 lg:grid-cols-3">
-        {columns.map((column)=>{
-          const columnTasks = tasks.filter((task)=>task.status===column.status);
+        {columns.map((column) => {
+          const columnTasks = tasks.filter(
+            (task) => task.status === column.status,
+          );
           return (
-            <div key={column.status} className="flex max-h-[650px] min-h-[420px] flex-col rounded-2xl border border-[#2A3B55] bg-[#172235] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+            <div
+              key={column.status}
+              className="theme-card-interactive flex max-h-[650px] min-h-[420px] flex-col rounded-[14px] border border-theme-border bg-surface p-4"
+            >
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-semibold text-[#F5F7FA]">{column.title}</h2>
-                <span className="rounded-full border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1 text-xs font-semibold text-[#52E0DC]">{columnTasks.length}</span>
+                <h2 className="font-heading font-semibold text-content-strong">
+                  {column.title}
+                </h2>
+                <span className="rounded-full border border-theme-border bg-surface-alt px-3 py-1 text-xs font-semibold text-content-strong">
+                  {columnTasks.length}
+                </span>
               </div>
 
               {loadingTasks ? (
-                <p className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">Cargando tareas...</p>
-              ) : columnTasks.length===0 ? (
-                <p className="rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-4 text-sm text-[#AAB4C0]">No hay tareas en esta columna.</p>
+                <p className="rounded-lg border border-theme-border bg-surface-alt p-4 text-sm text-content-muted">
+                  Cargando tareas...
+                </p>
+              ) : columnTasks.length === 0 ? (
+                <p className="rounded-lg border border-theme-border bg-surface-alt p-4 text-sm text-content-muted">
+                  No hay tareas en esta columna.
+                </p>
               ) : (
                 <div className="space-y-3 overflow-y-auto pr-2">
-                  {columnTasks.map((task)=>(
-                    <article key={task.id} onClick={() => openTaskModal(task)} className="cursor-pointer rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4 transition hover:border-[#52E0DC]/40 hover:bg-[#22344E]">
-                      <h3 className="font-semibold text-[#F5F7FA]">{task.title}</h3>
-                      <p className="mt-2 line-clamp-2 text-sm text-[#AAB4C0]">{task.description}</p>
-                      <div className="mt-3 space-y-1 text-xs text-[#AAB4C0]">
-                        <p><strong>Responsable:</strong> {getResponsibleName(task)}</p>
-                        <p><strong>Inicio:</strong> {formatDateShort(task.start_date ?? task.startDate)}</p>
-                        <p><strong>Avance:</strong> <span className="font-semibold text-[#F5F7FA]">{task.progress}%</span></p>
+                  {columnTasks.map((task) => (
+                    <article
+                      key={task.id}
+                      onClick={() => openTaskModal(task)}
+                      className="relative cursor-pointer rounded-[14px] border border-theme-border bg-surface-alt p-4 transition hover:border-theme-border-strong hover:bg-surface-hover"
+                    >
+                      <button
+                        type="button"
+                        onClick={(event) => openDeleteTaskModal(event, task)}
+                        className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full text-lg text-content-muted transition hover:bg-danger-surface hover:text-danger"
+                        aria-label={`Eliminar tarea ${task.title}`}
+                        title="Eliminar tarea"
+                      >
+                        ×
+                      </button>
+
+                      <h3 className="pr-8 font-semibold text-content-strong">
+                        {task.title}
+                      </h3>
+                      <p className="mt-2 line-clamp-2 break-words text-sm text-content-muted">
+                        {task.description}
+                      </p>
+                      <div className="mt-3 space-y-1 text-xs text-content-muted">
+                        <p>
+                          <strong>Responsable:</strong>{' '}
+                          {getResponsibleName(task)}
+                        </p>
+                        <p>
+                          <strong>Inicio:</strong>{' '}
+                          {formatDateShort(task.start_date ?? task.startDate)}
+                        </p>
+                        <p>
+                          <strong>Avance:</strong>{' '}
+                          <span className="font-semibold text-content-strong">
+                            {task.progress}%
+                          </span>
+                        </p>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-                        {task.status!=='TODO' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'TODO');}} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">Pasar a Por hacer</button>)}
-                        {task.status!=='IN_PROGRESS' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'IN_PROGRESS');}} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">Pasar a En progreso</button>)}
-                        {task.status!=='DONE' && (<button type="button" onClick={(e)=>{e.stopPropagation(); handleChangeStatus(task,'DONE');}} className="rounded-lg bg-[#52E0DC] px-3 py-1 text-xs font-semibold text-[#171C22] transition hover:bg-[#43C3CF]">Finalizar</button>)}
+                      <div
+                        className="mt-4 flex flex-wrap gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {task.status !== 'TODO' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChangeStatus(task, 'TODO');
+                            }}
+                            className="rounded-lg border border-theme-border bg-surface px-3 py-1 text-xs text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
+                          >
+                            Pasar a Por hacer
+                          </button>
+                        )}
+                        {task.status !== 'IN_PROGRESS' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChangeStatus(task, 'IN_PROGRESS');
+                            }}
+                            className="rounded-lg border border-theme-border bg-surface px-3 py-1 text-xs text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
+                          >
+                            Pasar a En progreso
+                          </button>
+                        )}
+                        {task.status !== 'DONE' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChangeStatus(task, 'DONE');
+                            }}
+                            className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                          >
+                            Finalizar
+                          </button>
+                        )}
                       </div>
                     </article>
                   ))}
@@ -415,156 +756,403 @@ export default function AdminTasksPage() {
       </div>
 
       {selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={closeTaskModal}>
-          <div className="w-full max-w-lg rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm"
+          onClick={closeTaskModal}
+        >
+          <div
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-xl overflow-y-auto rounded-[14px] border border-theme-border bg-surface p-4 shadow-floating"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#F5F7FA]">{selectedTask.title}</h3>
-              <button onClick={closeTaskModal} className="text-lg text-[#AAB4C0] transition hover:text-[#F5F7FA]">✕</button>
+              <h3 className="break-words font-heading text-lg font-semibold text-content-strong">
+                {selectedTask.title}
+              </h3>
+              <button
+                onClick={closeTaskModal}
+                className="text-lg text-content-muted transition hover:text-content-strong"
+              >
+                ✕
+              </button>
             </div>
 
-            <p className="mt-2 text-sm text-[#AAB4C0]">{selectedTask.description}</p>
+            <p className="mt-1 max-h-16 overflow-y-auto whitespace-pre-wrap break-words pr-1 text-sm text-content-muted">
+              {selectedTask.description}
+            </p>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div>
-                <p className="text-xs text-[#AAB4C0]">Responsable</p>
-                <p className="font-medium text-[#F5F7FA]">{getResponsibleName(selectedTask)}</p>
-              </div>
-
-              <div>
-                <p className="text-xs text-[#AAB4C0]">Estado</p>
-                <p className="font-medium text-[#F5F7FA]">
-                  {selectedTask.status === 'TODO' ? 'Por hacer' : selectedTask.status === 'IN_PROGRESS' ? 'En progreso' : 'Finalizada'}
+                <p className="text-xs text-content-muted">Responsable</p>
+                <p className="text-sm font-medium text-content-strong">
+                  {getResponsibleName(selectedTask)}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-[#AAB4C0]">Inicio</p>
-                <p className="font-medium text-[#F5F7FA]">{formatDateShort(selectedTask.start_date ?? selectedTask.startDate)}</p>
+                <p className="text-xs text-content-muted">Estado</p>
+                <p className="text-sm font-medium text-content-strong">
+                  {getTaskStatusLabel(selectedTask.status)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs text-content-muted">Inicio</p>
+                <p className="text-sm font-medium text-content-strong">
+                  {formatDateShort(
+                    selectedTask.start_date ?? selectedTask.startDate,
+                  )}
+                </p>
               </div>
 
               {selectedTask.status === 'DONE' && (
                 <div>
-                  <p className="text-xs text-[#AAB4C0]">Término</p>
-                  <p className="font-medium text-[#F5F7FA]">{formatDateShort(selectedTask.end_date ?? selectedTask.endDate)}</p>
+                  <p className="text-xs text-content-muted">Término</p>
+                  <p className="text-sm font-medium text-content-strong">
+                    {formatDateShort(
+                      selectedTask.end_date ?? selectedTask.endDate,
+                    )}
+                  </p>
                 </div>
               )}
 
-              <div className="md:col-span-2">
-                <p className="mb-2 text-xs text-[#AAB4C0]">Avance</p>
-                <div className="flex items-center gap-3">
-                  <input type="range" min={0} max={100} value={editProgress} onChange={(e) => setEditProgress(Number(e.target.value))} className="flex-1 cursor-pointer" />
+              <div className="col-span-2 sm:col-span-3">
+                <p className="mb-1 text-xs text-content-muted">Avance</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={editProgress}
+                    onChange={(e) => setEditProgress(Number(e.target.value))}
+                    className="flex-1 cursor-pointer"
+                  />
                   <div className="flex items-center gap-1">
-                    <input type="number" min={0} max={100} value={editProgress} onChange={(e) => setEditProgress(Number(e.target.value))} className="w-16 rounded-lg border border-[#2A3B55] bg-[#162233] p-1 text-center text-sm text-[#F5F7FA] outline-none focus:border-[#52E0DC]" />
-                    <span className="text-sm font-medium text-[#AAB4C0]">%</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={editProgress}
+                      onChange={(e) => setEditProgress(Number(e.target.value))}
+                      className="w-12 rounded-lg border border-theme-border bg-surface-alt p-1 text-center text-xs text-content-strong outline-none focus:border-theme-border-strong"
+                    />
+                    <span className="text-xs font-medium text-content-muted">
+                      %
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setShowCommentForm((current) => !current);
+                }}
+                aria-expanded={showCommentForm}
+                aria-controls="task-comment-form"
+                className="rounded-lg border border-theme-border bg-surface-alt px-3 py-1 text-xs font-medium text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
+              >
+                {showCommentForm
+                  ? '- Ocultar formulario'
+                  : '+ Agregar comentario'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCommentForm(false);
+                  setShowHistoryModal(true);
+                }}
+                className="rounded-lg border border-theme-border bg-surface-alt px-3 py-1 text-xs font-medium text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
+              >
+                Ver historial
+              </button>
+
               {selectedTask.status !== 'TODO' && (
-                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'TODO'); closeTaskModal(); }} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleChangeStatus(selectedTask, 'TODO');
+                    closeTaskModal();
+                  }}
+                  className="rounded-lg border border-theme-border bg-surface-alt px-3 py-1 text-xs text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
+                >
                   Mover a Por hacer
                 </button>
               )}
               {selectedTask.status !== 'IN_PROGRESS' && (
-                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'IN_PROGRESS'); closeTaskModal(); }} className="rounded-lg border border-white/10 bg-[#162233] px-3 py-1 text-xs text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleChangeStatus(selectedTask, 'IN_PROGRESS');
+                    closeTaskModal();
+                  }}
+                  className="rounded-lg border border-theme-border bg-surface-alt px-3 py-1 text-xs text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover"
+                >
                   Mover a En progreso
                 </button>
               )}
               {selectedTask.status !== 'DONE' && (
-                <button type="button" onClick={() => { handleChangeStatus(selectedTask, 'DONE'); closeTaskModal(); }} className="rounded-lg bg-[#52E0DC] px-3 py-1 text-xs font-semibold text-[#171C22] transition hover:bg-[#43C3CF]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleChangeStatus(selectedTask, 'DONE');
+                    closeTaskModal();
+                  }}
+                  className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                >
                   Finalizar
                 </button>
               )}
             </div>
 
-            <div className="mt-4 rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
-              <p className="text-sm font-medium text-[#F5F7FA]">Agregar comentario</p>
-              <div className="mt-3 grid gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-[#AAB4C0]">Título</label>
-                  <input
-                    value={commentForm.title}
-                    onChange={(e) => setCommentForm({ ...commentForm, title: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-sm text-[#F5F7FA] outline-none placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]"
-                    placeholder="Resumen corto del comentario"
-                    maxLength={120}
-                  />
+            {showCommentForm && (
+              <div
+                id="task-comment-form"
+                className="mt-2 rounded-[10px] border border-theme-border bg-surface-alt p-3"
+              >
+                <div className="grid gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-content-muted">
+                        Título
+                      </label>
+                      <input
+                        value={commentForm.title}
+                        onChange={(e) =>
+                          setCommentForm({
+                            ...commentForm,
+                            title: e.target.value,
+                          })
+                        }
+                        className="mt-1 w-full rounded-md border border-theme-border bg-surface px-2 py-1.5 text-sm text-content-strong outline-none placeholder:text-content-muted/60 focus:border-theme-border-strong"
+                        placeholder="Resumen corto del comentario"
+                        maxLength={120}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-content-muted">
+                        Descripción
+                      </label>
+                      <textarea
+                        value={commentForm.description}
+                        onChange={(e) =>
+                          setCommentForm({
+                            ...commentForm,
+                            description: e.target.value,
+                          })
+                        }
+                        className="mt-1 h-20 w-full resize-none rounded-md border border-theme-border bg-surface p-2 text-sm text-content-strong outline-none placeholder:text-content-muted/60 focus:border-theme-border-strong"
+                        placeholder="Escribe el comentario..."
+                        maxLength={500}
+                      />
+                      <p className="mt-0.5 text-right text-xs text-content-muted">
+                        {commentForm.description.length}/500
+                      </p>
+                    </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#AAB4C0]">Descripción</label>
-                  <textarea
-                    value={commentForm.description}
-                    onChange={(e) => setCommentForm({ ...commentForm, description: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-sm text-[#F5F7FA] outline-none placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]"
-                    placeholder="Escribe el comentario..."
-                    maxLength={2000}
-                    rows={4}
-                  />
+                <div className="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveComment}
+                      disabled={savingComment}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary-hover disabled:opacity-60"
+                    >
+                      {savingComment ? 'Guardando...' : 'Guardar comentario'}
+                    </button>
                 </div>
               </div>
-              <div className="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSaveComment}
-                  disabled={savingComment}
-                  className="rounded-lg border border-[#52E0DC]/40 bg-[#52E0DC]/10 px-4 py-2 text-sm font-medium text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22] disabled:opacity-60"
-                >
-                  {savingComment ? 'Guardando...' : 'Agregar comentario'}
-                </button>
-              </div>
-            </div>
+            )}
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="mt-3">
               <div>
-                <p className="text-sm font-semibold text-[#F5F7FA]">Historial de cambios</p>
-                {loadingHistory ? (
-                  <p className="mt-2 text-sm text-[#AAB4C0]">Cargando historial...</p>
-                ) : taskHistory && taskHistory.length > 0 ? (
-                  <div className="mt-2 max-h-48 space-y-2 overflow-auto rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-3">
-                    {taskHistory.map((h) => (
-                      <div key={h.id} className="rounded-lg border border-[#2A3B55] bg-[#162233] p-2">
-                        <p className="text-xs text-[#AAB4C0]">{new Date(h.created_at).toLocaleString('es-CL')}</p>
-                        <p className="mt-1 text-sm text-[#F5F7FA]">{h.previous_status} → {h.new_status}</p>
-                        {h.comment && <p className="mt-1 text-xs text-[#AAB4C0]">{h.comment}</p>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-[#AAB4C0]">Sin cambios registrados</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-[#F5F7FA]">Comentarios</p>
+                <p className="text-sm font-semibold text-content-strong">
+                  Comentarios
+                </p>
                 {loadingComments ? (
-                  <p className="mt-2 text-sm text-[#AAB4C0]">Cargando comentarios...</p>
+                  <p className="mt-2 text-sm text-content-muted">
+                    Cargando comentarios...
+                  </p>
                 ) : taskComments && taskComments.length > 0 ? (
-                  <div className="mt-2 max-h-48 space-y-2 overflow-auto rounded-lg border border-[#2A3B55] bg-[#1D2B42] p-3">
+                  <div className="mt-2 max-h-40 space-y-2 overflow-auto rounded-lg border border-theme-border bg-surface-alt p-2">
                     {taskComments.map((comment) => (
-                      <div key={comment.id} className="rounded-lg border border-[#2A3B55] bg-[#162233] p-2">
+                      <div
+                        key={comment.id}
+                        className="rounded-lg border border-theme-border bg-surface p-2"
+                      >
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-medium text-[#F5F7FA]">{comment.title}</p>
-                          <p className="shrink-0 text-xs text-[#AAB4C0]">{new Date(comment.created_at).toLocaleString('es-CL')}</p>
+                          <p className="text-sm font-medium text-content-strong">
+                            {comment.title}
+                          </p>
+                          <p className="shrink-0 text-xs text-content-muted">
+                            {formatDateTimeShort(comment.created_at)}
+                          </p>
                         </div>
-                        <p className="mt-1 text-sm text-[#AAB4C0]">{comment.description}</p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm text-content-muted">
+                          {formatTaskStatusText(comment.description)}
+                        </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-[#AAB4C0]">Sin comentarios</p>
+                  <p className="mt-2 text-sm text-content-muted">
+                    Sin comentarios
+                  </p>
                 )}
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={closeTaskModal} className={secondaryButtonClass}>Cancelar</button>
-              <button onClick={handleSaveProgress} disabled={savingProgress} className="rounded-lg bg-[#52E0DC] px-4 py-2 text-sm font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50">
+            <div className="mt-3 flex justify-end gap-2">
+              <button onClick={closeTaskModal} className={secondaryButtonClass}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveProgress}
+                disabled={savingProgress}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 {savingProgress ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
           </div>
+
+          {showHistoryModal && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowHistoryModal(false);
+              }}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="task-history-title"
+                className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-hidden rounded-[14px] border border-theme-border bg-surface p-5 shadow-floating"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h4
+                    id="task-history-title"
+                    className="font-heading text-lg font-semibold text-content-strong"
+                  >
+                    Historial de cambios
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowHistoryModal(false)}
+                    className="text-lg text-content-muted transition hover:text-content-strong"
+                    aria-label="Cerrar historial"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {loadingHistory ? (
+                  <p className="mt-4 text-sm text-content-muted">
+                    Cargando historial...
+                  </p>
+                ) : taskHistory && taskHistory.length > 0 ? (
+                  <div className="mt-4 max-h-[60dvh] space-y-2 overflow-y-auto pr-2">
+                    {taskHistory.map((h) => (
+                      <div
+                        key={h.id}
+                        className="rounded-lg border border-theme-border bg-surface-alt p-3"
+                      >
+                        <p className="text-xs text-content-muted">
+                          {formatDateTimeShort(h.created_at)}
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-content-strong">
+                          {getTaskStatusLabel(h.previous_status)} →{' '}
+                          {getTaskStatusLabel(h.new_status)}
+                        </p>
+                        {h.comment && (
+                          <p className="mt-1 text-sm text-content-muted">
+                            {formatTaskStatusText(h.comment)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-content-muted">
+                    Sin cambios registrados
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {taskToDelete && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          onClick={closeDeleteTaskModal}
+        >
+          <form
+            onSubmit={handleDeleteTask}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-md rounded-[14px] border border-theme-border bg-surface p-6 shadow-floating"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-heading text-xl font-semibold text-content-strong">
+                  Eliminar tarea
+                </h3>
+                <p className="mt-2 text-sm text-content-muted">
+                  Esta acción eliminará permanentemente{' '}
+                  <strong className="text-content-strong">
+                    {taskToDelete.title}
+                  </strong>
+                  , junto con sus comentarios e historial.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteTaskModal}
+                disabled={deletingTask}
+                className="text-lg text-content-muted transition hover:text-content-strong disabled:opacity-50"
+                aria-label="Cerrar confirmación"
+              >
+                ×
+              </button>
+            </div>
+
+            <label className="mt-5 block text-sm font-medium text-content-strong">
+              Escribe <strong>eliminar</strong> para confirmar
+            </label>
+            <input
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none focus:border-theme-border-strong"
+              placeholder="eliminar"
+              autoComplete="off"
+              autoFocus
+            />
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteTaskModal}
+                disabled={deletingTask}
+                className={secondaryButtonClass}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  deletingTask ||
+                  deleteConfirmation.trim().toLowerCase() !== 'eliminar'
+                }
+                className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-danger-foreground transition hover:bg-danger-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deletingTask ? 'Eliminando...' : 'Eliminar tarea'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </section>

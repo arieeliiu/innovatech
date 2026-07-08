@@ -1,98 +1,85 @@
-# Backend - Innovatech Solutions
+# Project Service - Innovatech Solutions
 
-Backend desarrollado en **NestJS** para el proyecto **Innovatech Solutions**. Su objetivo es actuar como la capa de servicios de la plataforma, exponiendo una API para que el frontend pueda autenticarse, gestionar usuarios, administrar proyectos y preparar la integración futura con herramientas externas de gestión, recursos y analítica.
+Servicio principal de backend en NestJS para Innovatech Solutions. Expone la API de autenticación, usuarios, proyectos, tareas y correo; además aplica reglas de acceso por roles y validación de entrada.
 
-Este backend forma parte de una arquitectura pensada originalmente bajo un enfoque de **microservicios**, donde cada área funcional del sistema puede evolucionar de forma independiente. Para esta entrega se implementó de forma prioritaria el núcleo funcional asociado a autenticación, usuarios, proyectos y tareas, manteniendo una estructura modular que permite escalar hacia los demás servicios planificados.
+## Rol dentro del sistema
 
----
+Este servicio actúa como la capa central de negocio. Recibe las peticiones del frontend, valida permisos, aplica reglas operativas y consulta Supabase para persistencia y autenticación.
 
-## Rol del backend dentro del sistema
+## Tecnologías usadas
 
-El backend cumple la función de intermediario entre el frontend de Innovatech Solutions y los servicios de datos o plataformas externas. En vez de conectar el frontend directamente con cada herramienta, el backend centraliza la lógica de negocio, las validaciones, la autenticación y la comunicación con los servicios externos.
+- NestJS 11
+- TypeScript
+- Supabase
+- class-validator y class-transformer
+- Nodemailer
+- Jest
 
-Esto permite que el sistema sea más ordenado, seguro y mantenible, ya que las reglas principales no quedan distribuidas en la interfaz de usuario, sino concentradas en una capa de servicios.
-
----
-
-## Enfoque de microservicios planificado
-
-La solución fue diseñada considerando tres servicios funcionales:
-
-### 1. Servicio de gestión de proyectos
-
-Responsable de administrar proyectos, tareas, responsables, estados, progreso e historial de cambios. Este servicio representa el núcleo operativo de la plataforma, ya que permite controlar el avance del trabajo y mantener trazabilidad sobre las actividades realizadas.
-
-En la implementación actual, este es el servicio con mayor desarrollo dentro del backend.
-
-### 2. Servicio de gestión de recursos
-
-Servicio proyectado para administrar información relacionada con personas, equipos de trabajo, disponibilidad, carga laboral y recursos asociados a los proyectos. Su propósito es apoyar la asignación de responsabilidades y mejorar la planificación interna.
-
-En una evolución futura, este servicio podría integrarse con herramientas externas de recursos humanos o control de horas.
-
-### 3. Servicio de analítica y reportes
-
-Servicio proyectado para consolidar información del sistema y transformarla en métricas útiles para la toma de decisiones. Su objetivo es entregar indicadores sobre avance de proyectos, productividad, carga de trabajo y estado general de la operación.
-
-En una evolución futura, este servicio podría alimentar herramientas de inteligencia de negocios como Metabase.
-
----
-
-## Estado actual de implementación
-
-Actualmente, el backend implementa el núcleo base necesario para operar la plataforma:
-
-- autenticación de usuarios;
-- validación de token mediante guard;
-- gestión de usuarios;
-- creación y consulta de proyectos;
-- gestión de tareas asociadas a proyectos;
-- actualización de estados y progreso de tareas;
-- registro de historial de cambios;
-- administración de miembros de proyecto.
-
-Aunque la arquitectura fue pensada para tres servicios principales, en esta etapa se priorizó el desarrollo del servicio central de gestión de proyectos y usuarios, dejando preparados los criterios de separación modular para futuras ampliaciones.
-
----
-
-## Tecnologías utilizadas
-
-- **NestJS**: framework principal del backend.
-- **TypeScript**: lenguaje utilizado para mejorar legibilidad, tipado y mantenibilidad.
-- **Supabase**: servicio utilizado para autenticación y persistencia de datos.
-- **class-validator / class-transformer**: validación y transformación de datos mediante DTOs.
-- **Node.js**: entorno de ejecución.
-
----
-
-## Estructura general
+## Estructura principal
 
 ```txt
-backend/
+services/project-service/
 ├── src/
 │   ├── auth/
-│   │   ├── controllers/
-│   │   ├── guards/
-│   │   ├── services/
-│   │   └── auth.module.ts
 │   ├── users/
-│   │   ├── controllers/
-│   │   ├── dto/
-│   │   ├── services/
-│   │   └── users.module.ts
 │   ├── projects/
-│   │   ├── controllers/
-│   │   ├── dto/
-│   │   ├── services/
-│   │   └── projects.module.ts
+│   ├── mail/
+│   ├── bootstrap/
 │   ├── app.module.ts
 │   └── main.ts
+├── test/
 ├── package.json
 └── README.md
 ```
 
-## Quick Start
+## Funcionalidades principales
+
+- Inicio de sesión con Supabase Auth.
+- Validación de JWT mediante guards.
+- Gestión de usuarios.
+- Gestión de proyectos, tareas, comentarios, historial y miembros.
+- Finalización de proyectos.
+- Envío de correos mediante SMTP.
+
+## Comandos de instalación, ejecución y pruebas
 
 ```bash
 npm install
 npm run start:dev
+npm run start
+npm run build
+npm run test
+npm run test:e2e
+npm run test:cov
+npm run lint
+```
+
+## Variables de entorno necesarias
+
+```env
+PORT=3001
+FRONTEND_URL=http://localhost:3000
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=valor_de_servicio
+SMTP_HOST=smtp.ejemplo.com
+SMTP_PORT=587
+SMTP_USER=usuario
+SMTP_PASS=clave
+MAIL_FROM=no-reply@innovatech.com
+```
+
+## Limitaciones actuales
+
+- No se observó una separación completa por microservicios dentro de este servicio; concentra la funcionalidad principal del dominio.
+- No se localizaron pruebas unitarias adicionales más allá del e2e de reglas de negocio.
+- La configuración de correo depende de variables SMTP correctas.
+
+## Mejoras futuras
+
+- Separar más claramente responsabilidades internas si el alcance crece.
+- Añadir más pruebas unitarias y de integración.
+- Completar telemetría, observabilidad y revisión de errores de infraestructura.
+
+## Nota técnica
+
+La validación de datos y el control de acceso están presentes en la implementación actual mediante DTOs, pipes y guards. Esto sostiene la defensa técnica del servicio como capa de negocio y no solo como proxy de datos.

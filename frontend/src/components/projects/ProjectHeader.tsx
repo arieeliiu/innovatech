@@ -1,6 +1,8 @@
 import { ProgressBar } from '../ui/ProgressBar';
 import { formatDateShort } from '../../lib/date';
 import type { Project } from '../../types';
+import { Card } from '../ui/Card';
+import { PageTitle } from '../ui/PageTitle';
 
 type ProjectHeaderProps = {
   project: Project;
@@ -14,14 +16,14 @@ type ProjectHeaderProps = {
 
 function getStatusBadgeClasses(status: string) {
   if (status === 'DONE') {
-    return 'border border-[#52E0DC]/25 bg-[#52E0DC]/10 text-[#7DEBE8]';
+    return 'border border-success/30 bg-success-surface text-success';
   }
 
   if (status === 'IN_PROGRESS') {
-    return 'border border-amber-400/30 bg-amber-400/15 text-amber-300';
+    return 'border border-warning/30 bg-warning-surface text-warning';
   }
 
-  return 'border border-[#3A4A63] bg-[#1D2B42] text-[#C7D0DC]';
+  return 'border border-theme-border bg-surface-alt text-content-muted';
 }
 
 function getStatusLabel(status: string) {
@@ -47,7 +49,7 @@ export function ProjectHeader({
         <button
           type="button"
           onClick={onBack}
-          className="rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] shadow transition hover:border-[#52E0DC]/40 hover:bg-[#1B2940]"
+          className="rounded-lg border border-theme-border bg-surface px-4 py-2 text-sm font-medium text-content-strong shadow transition hover:border-theme-border-strong hover:bg-surface-hover"
         >
           Volver a proyectos
         </button>
@@ -58,7 +60,7 @@ export function ProjectHeader({
               <button
                 type="button"
                 onClick={onFinalize}
-                className="rounded-lg border border-amber-400/30 bg-amber-400/15 px-4 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-400 hover:text-[#171C22]"
+                className="rounded-lg border border-warning/30 bg-warning-surface px-4 py-2 text-sm font-semibold text-warning transition hover:border-warning"
               >
                 Finalizar proyecto
               </button>
@@ -68,7 +70,7 @@ export function ProjectHeader({
               <button
                 type="button"
                 onClick={onDelete}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-danger-foreground transition hover:bg-danger-hover"
               >
                 Eliminar proyecto
               </button>
@@ -77,20 +79,20 @@ export function ProjectHeader({
         )}
       </div>
 
-      <div className="rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+      <Card className="p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-[#F5F7FA]">
+          <div className="min-w-0 [overflow-wrap:anywhere]">
+            <PageTitle className="line-clamp-2 [overflow-wrap:anywhere]">
               {project.name}
-            </h1>
+            </PageTitle>
 
-            <p className="mt-2 max-w-3xl text-[#AAB4C0]">
+            <p className="mt-2 max-w-3xl whitespace-pre-wrap text-content-muted">
               {project.description}
             </p>
           </div>
 
           <span
-            className={`w-fit rounded-full px-4 py-2 text-sm font-medium ${getStatusBadgeClasses(
+            className={`w-fit shrink-0 rounded-full px-4 py-2 text-sm font-medium ${getStatusBadgeClasses(
               project.status,
             )}`}
           >
@@ -99,27 +101,27 @@ export function ProjectHeader({
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
-            <p className="text-sm text-[#AAB4C0]">Fecha de inicio</p>
+          <Card variant="subtle" className="p-4">
+            <p className="text-sm text-content-muted">Fecha de inicio</p>
 
-            <p className="font-medium text-[#F5F7FA]">
+            <p className="font-medium text-content-strong">
               {formatDateShort(project.start_date)}
             </p>
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
-            <p className="text-sm text-[#AAB4C0]">Fecha de término</p>
+          <Card variant="subtle" className="p-4">
+            <p className="text-sm text-content-muted">Fecha de término</p>
 
-            <p className="font-medium text-[#F5F7FA]">
+            <p className="font-medium text-content-strong">
               {formatDateShort(project.end_date)}
             </p>
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-[#2A3B55] bg-[#1D2B42] p-4">
-            <p className="text-sm text-[#AAB4C0]">Responsable principal</p>
+          <Card variant="subtle" className="p-4">
+            <p className="text-sm text-content-muted">Responsable principal</p>
 
-            <p className="font-medium text-[#F5F7FA]">{responsibleName}</p>
-          </div>
+            <p className="font-medium text-content-strong">{responsibleName}</p>
+          </Card>
         </div>
 
         <div className="mt-6">
@@ -129,7 +131,7 @@ export function ProjectHeader({
             size="md"
           />
         </div>
-      </div>
+      </Card>
     </>
   );
 }

@@ -1,27 +1,42 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Search, UserRound } from 'lucide-react';
 import { deleteUser, getUsers, updateUser } from '../../../lib/api';
 import { getStoredUserId } from '../../../lib/auth';
+import { takeFlashNotice } from '../../../lib/flashNotice';
 import {
   getUserRoleLabel,
   hasValidPasswordLength,
   USER_PASSWORD_MIN_LENGTH,
   USER_ROLE_OPTIONS,
 } from '../../../lib/userRules';
+import { Card } from '../../../components/ui/Card';
+import { CreateUserModal } from '../../../components/users/CreateUserModal';
+import {
+  PageTitle,
+  primaryPageActionButtonClassName,
+} from '../../../components/ui/PageTitle';
 
 type User = {
   id: string;
   name?: string;
   email?: string;
   role?: string;
+  active?: boolean;
 };
+
+const USERS_PER_PAGE = 15;
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [confirmText, setConfirmText] = useState('');
@@ -39,6 +54,34 @@ export default function AdminUsersPage() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const currentUserId = useMemo(() => getStoredUserId(), []);
+  const filteredUsers = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase('es');
+
+    return users.filter((user) => {
+      const matchesRole =
+        roleFilter === 'ALL' ||
+        (user.role || '').toUpperCase() === roleFilter;
+      const matchesQuery =
+        !normalizedQuery ||
+        (user.name || '').toLocaleLowerCase('es').includes(normalizedQuery) ||
+        (user.email || '').toLocaleLowerCase('es').includes(normalizedQuery);
+
+      return matchesRole && matchesQuery;
+    });
+  }, [roleFilter, searchQuery, users]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredUsers.length / USERS_PER_PAGE),
+  );
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(
+    () =>
+      filteredUsers.slice(
+        (safeCurrentPage - 1) * USERS_PER_PAGE,
+        safeCurrentPage * USERS_PER_PAGE,
+      ),
+    [filteredUsers, safeCurrentPage],
+  );
 
   async function loadUsers() {
     try {
@@ -48,7 +91,11 @@ export default function AdminUsersPage() {
       const data = await getUsers();
       const list = data.users ?? data.data ?? [];
 
-      setUsers(Array.isArray(list) ? list : []);
+      setUsers(
+        Array.isArray(list)
+          ? list.filter((user: User) => user.active !== false)
+          : [],
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -61,7 +108,14 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
-    loadUsers();
+    void Promise.resolve().then(loadUsers);
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      const flashMessage = takeFlashNotice();
+      if (flashMessage) setMessage(flashMessage);
+    });
   }, []);
 
   function openDeleteModal(user: User) {
@@ -116,7 +170,7 @@ export default function AdminUsersPage() {
 
       await deleteUser(selectedUser.id);
 
-      setMessage('Usuario eliminado correctamente');
+      setMessage('Usuario desactivado correctamente');
       closeDeleteModal();
       await loadUsers();
     } catch (requestError) {
@@ -179,104 +233,210 @@ export default function AdminUsersPage() {
     }
   }
 
-  const labelClass = 'block text-sm font-medium text-[#F5F7FA]';
+  const labelClass = 'block text-sm font-medium text-content-strong';
 
   const inputClass =
-    'mt-1 w-full rounded-lg border border-[#2A3B55] bg-[#162233] p-2 text-[#F5F7FA] outline-none transition placeholder:text-[#AAB4C0]/60 focus:border-[#52E0DC]';
+    'mt-1 w-full rounded-lg border border-theme-border bg-surface-alt p-2 text-content-strong outline-none transition placeholder:text-content-muted/60 focus:border-theme-border-strong';
 
   const secondaryButtonClass =
-    'rounded-lg border border-white/10 bg-[#162233] px-4 py-2 text-sm font-medium text-[#F5F7FA] transition hover:border-[#52E0DC]/40 hover:bg-[#1D2B42]';
+    'rounded-lg border border-theme-border bg-surface-alt px-4 py-2 text-sm font-medium text-content-strong transition hover:border-theme-border-strong hover:bg-surface-hover';
 
   return (
-    <section>
-      <h1 className="text-3xl font-bold text-[#F5F7FA]">Usuarios registrados</h1>
-      <p className="mt-2 text-[#AAB4C0]">Listado completo de cuentas registradas en la plataforma.</p>
+    <section className="mx-auto w-full max-w-[1240px]">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <PageTitle>Usuarios registrados</PageTitle>
+
+        <button
+          type="button"
+          onClick={() => setShowCreateModal(true)}
+          className={primaryPageActionButtonClassName}
+        >
+          Registrar usuario
+        </button>
+      </div>
+
+      <div className="mt-8 flex min-h-12 flex-col overflow-hidden rounded-[14px] border border-theme-border bg-surface shadow-card sm:flex-row sm:items-stretch">
+        <label className="flex min-w-0 flex-1 items-center gap-3 px-4">
+          <Search size={18} className="shrink-0 text-content-muted" />
+          <span className="sr-only">Buscar usuario</span>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Buscar por nombre o correo"
+            className="min-h-12 w-full bg-transparent text-content-strong outline-none placeholder:text-content-muted/70"
+          />
+        </label>
+
+        <label className="flex min-h-12 items-center border-t border-theme-border px-4 sm:border-t-0 sm:border-l">
+          <span className="sr-only">Filtrar por rol</span>
+          <select
+            value={roleFilter}
+            onChange={(event) => {
+              setRoleFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="calendar-themed min-w-[190px] rounded-[10px] border border-theme-border bg-surface px-3 py-2 text-sm font-normal text-content outline-none transition focus:border-theme-border-strong"
+          >
+            <option value="ALL">Todos los roles</option>
+            {USER_ROLE_OPTIONS.map((roleOption) => (
+              <option key={roleOption.value} value={roleOption.value}>
+                {roleOption.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <span className="flex min-h-12 items-center border-t border-theme-border px-4 text-sm text-content-muted sm:border-t-0 sm:border-l">
+          {filteredUsers.length}{' '}
+          {filteredUsers.length === 1 ? 'usuario' : 'usuarios'}
+        </span>
+      </div>
 
       {error && (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-red-300">{error}</p>
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface p-3 text-danger">
+          {error}
+        </p>
       )}
 
       {message && (
-        <p className="mt-4 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 p-3 text-[#7DEBE8]">{message}</p>
+        <p className="mt-4 rounded-lg border border-success/30 bg-success-surface p-3 text-success">
+          {message}
+        </p>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-[#2A3B55] bg-[#172235] shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-[#2A3B55] bg-[#162233] text-[#AAB4C0]">
-            <tr>
-              <th className="px-4 py-3 font-semibold">ID</th>
-              <th className="px-4 py-3 font-semibold">Nombre</th>
-              <th className="px-4 py-3 font-semibold">Correo</th>
-              <th className="px-4 py-3 font-semibold">Rol</th>
-              <th className="px-4 py-3 font-semibold text-right">Acciones</th>
-            </tr>
-          </thead>
+      {loading && (
+        <Card className="mt-8 p-6 text-center text-content-muted">
+          Cargando usuarios...
+        </Card>
+      )}
 
-          <tbody>
-            {!loading && users.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[#AAB4C0]">
-                  No hay usuarios registrados.
-                </td>
-              </tr>
-            )}
+      {!loading && filteredUsers.length === 0 && (
+        <Card className="mt-8 p-6 text-center text-content-muted">
+          {users.length === 0
+            ? 'No hay usuarios registrados.'
+            : 'No hay usuarios con el rol seleccionado.'}
+        </Card>
+      )}
 
-            {loading && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[#AAB4C0]">
-                  Cargando usuarios...
-                </td>
-              </tr>
-            )}
+      {!loading && filteredUsers.length > 0 && (
+        <>
+          <Card className="mt-6 overflow-hidden">
+            <div className="hidden grid-cols-[minmax(0,1.6fr)_minmax(150px,0.8fr)_190px] items-center gap-4 border-b border-theme-border bg-surface-alt px-5 py-3 text-xs font-semibold uppercase tracking-wide text-content-muted md:grid">
+              <span>Usuario</span>
+              <span>Rol</span>
+              <span>Acciones</span>
+            </div>
 
-            {!loading &&
-              users.map((user) => {
+            <div className="divide-y divide-theme-border">
+              {paginatedUsers.map((user) => {
                 const isCurrentUser = user.id === currentUserId;
 
                 return (
-                  <tr key={user.id} className="border-b border-[#2A3B55] transition hover:bg-[#1D2B42]">
-                    <td className="px-4 py-3 text-[#AAB4C0]">{user.id}</td>
-                    <td className="px-4 py-3 font-medium text-[#F5F7FA]">
-                      {user.name || 'Usuario sin nombre'}
-                    </td>
-                    <td className="px-4 py-3 text-[#AAB4C0]">{user.email || 'Sin correo'}</td>
-                    <td className="px-4 py-3 text-[#AAB4C0]">{getUserRoleLabel(user.role)}</td>
-                    <td className="px-4 py-3 text-right">
+                  <article
+                    key={user.id}
+                    className="grid gap-4 px-5 py-4 transition hover:bg-surface-hover md:grid-cols-[minmax(0,1.6fr)_minmax(150px,0.8fr)_190px] md:items-center"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-feature-icon-border bg-feature-icon-background text-feature-icon shadow-sm">
+                        <UserRound size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h2 className="truncate font-semibold text-content-strong">
+                            {user.name || 'Usuario sin nombre'}
+                          </h2>
+                          {isCurrentUser && (
+                            <span className="shrink-0 rounded-full border border-success/30 bg-success-surface px-2 py-0.5 text-xs font-medium text-success">
+                              Tú
+                            </span>
+                          )}
+                        </div>
+                        <p className="truncate text-sm text-content-muted">
+                          {user.email || 'Sin correo'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="inline-flex rounded-full border border-theme-border bg-surface-alt px-3 py-1 text-sm text-content">
+                        {getUserRoleLabel(user.role)}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => openEditModal(user)}
-                        className="mr-2 rounded-lg border border-[#52E0DC]/30 bg-[#52E0DC]/10 px-3 py-1.5 text-xs font-semibold text-[#52E0DC] transition hover:bg-[#52E0DC] hover:text-[#171C22]"
+                        className="border border-theme-border bg-surface-alt px-4 py-2 text-content-strong transition hover:bg-surface-hover"
                       >
                         Editar
                       </button>
-
                       <button
                         type="button"
                         onClick={() => openDeleteModal(user)}
                         disabled={isCurrentUser}
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="bg-danger px-4 py-2 text-danger-foreground transition hover:bg-danger-hover disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isCurrentUser ? 'Tu cuenta' : 'Eliminar'}
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </article>
                 );
               })}
-          </tbody>
-        </table>
-      </div>
+            </div>
+          </Card>
+
+          <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-sm text-content-muted">
+              Mostrando {(safeCurrentPage - 1) * USERS_PER_PAGE + 1}–
+              {Math.min(safeCurrentPage * USERS_PER_PAGE, filteredUsers.length)} de{' '}
+              {filteredUsers.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safeCurrentPage === 1}
+                className="border border-theme-border bg-surface px-4 py-2 text-content-strong transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <span className="min-w-24 text-center text-sm text-content-muted">
+                {safeCurrentPage} de {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
+                disabled={safeCurrentPage === totalPages}
+                className="border border-theme-border bg-surface px-4 py-2 text-content-strong transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
-            <h2 className="text-xl font-bold text-[#F5F7FA]">Eliminar usuario</h2>
+          <Card className="w-full max-w-md p-6 shadow-floating">
+            <h2 className="font-heading text-xl font-bold text-content-strong">
+              Desactivar usuario
+            </h2>
 
-            <p className="mt-3 text-sm text-[#AAB4C0]">
-              Para eliminar al usuario{' '}
-              <strong className="text-[#F5F7FA]">
+            <p className="mt-3 text-sm text-content-muted">
+              Para desactivar al usuario{' '}
+              <strong className="text-content-strong">
                 {selectedUser.name || selectedUser.email || selectedUser.id}
               </strong>
-              , escribe <strong className="text-[#F5F7FA]">eliminar</strong>.
+              , impedir su acceso y conservar su historial, escribe{' '}
+              <strong className="text-content-strong">eliminar</strong>.
             </p>
 
             <input
@@ -287,7 +447,7 @@ export default function AdminUsersPage() {
             />
 
             {deleteError && (
-              <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+              <p className="mt-3 rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
                 {deleteError}
               </p>
             )}
@@ -304,24 +464,28 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={handleDeleteUser}
-                disabled={deleting || confirmText.trim().toLowerCase() !== 'eliminar'}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={
+                  deleting || confirmText.trim().toLowerCase() !== 'eliminar'
+                }
+                className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-danger-foreground transition hover:bg-danger-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {deleting ? 'Eliminando...' : 'Confirmar eliminación'}
+                {deleting ? 'Desactivando...' : 'Confirmar desactivación'}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#2A3B55] bg-[#172235] p-6 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
-            <h2 className="text-xl font-bold text-[#F5F7FA]">Editar usuario</h2>
+          <Card className="w-full max-w-md p-6 shadow-floating">
+            <h2 className="font-heading text-xl font-bold text-content-strong">
+              Editar usuario
+            </h2>
 
-            <p className="mt-2 text-sm text-[#AAB4C0]">
+            <p className="mt-2 text-sm text-content-muted">
               Actualiza los datos de{' '}
-              <strong className="text-[#F5F7FA]">
+              <strong className="text-content-strong">
                 {editingUser.name || editingUser.email || editingUser.id}
               </strong>
               .
@@ -329,9 +493,7 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleUpdateUser} className="mt-4 space-y-4">
               <div>
-                <label className={labelClass}>
-                  Nombre
-                </label>
+                <label className={labelClass}>Nombre</label>
                 <input
                   className={inputClass}
                   value={editForm.name}
@@ -343,9 +505,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className={labelClass}>
-                  Correo
-                </label>
+                <label className={labelClass}>Correo</label>
                 <input
                   type="email"
                   className={inputClass}
@@ -358,9 +518,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className={labelClass}>
-                  Rol
-                </label>
+                <label className={labelClass}>Rol</label>
                 <select
                   className={inputClass}
                   value={editForm.role}
@@ -394,7 +552,7 @@ export default function AdminUsersPage() {
               </div>
 
               {editError && (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                <p className="rounded-lg border border-danger/30 bg-danger-surface p-3 text-sm text-danger">
                   {editError}
                 </p>
               )}
@@ -411,14 +569,24 @@ export default function AdminUsersPage() {
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="rounded-lg bg-[#52E0DC] px-4 py-2 text-sm font-semibold text-[#171C22] transition hover:bg-[#43C3CF] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingEdit ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
+      )}
+
+      {showCreateModal && (
+        <CreateUserModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={async () => {
+            await loadUsers();
+            setMessage('Usuario creado correctamente.');
+          }}
+        />
       )}
     </section>
   );

@@ -6,17 +6,22 @@ import { ProjectHeader } from '../../../components/projects/ProjectHeader';
 import { ProjectMembersPanel } from '../../../components/projects/ProjectMembersPanel';
 import { ProjectTaskBoard } from '../../../components/projects/ProjectTaskBoard';
 import { ConfirmProjectActionModal } from '../../../components/projects/ConfirmProjectActionModal';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
+import { FeedbackAlert } from '../../../components/ui/FeedbackAlert';
 import {
   addProjectMember,
   deleteProject,
   finalizeProject,
   getProjectById,
   getProjectMembers,
+  getResources,
   getProjectTasks,
   getUsers,
   removeProjectMember,
 } from '../../../lib/api';
+import type { ResourceSummary } from '../../../lib/api';
 import { getStoredRole, getStoredUserId } from '../../../lib/auth';
+import { setFlashNotice } from '../../../lib/flashNotice';
 import {
   canManageProjectMembers,
   canViewProjectDetail,
@@ -39,6 +44,7 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [resources, setResources] = useState<ResourceSummary[]>([]);
 
   const [error, setError] = useState('');
 
@@ -46,6 +52,9 @@ export default function ProjectDetailPage() {
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [loadingAddMember, setLoadingAddMember] = useState(false);
   const [memberError, setMemberError] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -64,12 +73,13 @@ export default function ProjectDetailPage() {
     try {
       setError('');
 
-      const [projectData, tasksData, usersData, membersData] =
+      const [projectData, tasksData, usersData, membersData, resourcesData] =
         await Promise.all([
           getProjectById(projectId),
           getProjectTasks(projectId),
           getUsers(),
           getProjectMembers(projectId),
+          getResources(),
         ]);
 
       const projectDetail = projectData.project;
@@ -81,10 +91,11 @@ export default function ProjectDetailPage() {
           (member: { user_id?: string }) => member.user_id === storedUserId,
         );
 
-      const isAllowed = canViewProjectDetail(
-        currentRole,
-        isAssociatedProject,
-      );
+      const currentPermissions = getPermissions(currentRole);
+      const isAllowed =
+        canViewProjectDetail(currentRole, isAssociatedProject) &&
+        (projectDetail.status !== 'DONE' ||
+          currentPermissions.canViewFinishedProjects);
 
       if (!isAllowed) {
         setError('No tienes acceso a este proyecto');
@@ -98,10 +109,11 @@ export default function ProjectDetailPage() {
       setProject(projectDetail);
       setTasks(tasksData.tasks ?? []);
       setMembers(memberList);
+      setResources(resourcesData.resources ?? []);
       setUsers(
         Array.isArray(usersData)
           ? usersData
-          : usersData.users ?? usersData.data ?? [],
+          : (usersData.users ?? usersData.data ?? []),
       );
     } catch {
       setError('No se pudo cargar el detalle del proyecto');
@@ -140,9 +152,13 @@ export default function ProjectDetailPage() {
         projectRole: userRole,
       });
 
-      const updatedMembers = await getProjectMembers(projectId);
+      const [updatedMembers, updatedResources] = await Promise.all([
+        getProjectMembers(projectId),
+        getResources(),
+      ]);
 
       setMembers(updatedMembers.members ?? []);
+      setResources(updatedResources.resources ?? []);
       setSelectedMemberId('');
       setShowAddMemberForm(false);
     } catch (err) {
@@ -155,22 +171,33 @@ export default function ProjectDetailPage() {
   }
 
   async function handleRemoveMember(memberId: string) {
-    if (
-      !confirm('¿Estás seguro de que deseas remover este miembro del proyecto?')
-    ) {
-      return;
-    }
+    setMemberToRemove(memberId);
+  }
+
+  async function confirmRemoveMember() {
+    if (!memberToRemove) return;
 
     try {
-      await removeProjectMember(projectId, memberId);
+      setIsRemovingMember(true);
+      setMemberError('');
+      const memberName = getUserName(memberToRemove);
+      await removeProjectMember(projectId, memberToRemove);
 
-      const updatedMembers = await getProjectMembers(projectId);
+      const [updatedMembers, updatedResources] = await Promise.all([
+        getProjectMembers(projectId),
+        getResources(),
+      ]);
 
       setMembers(updatedMembers.members ?? []);
+      setResources(updatedResources.resources ?? []);
+      setMemberToRemove(null);
+      setFeedbackMessage(`${memberName} fue removido del proyecto.`);
     } catch (err) {
       setMemberError(
         err instanceof Error ? err.message : 'Error al remover miembro',
       );
+    } finally {
+      setIsRemovingMember(false);
     }
   }
 
@@ -188,6 +215,7 @@ export default function ProjectDetailPage() {
 
       await deleteProject(project.id);
 
+      setFlashNotice(`El proyecto “${project.name}” fue eliminado correctamente.`);
       router.push('/projects');
     } catch {
       setDeleteError('No se pudo eliminar el proyecto');
@@ -216,6 +244,7 @@ export default function ProjectDetailPage() {
 
       await finalizeProject(project.id);
 
+      setFlashNotice(`El proyecto “${project.name}” fue finalizado correctamente.`);
       router.push('/projects');
     } catch (err) {
       setFinalizeError(
@@ -236,24 +265,30 @@ export default function ProjectDetailPage() {
     const storedRole = getStoredRole();
     const storedUserId = getStoredUserId();
 
-    setRole(storedRole);
-    setCurrentUserId(storedUserId);
+    void Promise.resolve().then(() => {
+      setRole(storedRole);
+      setCurrentUserId(storedUserId);
 
-    if (projectId) {
-      loadProjectDetail(storedRole, storedUserId);
-    }
+      if (projectId) {
+        return loadProjectDetail(storedRole, storedUserId);
+      }
+    });
+    // La carga se reinicia al cambiar el identificador de la ruta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-        <section className="mx-auto max-w-6xl">
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>
+      <main>
+        <section className="mx-auto w-full max-w-[1240px]">
+          <p className="rounded-lg border border-danger/30 bg-danger-surface p-4 text-sm text-danger">
+            {error}
+          </p>
 
           <button
             type="button"
             onClick={() => router.push('/projects')}
-            className="mt-4 rounded-lg bg-[#52E0DC] px-4 py-2 font-semibold text-[#171C22] transition hover:bg-[#43C3CF]"
+            className="mt-4 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:bg-primary-hover"
           >
             Volver a proyectos
           </button>
@@ -264,9 +299,9 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-        <section className="mx-auto max-w-6xl">
-          <p className="text-[#AAB4C0]">Cargando proyecto...</p>
+      <main>
+        <section className="mx-auto w-full max-w-[1240px]">
+          <p className="text-content-muted">Cargando proyecto...</p>
         </section>
       </main>
     );
@@ -279,8 +314,7 @@ export default function ProjectDetailPage() {
   const permissions = getPermissions(role);
   const isProjectFinished = project.status === 'DONE';
 
-  const canManageMembers =
-    canManageProjectMembers(role) && !isProjectFinished;
+  const canManageMembers = canManageProjectMembers(role) && !isProjectFinished;
   const canViewMembers = canViewProjectMembers(role, isAssociatedProject);
   const canViewTasks = canViewTaskBoard(role, isAssociatedProject);
 
@@ -289,8 +323,15 @@ export default function ProjectDetailPage() {
     permissions.canFinalizeProject && !isProjectFinished;
 
   return (
-    <main className="min-h-screen bg-[#1F2E49] p-8 text-[#F5F7FA]">
-      <section className="mx-auto max-w-7xl">
+    <main>
+      <section className="mx-auto w-full max-w-[1240px]">
+        {feedbackMessage && (
+          <FeedbackAlert
+            message={feedbackMessage}
+            onClose={() => setFeedbackMessage('')}
+          />
+        )}
+
         <ProjectHeader
           project={project}
           responsibleName={getUserName(project.main_responsible_id)}
@@ -305,16 +346,31 @@ export default function ProjectDetailPage() {
           <ProjectMembersPanel
             members={members}
             users={users}
+            resources={resources}
             canManageMembers={canManageMembers}
             showAddMemberForm={showAddMemberForm}
             selectedMemberId={selectedMemberId}
             loadingAddMember={loadingAddMember}
             memberError={memberError}
-            onToggleAddMemberForm={() => setShowAddMemberForm(!showAddMemberForm)}
+            onToggleAddMemberForm={() =>
+              setShowAddMemberForm(!showAddMemberForm)
+            }
             onSelectedMemberChange={setSelectedMemberId}
             onAddMember={handleAddMember}
             onRemoveMember={handleRemoveMember}
             getUserName={getUserName}
+          />
+        )}
+
+        {memberToRemove && (
+          <ConfirmDialog
+            title="Remover miembro"
+            description={`¿Deseas remover a ${getUserName(memberToRemove)} de este proyecto? Podrás volver a asignarlo más adelante.`}
+            confirmLabel="Remover miembro"
+            loadingLabel="Removiendo..."
+            loading={isRemovingMember}
+            onCancel={() => setMemberToRemove(null)}
+            onConfirm={confirmRemoveMember}
           />
         )}
 
@@ -324,7 +380,7 @@ export default function ProjectDetailPage() {
             description={
               <p>
                 Para eliminar este proyecto{' '}
-                <strong className="text-[#F5F7FA]">{project.name}</strong>.
+                <strong className="text-content-strong">{project.name}</strong>.
               </p>
             }
             confirmationLabel="eliminar"
@@ -347,8 +403,10 @@ export default function ProjectDetailPage() {
               <>
                 <p>
                   Al finalizar{' '}
-                  <strong className="text-[#F5F7FA]">{project.name}</strong>, se
-                  marcará como finalizado y quedará como historial.
+                  <strong className="text-content-strong">
+                    {project.name}
+                  </strong>
+                  , se marcará como finalizado y quedará como historial.
                 </p>
               </>
             }
