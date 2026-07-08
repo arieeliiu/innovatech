@@ -36,6 +36,23 @@ export const metadata: Metadata = {
     ],
     shortcut: "/fav-light.ico",
   },
+  openGraph: {
+    title: "Innovatech Solutions",
+    description: "Plataforma de gestión de proyectos, usuarios y tareas",
+    images: [
+      {
+        url: "/og-icon.png",
+        width: 235,
+        height: 235,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Innovatech Solutions",
+    description: "Plataforma de gestión de proyectos, usuarios y tareas",
+    images: ["/og-icon.png"],
+  },
 };
 
 export default function RootLayout({
